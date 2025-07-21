@@ -46,7 +46,18 @@ export default function CreatePostScreen() {
     isLoading: areCommunitiesLoading,
     error: communitiesError?.message,
     selectedCommunity,
-    showCommunityFix
+    showCommunityFix,
+    rawData: userCommunityMemberships,
+    dataType: typeof userCommunityMemberships,
+    isArray: Array.isArray(userCommunityMemberships)
+  });
+
+  // Check the noCommunities calculation
+  const noCommunities = !userCommunityMemberships || userCommunityMemberships.length === 0;
+  console.log('🔍 CREATE POST: noCommunities check:', {
+    noCommunities,
+    reason: !userCommunityMemberships ? 'falsy userCommunityMemberships' : 
+           userCommunityMemberships.length === 0 ? 'empty array' : 'has communities'
   });
 
   // Simple image setter without processing

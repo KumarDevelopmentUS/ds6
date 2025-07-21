@@ -222,6 +222,46 @@ export async function refreshFeedCache() {
   }
 }
 
+// Force refetch FeedProvider data specifically
+export async function forceFeedRefetch() {
+  console.log('🔄 FEED REFETCH: Forcing FeedProvider to refetch data...');
+  
+  try {
+    // Get current user
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      console.error('❌ No authenticated user found');
+      return false;
+    }
+    
+    // Perform the exact same query as useUserCommunities
+    console.log('🔍 FEED REFETCH: Performing fresh query...');
+    const { data, error } = await supabase
+      .from('user_communities')
+      .select('*, communities(*)')
+      .eq('user_id', user.id);
+    
+    console.log('📥 FEED REFETCH: Fresh query results:', {
+      success: !error,
+      error: error?.message,
+      dataCount: data?.length || 0,
+      rawData: data
+    });
+    
+    if (data && data.length > 0) {
+      console.log('🏘️ FEED REFETCH: Fresh communities found:');
+      data.forEach((uc, index) => {
+        console.log(`  ${index + 1}. ${uc.communities?.name} (Community ID: ${uc.communities?.id}, Membership ID: ${uc.id})`);
+      });
+    }
+    
+    return { success: true, data, count: data?.length || 0 };
+  } catch (error) {
+    console.error('❌ Feed refetch failed:', error);
+    return { success: false, error };
+  }
+}
+
 // Manual function to join a community for testing
 export async function joinCommunityManually(communityName: string, communityType: 'school' | 'general' = 'general') {
   console.log('🏘️ MANUAL JOIN: Attempting to join community:', communityName);
