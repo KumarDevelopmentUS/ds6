@@ -2,6 +2,7 @@ import 'react-native-url-polyfill/auto';
 import * as SecureStore from 'expo-secure-store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
+// import { Database } from './types/database'; // Available for gradual typing
 import { Platform } from 'react-native';
 
 // --- Storage adapter that works on both web and native ---
