@@ -11,6 +11,7 @@ import { ThemedText } from '@/components/themed/ThemedText';
 import { ThemedView } from '@/components/themed/ThemedView';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '../_layout';
+import { testDatabaseConnection, debugUserCommunities, joinCommunityManually } from '@/utils/profileSync';
 
 // Array of fun dice facts
 const diceFacts = [
@@ -218,6 +219,11 @@ export default function MainMenuScreen() {
     return true;
   };
 
+  // Debug functions
+  const handleTestJoinCommunity = () => {
+    joinCommunityManually('arizona_state_university', 'school');
+  };
+
   return (
     <ScrollView
       style={styles.container}
@@ -360,6 +366,41 @@ export default function MainMenuScreen() {
           {randomFact}
         </ThemedText>
       </ThemedView>
+
+      {/* Debug Section - Only show for authenticated users */}
+      {session && (
+        <ThemedView variant="card" style={styles.debugCard}>
+          <View style={styles.debugHeader}>
+            <Ionicons name="bug" size={24} color={theme.colors.warning} />
+            <ThemedText variant="subtitle" style={styles.debugTitle}>
+              Debug Tools
+            </ThemedText>
+          </View>
+          <View style={styles.debugButtons}>
+            <ThemedButton
+              title="🧪 Test DB"
+              variant="outline"
+              onPress={testDatabaseConnection}
+              size="small"
+              style={styles.debugButton}
+            />
+            <ThemedButton
+              title="🏘️ My Communities"
+              variant="outline"
+              onPress={debugUserCommunities}
+              size="small"
+              style={styles.debugButton}
+            />
+            <ThemedButton
+              title="🎓 Join ASU"
+              variant="outline"
+              onPress={handleTestJoinCommunity}
+              size="small"
+              style={styles.debugButton}
+            />
+          </View>
+        </ThemedView>
+      )}
     </ScrollView>
   );
 }
@@ -426,5 +467,27 @@ const styles = StyleSheet.create({
   funFactText: {
     lineHeight: 22,
     fontStyle: 'italic',
+  },
+  debugCard: {
+    marginTop: 16,
+    marginBottom: 20,
+  },
+  debugHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  debugTitle: {
+    marginLeft: 8,
+    marginBottom: 0,
+  },
+  debugButtons: {
+    flexDirection: 'row',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  debugButton: {
+    flex: 1,
+    minWidth: 100,
   },
 });

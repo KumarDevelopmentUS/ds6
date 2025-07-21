@@ -1,7 +1,7 @@
 // app/(auth)/signUp.tsx
 import { SCHOOLS, searchSchools } from '@/constants/schools';
 import { supabase } from '@/supabase';
-import { ensureUserProfilesExist, joinDefaultCommunity, testDatabaseConnection, debugUserCommunities, joinCommunityManually } from '@/utils/profileSync';
+import { ensureUserProfilesExist, joinDefaultCommunity } from '@/utils/profileSync';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
@@ -188,10 +188,6 @@ export default function SignUpScreen() {
     router.back();
   };
 
-  const handleTestJoinCommunity = () => {
-    joinCommunityManually('arizona_state_university', 'school');
-  };
-
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -292,30 +288,6 @@ export default function SignUpScreen() {
               style={{ marginTop: theme.spacing.lg }}
             />
           </ThemedView>
-
-          <ThemedButton
-            title="🧪 Test Database Connection"
-            variant="outline"
-            onPress={testDatabaseConnection}
-            size="small"
-            style={{ marginTop: theme.spacing.md }}
-          />
-
-          <ThemedButton
-            title="🏘️ Debug My Communities"
-            variant="outline"
-            onPress={debugUserCommunities}
-            size="small"
-            style={{ marginTop: theme.spacing.sm }}
-          />
-
-          <ThemedButton
-            title="🎓 Join ASU Community"
-            variant="outline"
-            onPress={handleTestJoinCommunity}
-            size="small"
-            style={{ marginTop: theme.spacing.sm }}
-          />
 
           <ThemedButton
             title="Already have an account? Sign In"
