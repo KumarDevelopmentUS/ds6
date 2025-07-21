@@ -103,7 +103,8 @@ export default function SignUpScreen() {
           router.replace('/(auth)/login');
         }
       }
-    } catch (err: any) {
+    } catch (error: any) {
+      console.error('Sign up error:', error);
       Alert.alert('Error', 'An unexpected error occurred during sign up.');
     } finally {
         setLoading(false);

@@ -1,7 +1,7 @@
 // components/social/UserAvatar.tsx
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import React from 'react';
+import { StyleSheet, View } from 'react-native';
 
 interface UserAvatarProps {
   icon?: string;

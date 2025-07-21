@@ -1,26 +1,25 @@
 // components/social/PostCard.tsx
+import { getSchoolByValue } from '@/constants/schools';
 import { Ionicons } from '@expo/vector-icons';
 import * as Device from 'expo-device';
 import { Image } from 'expo-image';
-import { useRouter } from 'expo-router';
 import React, { memo, useState } from 'react';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import {
-  Linking,
-  Modal,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Linking,
+    Modal,
+    Platform,
+    Pressable,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
+    useAnimatedStyle,
+    useSharedValue,
+    withTiming,
 } from 'react-native-reanimated';
-import { getSchoolByValue } from '@/constants/schools';
 // Note: You will need to update your actual Post type definition where it lives.
 import { Post as BasePost } from '../../types/social';
 import { UserAvatar } from './UserAvatar';

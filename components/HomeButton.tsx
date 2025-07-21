@@ -1,5 +1,4 @@
 import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
-import { useRouter } from 'expo-router';
 
 // --- IconSymbol Mock Component ---
 // This mock is needed here because HomeButton uses IconSymbol.

@@ -1,7 +1,7 @@
- import React, { useState, useEffect, useCallback, useMemo, ComponentProps } from 'react';
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, Alert, ScrollView, ActivityIndicator, TextStyle, ViewStyle, ImageStyle } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
+ import { Picker } from '@react-native-picker/picker';
 import { Image } from 'expo-image';
+import React, { ComponentProps, useCallback, useEffect, useMemo, useState } from 'react';
+import { Alert, ImageStyle, ScrollView, StyleSheet, Text, TextInput, TextStyle, TouchableOpacity, View, ViewStyle } from 'react-native';
 
 // --- Mock Components ---
 interface ThemedTextProps extends ComponentProps<typeof Text> {
@@ -11,7 +11,7 @@ const ThemedText = ({ style, type, ...rest }: ThemedTextProps) => (
   <Text style={[styles.text_default, type && (styles as any)[`text_${type}`], style]} {...rest} />
 );
 const ThemedView = (props: View['props']) => <View {...props} />;
-const HelloWave = () => <Text style={{ fontSize: 24 }}>👋</Text>;
+
 const ParallaxScrollView = ({ headerBackgroundColor, headerImage, children }: any) => (
   <ScrollView style={styles.parallaxScroll}>
     <View style={[styles.parallaxHeader, { backgroundColor: headerBackgroundColor.light }]}>
@@ -23,14 +23,7 @@ const ParallaxScrollView = ({ headerBackgroundColor, headerImage, children }: an
   </ScrollView>
 );
 
-interface IconSymbolProps { size: number; name: string; color: string; }
-const IconSymbol = ({ size, name, color }: IconSymbolProps) => (
-  <View style={{ width: size, height: size, justifyContent: 'center', alignItems: 'center' }}>
-    <Text style={{ fontSize: size * 0.7, color: color, fontWeight: 'bold' }}>
-      {name.split('.')[0][0].toUpperCase()}
-    </Text>
-  </View>
-);
+
 // --- End Mock Components ---
 
 // --- Helper Functions ---

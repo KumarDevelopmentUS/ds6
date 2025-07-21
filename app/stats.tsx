@@ -762,36 +762,7 @@ export default function StatisticsScreen() {
     return achievements;
   };
 
-  const checkWinningStreak = (matches: any[], target: number): boolean => {
-    if (!session?.user) return false;
-    
-    let currentStreak = 0;
-    for (const match of matches) {
-      const userTeam = getUserTeam(match, session.user.id);
-      if (userTeam && match.winnerTeam === userTeam) {
-        currentStreak++;
-        if (currentStreak >= target) return true;
-      } else {
-        currentStreak = 0;
-      }
-    }
-    return false;
-  };
 
-  const getCurrentWinStreak = (matches: any[]): number => {
-    if (!session?.user) return 0;
-    
-    let currentStreak = 0;
-    for (const match of matches) {
-      const userTeam = getUserTeam(match, session.user.id);
-      if (userTeam && match.winnerTeam === userTeam) {
-        currentStreak++;
-      } else {
-        break;
-      }
-    }
-    return currentStreak;
-  };
 
   const formatDuration = (seconds: number): string => {
     const hours = Math.floor(seconds / 3600);

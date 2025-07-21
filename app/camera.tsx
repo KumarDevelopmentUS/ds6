@@ -41,7 +41,7 @@ export default function CameraScreen() {
 
       // Pass the photo back to create-post screen using the same navigation method as dual-camera
       router.navigate({
-        pathname: '/(tabs)/create-post',
+        pathname: '/create-post',
         params: { photoUri: picture.uri },
       });
     } catch (error) {
