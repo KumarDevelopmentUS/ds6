@@ -8,10 +8,12 @@ import { ThemedButton } from '../../components/themed/ThemedButton';
 import { ThemedText } from '../../components/themed/ThemedText';
 import { ThemedView } from '../../components/themed/ThemedView';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useFeed } from '../../contexts/FeedContext';
 
 export default function AccountScreen() {
   const router = useRouter();
   const { theme, colorScheme, toggleColorScheme } = useTheme();
+  const { communities: userCommunities, isLoading: communitiesLoading } = useFeed();
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<{
     id: string;
@@ -153,6 +155,86 @@ export default function AccountScreen() {
         <ThemedText style={styles.guestText}>Loading user profile...</ThemedText>
       )}
 
+      {/* Communities Section */}
+      {user && (
+        <ThemedView variant="section">
+          <View style={styles.sectionHeader}>
+            <Ionicons
+              name="people-outline"
+              size={24}
+              color={theme.colors.primary}
+            />
+            <ThemedText variant="subtitle" style={styles.sectionTitle}>
+              My Communities
+            </ThemedText>
+          </View>
+
+          <ThemedView variant="card">
+            {communitiesLoading ? (
+              <View style={styles.communitiesLoading}>
+                <ThemedText variant="caption">Loading communities...</ThemedText>
+              </View>
+            ) : userCommunities && userCommunities.length > 0 ? (
+              userCommunities.map((membership, index) => (
+                <View
+                  key={membership.community_id}
+                  style={[
+                    styles.communityItem,
+                    index < userCommunities.length - 1 && styles.communityItemBorder,
+                    { borderColor: theme.colors.border }
+                  ]}
+                >
+                  <View style={styles.communityInfo}>
+                    <View style={[
+                      styles.communityIcon,
+                      { 
+                        backgroundColor: membership.communities.type === 'school' 
+                          ? theme.colors.warning 
+                          : theme.colors.info 
+                      }
+                    ]}>
+                      <Ionicons
+                        name={membership.communities.type === 'school' ? 'school-outline' : 'globe-outline'}
+                        size={20}
+                        color="#FFFFFF"
+                      />
+                    </View>
+                    <View style={styles.communityText}>
+                      <ThemedText variant="body" style={styles.communityName}>
+                        {membership.communities.name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      </ThemedText>
+                      <ThemedText variant="caption" style={styles.communityType}>
+                        {membership.communities.type === 'school' ? 'School Community' : 'General Community'}
+                      </ThemedText>
+                    </View>
+                  </View>
+                  <View style={styles.communityMeta}>
+                    <ThemedText variant="caption" style={styles.joinedDate}>
+                      Joined {new Date(membership.joined_at).toLocaleDateString()}
+                    </ThemedText>
+                  </View>
+                </View>
+              ))
+            ) : (
+              <View style={styles.noCommunities}>
+                <Ionicons
+                  name="people-outline"
+                  size={48}
+                  color={theme.colors.textSecondary}
+                  style={styles.noCommunitiesIcon}
+                />
+                <ThemedText variant="body" style={styles.noCommunitiesText}>
+                  You're not part of any communities yet
+                </ThemedText>
+                <ThemedText variant="caption" style={styles.noCommunitiesSubtext}>
+                  Join communities by selecting a school during signup or ask an admin to add you
+                </ThemedText>
+              </View>
+            )}
+          </ThemedView>
+        </ThemedView>
+      )}
+
       {/* Settings Sections */}
       {settingsOptions.map((section, sectionIndex) => (
         <ThemedView key={section.title} variant="section">
@@ -276,5 +358,67 @@ const styles = StyleSheet.create({
   },
   logoutButton: {
     marginTop: 32,
+  },
+  communitiesLoading: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  communityItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 4,
+  },
+  communityItemBorder: {
+    borderBottomWidth: 1,
+  },
+  communityInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  communityIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  communityText: {
+    flex: 1,
+  },
+  communityName: {
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  communityType: {
+    opacity: 0.7,
+  },
+  communityMeta: {
+    alignItems: 'flex-end',
+  },
+  joinedDate: {
+    opacity: 0.6,
+    fontSize: 12,
+  },
+  noCommunities: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  noCommunitiesIcon: {
+    marginBottom: 16,
+    opacity: 0.5,
+  },
+  noCommunitiesText: {
+    textAlign: 'center',
+    marginBottom: 8,
+    fontWeight: '500',
+  },
+  noCommunitiesSubtext: {
+    textAlign: 'center',
+    opacity: 0.7,
+    lineHeight: 18,
   },
 });
