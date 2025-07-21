@@ -2,14 +2,14 @@
 'use client';
 
 import { createClient } from '@supabase/supabase-js';
-import { useParams, useRouter } from 'next/navigation';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 
 // Import useCallback and useEffect from React
-import React, { useCallback, useEffect, useState } from 'react';
 import { ThemedButton } from '@/components/themed/ThemedButton';
 import { ThemedInput } from '@/components/themed/ThemedInput';
 import { ThemedText } from '@/components/themed/ThemedText';
 import { ThemedView } from '@/components/themed/ThemedView';
+import React, { useCallback, useEffect, useState } from 'react';
 
 // Supabase client
 const supabase = createClient(
@@ -37,7 +37,7 @@ interface LiveMatch {
 }
 
 const JoinMatchPage: React.FC = () => {
-  const params = useParams();
+  const params = useLocalSearchParams();
   const router = useRouter();
   const roomCode = params.roomCode as string;
 
