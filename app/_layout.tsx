@@ -125,14 +125,21 @@ function RootLayoutNav() {
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       setSession(session);
       
-      // Ensure profiles exist when user signs in
-      if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
+      // Ensure profiles exist when user signs in (but not on token refresh to avoid repeated calls)
+      if (session?.user && event === 'SIGNED_IN') {
         console.log('🔄 User signed in, ensuring profiles exist...');
-        await ensureUserProfilesExist(session.user.id, {
-          username: session.user.user_metadata?.username,
-          nickname: session.user.user_metadata?.nickname,
-          school: session.user.user_metadata?.school,
-        });
+        try {
+          // Run profile sync in background, don't await it to prevent blocking
+          ensureUserProfilesExist(session.user.id, {
+            username: session.user.user_metadata?.username,
+            nickname: session.user.user_metadata?.nickname,
+            school: session.user.user_metadata?.school,
+          }).catch((error) => {
+            console.error('❌ Profile sync failed:', error);
+          });
+        } catch (error) {
+          console.error('❌ Profile sync error:', error);
+        }
       }
     });
 

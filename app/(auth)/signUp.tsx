@@ -1,9 +1,9 @@
 // app/(auth)/signUp.tsx
 import { SCHOOLS, searchSchools } from '@/constants/schools';
 import { supabase } from '@/supabase';
+import { ensureUserProfilesExist, joinDefaultCommunity, testDatabaseConnection } from '@/utils/profileSync';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { ensureUserProfilesExist, joinDefaultCommunity } from '@/utils/profileSync';
 import React, { useState } from 'react';
 import {
     Alert,
@@ -55,28 +55,41 @@ export default function SignUpScreen() {
   const handleSignUp = async () => {
     const { username, email, password, confirmPassword, nickname, school } = formData;
 
+    console.log('🚀 SIGNUP DEBUG: Starting signup with data:', {
+      username: username || 'MISSING',
+      email: email || 'MISSING', 
+      password: password ? `PROVIDED (${password.length} chars)` : 'MISSING',
+      confirmPassword: confirmPassword ? 'PROVIDED' : 'MISSING',
+      nickname: nickname || 'MISSING',
+      school: school || 'NOT_PROVIDED'
+    });
+
     if (!username || !email || !password || !confirmPassword || !nickname) {
+      console.log('❌ SIGNUP DEBUG: Validation failed - missing required fields');
       Alert.alert('Missing Information', 'Please fill in all required fields.');
       return;
     }
 
     if (password !== confirmPassword) {
+      console.log('❌ SIGNUP DEBUG: Validation failed - passwords do not match');
       Alert.alert('Password Mismatch', 'Passwords do not match.');
       return;
     }
 
     if (password.length < 6) {
+      console.log('❌ SIGNUP DEBUG: Validation failed - password too short');
       Alert.alert('Weak Password', 'Password must be at least 6 characters long.');
       return;
     }
 
+    console.log('✅ SIGNUP DEBUG: All validations passed, starting signup...');
     setLoading(true);
 
     try {
-      console.log('🔄 Starting signup process...');
+      console.log('🔄 SIGNUP DEBUG: Step 1 - Calling supabase.auth.signUp...');
       
       // Step 1: Create auth user
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      const signUpPayload = {
         email,
         password,
         options: {
@@ -86,10 +99,29 @@ export default function SignUpScreen() {
             ...(school && { school }),
           },
         },
+      };
+      
+      console.log('📤 SIGNUP DEBUG: Auth payload:', {
+        email: signUpPayload.email,
+        hasPassword: !!signUpPayload.password,
+        metadata: signUpPayload.options.data
+      });
+
+      const { data: authData, error: authError } = await supabase.auth.signUp(signUpPayload);
+
+      console.log('📥 SIGNUP DEBUG: Auth response:', {
+        hasData: !!authData,
+        hasUser: !!authData?.user,
+        userId: authData?.user?.id,
+        userEmail: authData?.user?.email,
+        hasSession: !!authData?.session,
+        hasError: !!authError,
+        errorMessage: authError?.message,
+        errorCode: authError?.status
       });
 
       if (authError) {
-        console.error('❌ Auth signup failed:', authError);
+        console.error('❌ SIGNUP DEBUG: Auth signup failed with error:', authError);
         if (authError.message.includes('User already registered')) {
           Alert.alert('Account Exists', 'An account with this email already exists. Please sign in instead.');
         } else {
@@ -99,35 +131,55 @@ export default function SignUpScreen() {
       }
 
       if (!authData.user) {
+        console.error('❌ SIGNUP DEBUG: No user returned from auth signup');
         Alert.alert('Error', 'Failed to create user account.');
         return;
       }
 
-      console.log('✅ Auth user created:', authData.user.id);
+      console.log('✅ SIGNUP DEBUG: Auth user created successfully:', {
+        userId: authData.user.id,
+        email: authData.user.email,
+        emailConfirmed: authData.user.email_confirmed_at,
+        userMetadata: authData.user.user_metadata
+      });
 
       // Step 2: Ensure both profile tables are created
-      await ensureUserProfilesExist(authData.user.id, {
+      console.log('🔄 SIGNUP DEBUG: Step 2 - Creating profile records...');
+      const profileResult = await ensureUserProfilesExist(authData.user.id, {
         username: username.toLowerCase(),
         nickname: nickname,
         school: school,
       });
+      console.log('📋 SIGNUP DEBUG: Profile creation result:', profileResult);
 
       // Step 3: Add user to default community
-      await joinDefaultCommunity(authData.user.id);
+      console.log('🔄 SIGNUP DEBUG: Step 3 - Joining default community...');
+      const communityResult = await joinDefaultCommunity(authData.user.id);
+      console.log('🏘️ SIGNUP DEBUG: Community join result:', communityResult);
 
       // Step 4: Success!
+      console.log('🔄 SIGNUP DEBUG: Step 4 - Final success handling...');
       if (authData.session) {
+        console.log('✅ SIGNUP DEBUG: User has session, redirecting to home');
         Alert.alert('Success', 'Account created successfully!');
         router.replace('/(tabs)/home');
       } else {
+        console.log('📧 SIGNUP DEBUG: No session, user needs email verification');
         Alert.alert('Check Your Email', 'Please verify your email to continue.');
         router.replace('/(auth)/login');
       }
 
+      console.log('🎉 SIGNUP DEBUG: Signup process completed successfully');
+
     } catch (error: any) {
-      console.error('💥 Signup error:', error);
+      console.error('💥 SIGNUP DEBUG: Unexpected error during signup:', {
+        error: error,
+        message: error?.message,
+        stack: error?.stack
+      });
       Alert.alert('Error', 'An unexpected error occurred during sign up.');
     } finally {
+      console.log('🔚 SIGNUP DEBUG: Cleanup - setting loading to false');
       setLoading(false);
     }
   };
@@ -236,6 +288,14 @@ export default function SignUpScreen() {
               style={{ marginTop: theme.spacing.lg }}
             />
           </ThemedView>
+
+          <ThemedButton
+            title="🧪 Test Database Connection"
+            variant="outline"
+            onPress={testDatabaseConnection}
+            size="small"
+            style={{ marginTop: theme.spacing.md }}
+          />
 
           <ThemedButton
             title="Already have an account? Sign In"
