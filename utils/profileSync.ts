@@ -2,27 +2,24 @@
 import { supabase } from '@/supabase';
 
 // Debug function to check user's current community memberships
-export async function debugUserCommunities(userId?: string) {
+export async function debugUserCommunities() {
   console.log('🔍 COMMUNITY DEBUG: Checking user community memberships...');
   
   try {
-    // Get current user if not provided
-    if (!userId) {
-      const { data: { user }, error } = await supabase.auth.getUser();
-      if (error || !user) {
-        console.error('❌ No authenticated user found');
-        return false;
-      }
-      userId = user.id;
+    // Always get current user from auth
+    const { data: { user }, error } = await supabase.auth.getUser();
+    if (error || !user) {
+      console.error('❌ No authenticated user found');
+      return false;
     }
     
-    console.log('👤 Checking communities for user:', userId);
+    console.log('👤 Checking communities for user:', user.id);
     
     // Check user_communities table
     const { data: userCommunities, error: ucError } = await supabase
       .from('user_communities')
       .select('*, communities(*)')
-      .eq('user_id', userId);
+      .eq('user_id', user.id);
     
     console.log('📥 User communities query result:', {
       count: userCommunities?.length || 0,
@@ -139,8 +136,16 @@ export async function joinCommunityManually(communityName: string, communityType
     
     console.log('✅ Successfully joined community:', membership);
     
-    // Force refresh of community data
+    // Force refresh of community data by triggering a window reload
     console.log('🔄 Refreshing community data...');
+    
+    // For web, we can trigger a page refresh to clear all caches
+    if (typeof window !== 'undefined') {
+      console.log('🔄 Triggering page refresh to update cache...');
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+    }
     
     return true;
     
