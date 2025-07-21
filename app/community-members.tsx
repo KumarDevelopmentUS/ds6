@@ -1,20 +1,20 @@
 // app/community-members.tsx
+import { getSchoolByValue } from '@/constants/schools';
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  FlatList,
-  StyleSheet,
-  TouchableOpacity,
-  View,
-  Text,
-  SafeAreaView
+    ActivityIndicator,
+    Alert,
+    FlatList,
+    SafeAreaView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from 'react-native';
-import { useAuth } from './_layout';
-import { getSchoolByValue } from '@/constants/schools';
 
 type UserProfile = {
   id: string;

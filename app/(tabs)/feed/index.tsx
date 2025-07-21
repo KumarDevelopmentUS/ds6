@@ -1,27 +1,27 @@
 // app/(tabs)/feed/index.tsx
+import { PostCard } from '@/components/social/PostCard';
+import { getSchoolByValue } from '@/constants/schools';
+import { useAuth } from '@/contexts/AuthContext';
+import { useFeed } from '@/contexts/FeedContext';
+import { usePosts, useRealtimeUpdates } from '@/hooks/useSocialFeatures';
+import { supabase } from '@/supabase';
+import { debugFeedProvider, debugUserCommunities, fixUserCommunityMembership } from '@/utils/profileSync';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  FlatList,
-  Modal,
-  Pressable,
-  RefreshControl,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
+    ActivityIndicator,
+    Alert,
+    FlatList,
+    Modal,
+    Pressable,
+    RefreshControl,
+    SafeAreaView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from 'react-native';
-import { PostCard } from '@/components/social/PostCard';
-import { useFeed } from '@/contexts/FeedContext';
-import { usePosts, useRealtimeUpdates } from '@/hooks/useSocialFeatures';
-import { getSchoolByValue } from '@/constants/schools';
-import { useAuth } from '../../_layout';
-import { supabase } from '@/supabase';
-import { fixUserCommunityMembership, debugUserCommunities, debugFeedProvider } from '@/utils/profileSync';
 
 export default function FeedScreen() {
   const router = useRouter();

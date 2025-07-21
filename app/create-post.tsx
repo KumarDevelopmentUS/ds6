@@ -1,5 +1,6 @@
 // app/create-post.tsx
 import { getSchoolByValue } from '@/constants/schools';
+import { useAuth } from '@/contexts/AuthContext';
 import { useFeed } from '@/contexts/FeedContext';
 import { useCreatePost } from '@/hooks/useSocialFeatures';
 import { fixUserCommunityMembership } from '@/utils/profileSync';
@@ -23,7 +24,6 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
-import { useAuth } from './_layout';
 
 export default function CreatePostScreen() {
   const router = useRouter();

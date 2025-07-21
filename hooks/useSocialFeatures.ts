@@ -6,7 +6,7 @@ import * as FileSystem from 'expo-file-system';
 import { useRouter } from 'expo-router';
 import { useEffect } from 'react';
 import { Alert, Platform } from 'react-native';
-import { useAuth } from '../app/_layout';
+import { useAuth } from '../contexts/AuthContext';
 import { Comment, Post } from '../types/social';
 
 export const useUserProfile = () => {

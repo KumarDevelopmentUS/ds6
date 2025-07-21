@@ -1,12 +1,12 @@
 // app/_layout.tsx
+import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { FeedProvider } from '@/contexts/FeedContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { supabase } from '@/supabase';
 import { ensureUserProfilesExist } from '@/utils/profileSync';
-import { Session } from '@supabase/supabase-js';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SplashScreen, Stack, useRouter, useSegments } from 'expo-router';
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
@@ -22,23 +22,7 @@ const queryClient = new QueryClient({
   },
 });
 
-// Create an authentication context.
-const AuthContext = createContext<{
-  session: Session | null;
-  isReady: boolean;
-}>({
-  session: null,
-  isReady: false,
-});
 
-// Custom hook to use the AuthContext.
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
 
 // Error Boundary Component to catch rendering errors.
 class ErrorBoundary extends React.Component<
@@ -110,22 +94,13 @@ function useProtectedRoute(session: Session | null, isReady: boolean) {
 }
 
 function RootLayoutNav() {
-  const [session, setSession] = useState<Session | null>(null);
-  const [isReady, setIsReady] = useState(false);
+  const { session, isReady } = useAuth();
 
   useEffect(() => {
-    // Fetch initial session.
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setIsReady(true);
-    });
-
-    // Listen for auth state changes.
+    // Listen for auth state changes for profile sync
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      setSession(session);
-      
       // Ensure profiles exist when user signs in (but not on token refresh to avoid repeated calls)
       if (session?.user && event === 'SIGNED_IN') {
         console.log('🔄 User signed in, ensuring profiles exist...');
@@ -166,19 +141,17 @@ function RootLayoutNav() {
   }
 
   return (
-    <AuthContext.Provider value={{ session, isReady }}>
-      <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
-        {/* Group screens */}
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="(auth)" />
+    <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
+      {/* Group screens */}
+      <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="(auth)" />
 
-        {/* Screens presented from the root */}
-        <Stack.Screen name="tracker" />
-        <Stack.Screen name="history" />
-        <Stack.Screen name="stats" />
-        <Stack.Screen name="friends" />
-      </Stack>
-    </AuthContext.Provider>
+      {/* Screens presented from the root */}
+      <Stack.Screen name="tracker" />
+      <Stack.Screen name="history" />
+      <Stack.Screen name="stats" />
+      <Stack.Screen name="friends" />
+    </Stack>
   );
 }
 
@@ -189,9 +162,11 @@ export default function RootLayout() {
         <GestureHandlerRootView style={{ flex: 1 }}>
           <QueryClientProvider client={queryClient}>
             <ThemeProvider>
-              <FeedProvider>
-                <RootLayoutNav />
-              </FeedProvider>
+              <AuthProvider>
+                <FeedProvider>
+                  <RootLayoutNav />
+                </FeedProvider>
+              </AuthProvider>
             </ThemeProvider>
           </QueryClientProvider>
         </GestureHandlerRootView>

@@ -3,15 +3,15 @@ import { MenuCard } from '@/components/MenuCard';
 import { ThemedButton } from '@/components/themed/ThemedButton';
 import { ThemedText } from '@/components/themed/ThemedText';
 import { ThemedView } from '@/components/themed/ThemedView';
+import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { supabase } from '@/supabase';
-import { debugFeedProvider, debugRLSPolicies, debugUserCommunities, joinCommunityManually, refreshFeedCache, testDatabaseConnection, forceFeedRefetch } from '@/utils/profileSync';
+import { debugFeedProvider, debugRLSPolicies, debugUserCommunities, forceFeedRefetch, joinCommunityManually, refreshFeedCache, testDatabaseConnection } from '@/utils/profileSync';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { nanoid } from 'nanoid/non-secure';
 import React, { useEffect, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, View } from 'react-native';
-import { useAuth } from '../_layout';
 
 // Array of fun dice facts
 const diceFacts = [

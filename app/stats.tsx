@@ -1,4 +1,5 @@
 // app/stats.tsx
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
@@ -15,7 +16,6 @@ import { ThemedButton } from '../components/themed/ThemedButton';
 import { ThemedText } from '../components/themed/ThemedText';
 import { ThemedView } from '../components/themed/ThemedView';
 import { useTheme } from '../contexts/ThemeContext';
-import { useAuth } from './_layout';
 
 interface OverallStats {
   totalMatches: number;
