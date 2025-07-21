@@ -1,17 +1,17 @@
 // app/(tabs)/home.tsx
-import { supabase } from '@/supabase';
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { nanoid } from 'nanoid/non-secure';
-import React, { useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { MenuCard } from '@/components/MenuCard';
 import { ThemedButton } from '@/components/themed/ThemedButton';
 import { ThemedText } from '@/components/themed/ThemedText';
 import { ThemedView } from '@/components/themed/ThemedView';
 import { useTheme } from '@/contexts/ThemeContext';
+import { supabase } from '@/supabase';
+import { debugUserCommunities, joinCommunityManually, testDatabaseConnection, debugFeedProvider } from '@/utils/profileSync';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import { nanoid } from 'nanoid/non-secure';
+import React, { useEffect, useState } from 'react';
+import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { useAuth } from '../_layout';
-import { testDatabaseConnection, debugUserCommunities, joinCommunityManually } from '@/utils/profileSync';
 
 // Array of fun dice facts
 const diceFacts = [
@@ -388,6 +388,13 @@ export default function MainMenuScreen() {
               title="🏘️ My Communities"
               variant="outline"
               onPress={debugUserCommunities}
+              size="small"
+              style={styles.debugButton}
+            />
+            <ThemedButton
+              title="📡 Feed Provider"
+              variant="outline"
+              onPress={debugFeedProvider}
               size="small"
               style={styles.debugButton}
             />

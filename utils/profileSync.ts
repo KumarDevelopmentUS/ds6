@@ -25,13 +25,17 @@ export async function debugUserCommunities() {
       count: userCommunities?.length || 0,
       hasError: !!ucError,
       errorMessage: ucError?.message,
-      communities: userCommunities?.map(uc => ({
-        id: uc.community_id,
-        name: uc.communities?.name,
-        type: uc.communities?.type,
-        joined_at: uc.joined_at
-      }))
     });
+    
+    // Log each community individually for clarity
+    if (userCommunities && userCommunities.length > 0) {
+      console.log('🏘️ Your communities:');
+      userCommunities.forEach((uc, index) => {
+        console.log(`  ${index + 1}. ${uc.communities?.name} (ID: ${uc.community_id}, Type: ${uc.communities?.type})`);
+      });
+    } else {
+      console.log('❌ No communities found for user');
+    }
     
     // Check all communities
     const { data: allCommunities, error: allError } = await supabase
@@ -52,6 +56,47 @@ export async function debugUserCommunities() {
     return true;
   } catch (error) {
     console.error('❌ Community debug failed:', error);
+    return false;
+  }
+}
+
+// Debug function to test what FeedProvider sees
+export async function debugFeedProvider() {
+  console.log('🔍 FEED DEBUG: Testing what FeedProvider sees...');
+  
+  try {
+    // Get current user
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      console.error('❌ No authenticated user found');
+      return false;
+    }
+    
+    // This is the EXACT query that useUserCommunities uses
+    const { data, error } = await supabase
+      .from('user_communities')
+      .select('*, communities(*)')
+      .eq('user_id', user.id);
+    
+    console.log('📥 FeedProvider query result:', {
+      hasError: !!error,
+      errorMessage: error?.message,
+      dataLength: data?.length || 0,
+      rawData: data
+    });
+    
+    if (data && data.length > 0) {
+      console.log('🏘️ FeedProvider communities:');
+      data.forEach((uc, index) => {
+        console.log(`  ${index + 1}. ${uc.communities?.name} (ID: ${uc.communities?.id})`);
+      });
+    } else {
+      console.log('❌ FeedProvider found no communities');
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('❌ FeedProvider debug failed:', error);
     return false;
   }
 }
