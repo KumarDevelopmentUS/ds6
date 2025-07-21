@@ -1,6 +1,155 @@
 // utils/profileSync.ts - Utility to sync profile tables
 import { supabase } from '@/supabase';
 
+// Debug function to check user's current community memberships
+export async function debugUserCommunities(userId?: string) {
+  console.log('🔍 COMMUNITY DEBUG: Checking user community memberships...');
+  
+  try {
+    // Get current user if not provided
+    if (!userId) {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error || !user) {
+        console.error('❌ No authenticated user found');
+        return false;
+      }
+      userId = user.id;
+    }
+    
+    console.log('👤 Checking communities for user:', userId);
+    
+    // Check user_communities table
+    const { data: userCommunities, error: ucError } = await supabase
+      .from('user_communities')
+      .select('*, communities(*)')
+      .eq('user_id', userId);
+    
+    console.log('📥 User communities query result:', {
+      count: userCommunities?.length || 0,
+      hasError: !!ucError,
+      errorMessage: ucError?.message,
+      communities: userCommunities?.map(uc => ({
+        id: uc.community_id,
+        name: uc.communities?.name,
+        type: uc.communities?.type,
+        joined_at: uc.joined_at
+      }))
+    });
+    
+    // Check all communities
+    const { data: allCommunities, error: allError } = await supabase
+      .from('communities')
+      .select('*')
+      .order('name');
+    
+    console.log('📋 All available communities:', {
+      count: allCommunities?.length || 0,
+      hasError: !!allError,
+      communities: allCommunities?.map(c => ({
+        id: c.id,
+        name: c.name,
+        type: c.type
+      }))
+    });
+    
+    return true;
+  } catch (error) {
+    console.error('❌ Community debug failed:', error);
+    return false;
+  }
+}
+
+// Manual function to join a community for testing
+export async function joinCommunityManually(communityName: string, communityType: 'school' | 'general' = 'school') {
+  console.log('🏘️ MANUAL JOIN: Attempting to join community:', communityName);
+  
+  try {
+    // Get current user
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      console.error('❌ No authenticated user found');
+      return false;
+    }
+    
+    console.log('👤 User ID:', user.id);
+    
+    // Find or create the community
+    let { data: community, error: findError } = await supabase
+      .from('communities')
+      .select('*')
+      .eq('name', communityName)
+      .eq('type', communityType)
+      .single();
+    
+    if (findError && findError.code === 'PGRST116') {
+      // Community doesn't exist, create it
+      console.log('📝 Creating new community:', communityName);
+      const { data: newCommunity, error: createError } = await supabase
+        .from('communities')
+        .insert({
+          name: communityName,
+          type: communityType,
+          description: `${communityType} community for ${communityName}`
+        })
+        .select()
+        .single();
+      
+      if (createError) {
+        console.error('❌ Failed to create community:', createError);
+        return false;
+      }
+      
+      community = newCommunity;
+      console.log('✅ Community created:', community);
+    } else if (findError) {
+      console.error('❌ Error finding community:', findError);
+      return false;
+    } else {
+      console.log('✅ Found existing community:', community);
+    }
+    
+    // Check if user is already a member
+    const { data: existingMembership, error: membershipError } = await supabase
+      .from('user_communities')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('community_id', community.id)
+      .single();
+    
+    if (existingMembership) {
+      console.log('✅ User is already a member of this community');
+      return true;
+    }
+    
+    // Join the community
+    console.log('📝 Adding user to community...');
+    const { data: membership, error: joinError } = await supabase
+      .from('user_communities')
+      .insert({
+        user_id: user.id,
+        community_id: community.id
+      })
+      .select()
+      .single();
+    
+    if (joinError) {
+      console.error('❌ Failed to join community:', joinError);
+      return false;
+    }
+    
+    console.log('✅ Successfully joined community:', membership);
+    
+    // Force refresh of community data
+    console.log('🔄 Refreshing community data...');
+    
+    return true;
+    
+  } catch (error) {
+    console.error('❌ Manual join failed:', error);
+    return false;
+  }
+}
+
 // Test function to verify database connection and operations
 export async function testDatabaseConnection() {
   console.log('🧪 DATABASE TEST: Starting comprehensive database test...');

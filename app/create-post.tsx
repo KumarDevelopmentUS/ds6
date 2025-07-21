@@ -1,26 +1,26 @@
 // app/(tabs)/create-post.tsx
+import { useFeed } from '@/contexts/FeedContext';
+import { useCreatePost } from '@/hooks/useSocialFeatures';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  KeyboardAvoidingView,
-  Linking,
-  Modal,
-  Platform,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    ActivityIndicator,
+    Alert,
+    Image,
+    KeyboardAvoidingView,
+    Linking,
+    Modal,
+    Platform,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
-import { useFeed } from '@/contexts/FeedContext';
-import { useCreatePost } from '@/hooks/useSocialFeatures';
 
 export default function CreatePostScreen() {
   const router = useRouter();
@@ -182,6 +182,8 @@ export default function CreatePostScreen() {
     );
   }
 
+  const noCommunities = !userCommunityMemberships || userCommunityMemberships.length === 0;
+
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView 
@@ -191,7 +193,11 @@ export default function CreatePostScreen() {
         <ScrollView style={styles.scrollView} keyboardShouldPersistTaps="handled">
           <View style={styles.form}>
             <Text style={styles.sectionTitle}>Create a New Post</Text>
-            
+            {noCommunities && (
+              <Text style={{ color: '#FF3B30', marginBottom: 16, fontWeight: 'bold' }}>
+                You must join a community before posting.
+              </Text>
+            )}
             <Text style={styles.label}>Select Community</Text>
             <View style={styles.communitySelector}>
               {userCommunityMemberships?.map((membership) => (
@@ -202,6 +208,7 @@ export default function CreatePostScreen() {
                     selectedCommunity === membership.communities.id && styles.communityOptionSelected
                   ]}
                   onPress={() => setSelectedCommunity(membership.communities.id)}
+                  disabled={noCommunities}
                 >
                   <Text
                     style={[
@@ -222,6 +229,7 @@ export default function CreatePostScreen() {
               onChangeText={setTitle}
               placeholder="Enter post title"
               maxLength={100}
+              editable={!noCommunities}
             />
 
             <Text style={styles.label}>Content (optional)</Text>
@@ -232,6 +240,7 @@ export default function CreatePostScreen() {
               placeholder="What's on your mind?"
               multiline
               maxLength={500}
+              editable={!noCommunities}
             />
             <Text style={styles.charCount}>{content.length}/500</Text>
             
@@ -239,6 +248,7 @@ export default function CreatePostScreen() {
               onPress={() => setShowMediaOptions(true)} 
               style={styles.imageButton}
               accessibilityLabel="Add media to your post"
+              disabled={noCommunities}
             >
               <Ionicons name="camera-outline" size={24} color="#007AFF" />
               <Text style={styles.imageButtonText}>Add Photo</Text>
@@ -262,10 +272,10 @@ export default function CreatePostScreen() {
 
             <TouchableOpacity
               onPress={handleSubmit}
-              disabled={isCreating || !title.trim() || !selectedCommunity}
+              disabled={isCreating || !title.trim() || !selectedCommunity || noCommunities}
               style={[
                 styles.submitButton, 
-                (isCreating || !title.trim() || !selectedCommunity) && styles.submitButtonDisabled
+                (isCreating || !title.trim() || !selectedCommunity || noCommunities) && styles.submitButtonDisabled
               ]}
               accessibilityLabel="Create and submit your post"
             >

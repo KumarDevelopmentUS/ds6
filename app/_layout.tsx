@@ -1,13 +1,14 @@
 // app/_layout.tsx
+import { FeedProvider } from '@/contexts/FeedContext';
+import { ThemeProvider } from '@/contexts/ThemeContext';
 import { supabase } from '@/supabase';
+import { ensureUserProfilesExist } from '@/utils/profileSync';
 import { Session } from '@supabase/supabase-js';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SplashScreen, Stack, useRouter, useSegments } from 'expo-router';
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { View, Text } from 'react-native';
-import { ThemeProvider } from '@/contexts/ThemeContext';
+import { Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { ensureUserProfilesExist } from '@/utils/profileSync';
 
 // Keep the native splash screen visible while the app initializes.
 SplashScreen.preventAutoHideAsync();
@@ -188,7 +189,9 @@ export default function RootLayout() {
         <GestureHandlerRootView style={{ flex: 1 }}>
           <QueryClientProvider client={queryClient}>
             <ThemeProvider>
-              <RootLayoutNav />
+              <FeedProvider>
+                <RootLayoutNav />
+              </FeedProvider>
             </ThemeProvider>
           </QueryClientProvider>
         </GestureHandlerRootView>
