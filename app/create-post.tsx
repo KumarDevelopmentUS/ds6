@@ -35,6 +35,15 @@ export default function CreatePostScreen() {
   const { createPost, isCreating } = useCreatePost();
   const { communities: userCommunityMemberships, isLoading: areCommunitiesLoading, error: communitiesError } = useFeed();
 
+  // Debug logging for useFeed results
+  console.log('🔍 CREATE POST DEBUG: useFeed results:', {
+    userCommunityMemberships,
+    isLoading: areCommunitiesLoading,
+    error: communitiesError,
+    length: userCommunityMemberships?.length || 0,
+    firstCommunity: userCommunityMemberships?.[0]
+  });
+
   // Simple image setter without processing
   const handleSetImage = (uri: string | null) => {
     setImageUri(uri);

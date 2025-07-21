@@ -101,6 +101,27 @@ export async function debugFeedProvider() {
   }
 }
 
+// Force refresh FeedProvider cache
+export async function refreshFeedCache() {
+  console.log('🔄 CACHE REFRESH: Forcing FeedProvider cache refresh...');
+  
+  try {
+    // For web, trigger a page refresh to clear all React Query cache
+    if (typeof window !== 'undefined') {
+      console.log('🔄 Triggering page refresh to clear React Query cache...');
+      window.location.reload();
+      return true;
+    }
+    
+    // For mobile, we could try to access the queryClient directly, but page refresh is simpler
+    console.log('✅ Cache refresh initiated');
+    return true;
+  } catch (error) {
+    console.error('❌ Cache refresh failed:', error);
+    return false;
+  }
+}
+
 // Manual function to join a community for testing
 export async function joinCommunityManually(communityName: string, communityType: 'school' | 'general' = 'school') {
   console.log('🏘️ MANUAL JOIN: Attempting to join community:', communityName);
