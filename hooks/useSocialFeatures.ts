@@ -18,16 +18,48 @@ export const useUserProfile = () => {
     queryFn: async () => {
       if (!user) return null;
 
-      const { data, error } = await supabase
+      // Try to get profile from profiles table
+      const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
         .single();
 
       if (error && error.code !== 'PGRST116') {
+        console.error('Profile fetch error:', error);
+        
+        // If profile doesn't exist, try to create it
+        if (error.code === 'PGRST116') {
+          console.log('Profile not found, creating default profile...');
+          
+          const defaultProfile = {
+            id: user.id,
+            user_id: user.id,
+            nickname: user.user_metadata?.nickname || user.email?.split('@')[0] || 'Player',
+            school: user.user_metadata?.school || null,
+            avatar_icon: 'person',
+            avatar_icon_color: '#FFFFFF',
+            avatar_background_color: '#007AFF',
+          };
+
+          const { data: newProfile, error: createError } = await supabase
+            .from('profiles')
+            .insert(defaultProfile)
+            .select()
+            .single();
+
+          if (createError) {
+            console.error('Failed to create default profile:', createError);
+            return defaultProfile; // Return default even if insert fails
+          }
+
+          return newProfile;
+        }
+        
         throw new Error(error.message);
       }
-      return data;
+
+      return profile;
     },
     enabled: !!user,
   });

@@ -7,6 +7,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { View, Text } from 'react-native';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { ensureUserProfilesExist } from '@/utils/profileSync';
 
 // Keep the native splash screen visible while the app initializes.
 SplashScreen.preventAutoHideAsync();
@@ -121,8 +122,18 @@ function RootLayoutNav() {
     // Listen for auth state changes.
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
       setSession(session);
+      
+      // Ensure profiles exist when user signs in
+      if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
+        console.log('🔄 User signed in, ensuring profiles exist...');
+        await ensureUserProfilesExist(session.user.id, {
+          username: session.user.user_metadata?.username,
+          nickname: session.user.user_metadata?.nickname,
+          school: session.user.user_metadata?.school,
+        });
+      }
     });
 
     // Unsubscribe from the listener when the component unmounts.

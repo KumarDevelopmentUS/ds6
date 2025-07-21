@@ -1,25 +1,26 @@
 // app/(auth)/signUp.tsx
+import { SCHOOLS, searchSchools } from '@/constants/schools';
 import { supabase } from '@/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { ensureUserProfilesExist, joinDefaultCommunity } from '@/utils/profileSync';
 import React, { useState } from 'react';
 import {
-  Alert,
-  FlatList,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  View
+    Alert,
+    FlatList,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import { ThemedButton } from '../../components/themed/ThemedButton';
 import { ThemedInput } from '../../components/themed/ThemedInput';
 import { ThemedText } from '../../components/themed/ThemedText';
 import { ThemedView } from '../../components/themed/ThemedView';
-import { SCHOOLS, searchSchools } from '@/constants/schools';
 import { useTheme } from '../../contexts/ThemeContext';
 
 export default function SignUpScreen() {
@@ -72,42 +73,62 @@ export default function SignUpScreen() {
     setLoading(true);
 
     try {
-      // The trigger we created in the database will handle creating the profile.
-      // If the username is not unique, the database will throw an error,
-      // which will be caught here, ensuring data consistency.
-      const { data, error } = await supabase.auth.signUp({
+      console.log('🔄 Starting signup process...');
+      
+      // Step 1: Create auth user
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
-            username: username.toLowerCase(), // Store username in lowercase for consistency
+            username: username.toLowerCase(),
             nickname: nickname,
             ...(school && { school }),
           },
         },
       });
 
-      if (error) {
-        // Provide a user-friendly message if the username is taken
-        if (error.message.includes('violates unique constraint "user_profiles_username_key"')) {
-            Alert.alert('Username Taken', 'This username is already in use. Please choose another.');
+      if (authError) {
+        console.error('❌ Auth signup failed:', authError);
+        if (authError.message.includes('User already registered')) {
+          Alert.alert('Account Exists', 'An account with this email already exists. Please sign in instead.');
         } else {
-            Alert.alert('Sign Up Error', error.message);
+          Alert.alert('Sign Up Error', authError.message);
         }
-      } else {
-        if (data.user && data.session) {
-          Alert.alert('Success', 'Account created successfully!');
-          router.replace('/(tabs)/home');
-        } else {
-          Alert.alert('Check Your Email', 'Please verify your email to continue.');
-          router.replace('/(auth)/login');
-        }
+        return;
       }
+
+      if (!authData.user) {
+        Alert.alert('Error', 'Failed to create user account.');
+        return;
+      }
+
+      console.log('✅ Auth user created:', authData.user.id);
+
+      // Step 2: Ensure both profile tables are created
+      await ensureUserProfilesExist(authData.user.id, {
+        username: username.toLowerCase(),
+        nickname: nickname,
+        school: school,
+      });
+
+      // Step 3: Add user to default community
+      await joinDefaultCommunity(authData.user.id);
+
+      // Step 4: Success!
+      if (authData.session) {
+        Alert.alert('Success', 'Account created successfully!');
+        router.replace('/(tabs)/home');
+      } else {
+        Alert.alert('Check Your Email', 'Please verify your email to continue.');
+        router.replace('/(auth)/login');
+      }
+
     } catch (error: any) {
-      console.error('Sign up error:', error);
+      console.error('💥 Signup error:', error);
       Alert.alert('Error', 'An unexpected error occurred during sign up.');
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
   };
 
