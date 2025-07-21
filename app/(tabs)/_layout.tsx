@@ -2,15 +2,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import React from 'react';
-import { FeedProvider } from '../../contexts/FeedContext';
-
 // This file should only be responsible for setting up the tabs.
 // The root _layout.tsx is responsible for protecting this route.
 
 export default function TabLayout() {
   return (
-    <FeedProvider>
-      <Tabs
+    <Tabs
         screenOptions={{
           tabBarActiveTintColor: '#007AFF',
           // Note: I've removed the hardcoded white background to better support theming.
@@ -49,6 +46,5 @@ export default function TabLayout() {
           }}
         />
       </Tabs>
-    </FeedProvider>
-  );
-}
+    );
+  }

@@ -60,6 +60,14 @@ export default function CreatePostScreen() {
            userCommunityMemberships.length === 0 ? 'empty array' : 'has communities'
   });
 
+  // Extra debug to see if FeedProvider fix worked
+  console.log('🔄 CREATE POST: FeedProvider fix test:', {
+    timestamp: new Date().toISOString(),
+    hasData: !!userCommunityMemberships,
+    dataLength: userCommunityMemberships?.length,
+    shouldShowCommunities: !noCommunities
+  });
+
   // Simple image setter without processing
   const handleSetImage = (uri: string | null) => {
     setImageUri(uri);
