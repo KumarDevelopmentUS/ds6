@@ -5,7 +5,7 @@ import { ThemedText } from '@/components/themed/ThemedText';
 import { ThemedView } from '@/components/themed/ThemedView';
 import { useTheme } from '@/contexts/ThemeContext';
 import { supabase } from '@/supabase';
-import { debugFeedProvider, debugUserCommunities, joinCommunityManually, testDatabaseConnection, refreshFeedCache } from '@/utils/profileSync';
+import { debugFeedProvider, debugUserCommunities, joinCommunityManually, testDatabaseConnection, refreshFeedCache, debugRLSPolicies } from '@/utils/profileSync';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { nanoid } from 'nanoid/non-secure';
@@ -395,6 +395,13 @@ export default function MainMenuScreen() {
               title="📡 Feed Provider"
               variant="outline"
               onPress={debugFeedProvider}
+              size="small"
+              style={styles.debugButton}
+            />
+            <ThemedButton
+              title="🔐 Check RLS"
+              variant="outline"
+              onPress={debugRLSPolicies}
               size="small"
               style={styles.debugButton}
             />

@@ -14,11 +14,13 @@ import {
   SafeAreaView
 } from 'react-native';
 import { useAuth } from './_layout';
+import { getSchoolByValue } from '@/constants/schools';
 
 type UserProfile = {
   id: string;
   username: string;
   nickname: string;
+  school: string;
   avatar_icon: keyof typeof Ionicons.glyphMap;
   avatar_icon_color: string;
   avatar_background_color: string;
@@ -127,7 +129,7 @@ export default function CommunityMembersScreen() {
       // Fetch profile details
       const { data: profiles, error: profileError } = await supabase
         .from('profiles')
-        .select('id, nickname, avatar_icon, avatar_icon_color, avatar_background_color')
+        .select('id, nickname, school, avatar_icon, avatar_icon_color, avatar_background_color')
         .in('id', memberIds);
 
       if (profileError) throw profileError;
@@ -140,6 +142,7 @@ export default function CommunityMembersScreen() {
           id: up.id,
           username: up.username,
           nickname: profile?.nickname || up.display_name || up.username,
+          school: getSchoolByValue(profile?.school)?.name || 'N/A',
           avatar_icon: profile?.avatar_icon || 'person',
           avatar_icon_color: profile?.avatar_icon_color || '#FFFFFF',
           avatar_background_color: profile?.avatar_background_color || '#007AFF',
@@ -226,6 +229,9 @@ export default function CommunityMembersScreen() {
           <View style={styles.textInfo}>
             <Text style={styles.nickname}>{item.nickname}</Text>
             <Text style={styles.username}>@{item.username}</Text>
+            {item.school && item.school !== 'N/A' && (
+              <Text style={styles.school}>{item.school}</Text>
+            )}
           </View>
         </View>
 
@@ -351,6 +357,11 @@ const styles = StyleSheet.create({
   username: {
     fontSize: 14,
     color: '#666',
+    marginBottom: 2,
+  },
+  school: {
+    fontSize: 12,
+    color: '#888',
   },
   statusButton: {
     paddingHorizontal: 16,

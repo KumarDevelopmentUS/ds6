@@ -1,6 +1,8 @@
-// app/(tabs)/create-post.tsx
+// app/create-post.tsx
+import { getSchoolByValue } from '@/constants/schools';
 import { useFeed } from '@/contexts/FeedContext';
 import { useCreatePost } from '@/hooks/useSocialFeatures';
+import { fixUserCommunityMembership } from '@/utils/profileSync';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -21,9 +23,11 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
+import { useAuth } from './_layout';
 
 export default function CreatePostScreen() {
   const router = useRouter();
+  const { session } = useAuth();
   const params = useLocalSearchParams();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -31,17 +35,18 @@ export default function CreatePostScreen() {
   const [imageAspectRatio, setImageAspectRatio] = useState<number | undefined>(undefined);
   const [selectedCommunity, setSelectedCommunity] = useState<number | null>(null);
   const [showMediaOptions, setShowMediaOptions] = useState(false);
+  const [showCommunityFix, setShowCommunityFix] = useState(false);
 
   const { createPost, isCreating } = useCreatePost();
-  const { communities: userCommunityMemberships, isLoading: areCommunitiesLoading, error: communitiesError } = useFeed();
+  const { communities: userCommunityMemberships, isLoading: areCommunitiesLoading, error: communitiesError, refetch } = useFeed();
 
-  // Debug logging for useFeed results
-  console.log('🔍 CREATE POST DEBUG: useFeed results:', {
-    userCommunityMemberships,
+  // Debug logging
+  console.log('🔍 CREATE POST: Component state:', {
+    communities: userCommunityMemberships?.length || 0,
     isLoading: areCommunitiesLoading,
-    error: communitiesError,
-    length: userCommunityMemberships?.length || 0,
-    firstCommunity: userCommunityMemberships?.[0]
+    error: communitiesError?.message,
+    selectedCommunity,
+    showCommunityFix
   });
 
   // Simple image setter without processing
@@ -82,8 +87,40 @@ export default function CreatePostScreen() {
   useEffect(() => {
     if (userCommunityMemberships && userCommunityMemberships.length > 0 && !selectedCommunity) {
       setSelectedCommunity(userCommunityMemberships[0].communities.id);
+      setShowCommunityFix(false);
+    } else if (!areCommunitiesLoading && (!userCommunityMemberships || userCommunityMemberships.length === 0)) {
+      setShowCommunityFix(true);
     }
-  }, [userCommunityMemberships, selectedCommunity]);
+  }, [userCommunityMemberships, selectedCommunity, areCommunitiesLoading]);
+
+  // Community membership fix function
+  const fixCommunityMembership = async () => {
+    if (!session?.user) {
+      Alert.alert('Not Logged In', 'Please log in first');
+      return;
+    }
+    
+    try {
+      Alert.alert('Fixing...', 'Attempting to fix community membership...');
+      
+      // Use the utility function to fix membership
+      const result = await fixUserCommunityMembership();
+      
+      if (result?.success) {
+        Alert.alert('Fixed!', 'You have been added to the general community.');
+        
+        // Refetch communities
+        refetch();
+        setShowCommunityFix(false);
+      } else {
+        Alert.alert('Fix Failed', result?.error || 'Unknown error occurred');
+      }
+      
+    } catch (error: any) {
+      console.error('Fix error:', error);
+      Alert.alert('Error', error.message || 'Failed to fix community membership');
+    }
+  };
 
   const pickImageFromLibrary = async () => {
     setShowMediaOptions(false);
@@ -179,6 +216,7 @@ export default function CreatePostScreen() {
     return (
       <SafeAreaView style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#007AFF" />
+        <Text style={styles.loadingText}>Loading communities...</Text>
       </SafeAreaView>
     );
   }
@@ -186,12 +224,61 @@ export default function CreatePostScreen() {
   if (communitiesError) {
     return (
       <SafeAreaView style={styles.container}>
-        <Text style={styles.errorText}>Error loading communities</Text>
+        <View style={styles.form}>
+          <Text style={styles.errorText}>Error loading communities: {communitiesError.message}</Text>
+          <TouchableOpacity 
+            style={styles.fixButton}
+            onPress={fixCommunityMembership}
+          >
+            <Text style={styles.fixButtonText}>🔧 Try Fix</Text>
+          </TouchableOpacity>
+        </View>
       </SafeAreaView>
     );
   }
 
-  const noCommunities = !userCommunityMemberships || userCommunityMemberships.length === 0;
+  // Show community fix UI if user has no communities
+  if (showCommunityFix || !userCommunityMemberships || userCommunityMemberships.length === 0) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.keyboardView}
+        >
+          <ScrollView style={styles.scrollView} keyboardShouldPersistTaps="handled">
+            <View style={styles.form}>
+              <Text style={styles.sectionTitle}>You must join a community before posting.</Text>
+              
+              <View style={styles.communityFixContainer}>
+                <Ionicons name="information-circle" size={48} color="#FF6B6B" />
+                <Text style={styles.communityFixTitle}>No Communities Found</Text>
+                <Text style={styles.communityFixText}>
+                  You need to join at least one community before you can create posts. 
+                  Let's get you set up with the general community!
+                </Text>
+                
+                <TouchableOpacity 
+                  style={styles.fixButton}
+                  onPress={fixCommunityMembership}
+                >
+                  <Text style={styles.fixButtonText}>
+                    🏘️ Join General Community
+                  </Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  style={styles.backButton}
+                  onPress={() => router.back()}
+                >
+                  <Text style={styles.backButtonText}>Go Back</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -202,33 +289,34 @@ export default function CreatePostScreen() {
         <ScrollView style={styles.scrollView} keyboardShouldPersistTaps="handled">
           <View style={styles.form}>
             <Text style={styles.sectionTitle}>Create a New Post</Text>
-            {noCommunities && (
-              <Text style={{ color: '#FF3B30', marginBottom: 16, fontWeight: 'bold' }}>
-                You must join a community before posting.
-              </Text>
-            )}
+            
             <Text style={styles.label}>Select Community</Text>
             <View style={styles.communitySelector}>
-              {userCommunityMemberships?.map((membership) => (
-                <TouchableOpacity
-                  key={membership.communities.id}
-                  style={[
-                    styles.communityOption,
-                    selectedCommunity === membership.communities.id && styles.communityOptionSelected
-                  ]}
-                  onPress={() => setSelectedCommunity(membership.communities.id)}
-                  disabled={noCommunities}
-                >
-                  <Text
+              {userCommunityMemberships?.map((membership) => {
+                const community = membership.communities;
+                const school = community.type === 'school' ? getSchoolByValue(community.name) : undefined;
+                const displayName = school ? school.display : community.name;
+                
+                return (
+                  <TouchableOpacity
+                    key={community.id}
                     style={[
-                      styles.communityOptionText,
-                      selectedCommunity === membership.communities.id && styles.communityOptionTextSelected
+                      styles.communityOption,
+                      selectedCommunity === community.id && styles.communityOptionSelected
                     ]}
+                    onPress={() => setSelectedCommunity(community.id)}
                   >
-                    {membership.communities.name}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+                    <Text
+                      style={[
+                        styles.communityOptionText,
+                        selectedCommunity === community.id && styles.communityOptionTextSelected
+                      ]}
+                    >
+                      {displayName}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
 
             <Text style={styles.label}>Title</Text>
@@ -238,7 +326,6 @@ export default function CreatePostScreen() {
               onChangeText={setTitle}
               placeholder="Enter post title"
               maxLength={100}
-              editable={!noCommunities}
             />
 
             <Text style={styles.label}>Content (optional)</Text>
@@ -249,7 +336,6 @@ export default function CreatePostScreen() {
               placeholder="What's on your mind?"
               multiline
               maxLength={500}
-              editable={!noCommunities}
             />
             <Text style={styles.charCount}>{content.length}/500</Text>
             
@@ -257,7 +343,6 @@ export default function CreatePostScreen() {
               onPress={() => setShowMediaOptions(true)} 
               style={styles.imageButton}
               accessibilityLabel="Add media to your post"
-              disabled={noCommunities}
             >
               <Ionicons name="camera-outline" size={24} color="#007AFF" />
               <Text style={styles.imageButtonText}>Add Photo</Text>
@@ -281,10 +366,10 @@ export default function CreatePostScreen() {
 
             <TouchableOpacity
               onPress={handleSubmit}
-              disabled={isCreating || !title.trim() || !selectedCommunity || noCommunities}
+              disabled={isCreating || !title.trim() || !selectedCommunity}
               style={[
                 styles.submitButton, 
-                (isCreating || !title.trim() || !selectedCommunity || noCommunities) && styles.submitButtonDisabled
+                (isCreating || !title.trim() || !selectedCommunity) && styles.submitButtonDisabled
               ]}
               accessibilityLabel="Create and submit your post"
             >
@@ -341,10 +426,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#f5f5f5',
   },
-  errorText: {
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
     color: '#666',
+  },
+  errorText: {
+    color: '#FF3B30',
     textAlign: 'center',
     padding: 20,
+    fontSize: 16,
   },
   container: {
     flex: 1,
@@ -502,5 +593,51 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#FF3B30',
     fontWeight: '500',
+  },
+  // Community fix styles
+  communityFixContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 40,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    marginTop: 20,
+  },
+  communityFixTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+    marginTop: 16,
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  communityFixText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 24,
+  },
+  fixButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  fixButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  backButton: {
+    backgroundColor: '#f0f0f0',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  backButtonText: {
+    color: '#666',
+    fontSize: 16,
   },
 });

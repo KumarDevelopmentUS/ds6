@@ -19,12 +19,24 @@ import { PostCard } from '@/components/social/PostCard';
 import { useFeed } from '@/contexts/FeedContext';
 import { usePosts, useRealtimeUpdates } from '@/hooks/useSocialFeatures';
 import { getSchoolByValue } from '@/constants/schools';
+import { useAuth } from '../../_layout';
+import { supabase } from '@/supabase';
+import { fixUserCommunityMembership, debugUserCommunities, debugFeedProvider } from '@/utils/profileSync';
 
 export default function FeedScreen() {
   const router = useRouter();
-  const { communities, isLoading: isCommunitiesLoading, error: communitiesError } = useFeed();
+  const { session } = useAuth();
+  const { communities, isLoading: isCommunitiesLoading, error: communitiesError, refetch } = useFeed();
   const [selectedCommunityId, setSelectedCommunityId] = useState<number | null>(null);
   const [dropdownVisible, setDropdownVisible] = useState(false);
+
+  // Debug logging
+  console.log('🏘️ FEED SCREEN: Current state:', {
+    communities: communities?.length || 0,
+    isLoading: isCommunitiesLoading,
+    error: communitiesError?.message,
+    userId: session?.user?.id
+  });
 
   // Get the currently selected community
   const selectedCommunity = selectedCommunityId
@@ -39,13 +51,12 @@ export default function FeedScreen() {
     ? schoolForSelected.display
     : selectedCommunity?.name;
 
-
-  const { posts, isLoading, refetch, handleVote, userVotes } = usePosts(selectedCommunityId || undefined);
+  const { posts, isLoading, refetch: refetchPosts, handleVote, userVotes } = usePosts(selectedCommunityId || undefined);
 
   // Enable real-time updates for the selected community
   useRealtimeUpdates(selectedCommunityId || undefined);
 
-  // Define the type for a post item (adjust as needed based on your data shape)
+  // Define the type for a post item
   type Post = typeof posts extends (infer U)[] ? U : any;
 
   // Memoize the renderItem function to improve FlatList performance
@@ -59,23 +70,152 @@ export default function FeedScreen() {
       onVote={(voteType) => handleVote(item.id, voteType)}
       userVote={userVotes?.[item.id]}
     />
-  ), [router, handleVote, userVotes]); // Dependencies for the callback
+  ), [router, handleVote, userVotes]);
+
+  // Community membership fix function
+  const fixCommunityMembership = async () => {
+    if (!session?.user) {
+      Alert.alert('Not Logged In', 'Please log in first');
+      return;
+    }
+    
+    try {
+      Alert.alert('Fixing...', 'Attempting to fix community membership...');
+      
+      // Check if user is in any community
+      const { data: memberships } = await supabase
+        .from('user_communities')
+        .select('*, communities(*)')
+        .eq('user_id', session.user.id);
+
+      console.log('Current memberships:', memberships);
+
+      if (memberships && memberships.length > 0) {
+        Alert.alert('Already Fixed', `You are already in ${memberships.length} community(ies)! Try refreshing the app.`);
+        return;
+      }
+
+      // Use the utility function to fix membership
+      const result = await fixUserCommunityMembership();
+      
+      if (result?.success) {
+        Alert.alert('Fixed!', 'You have been added to the general community. Refreshing...');
+        
+        // Trigger refetch and force refresh
+        refetch();
+        setTimeout(() => {
+          if (typeof window !== 'undefined') {
+            window.location.reload();
+          }
+        }, 1000);
+      } else {
+        Alert.alert('Fix Failed', result?.error || 'Unknown error occurred');
+      }
+      
+    } catch (error: any) {
+      console.error('Fix error:', error);
+      Alert.alert('Error', error.message || 'Failed to fix community membership');
+    }
+  };
+
+  // Debug function to check community data
+  const debugCommunities = async () => {
+    if (!session?.user) {
+      Alert.alert('Not logged in');
+      return;
+    }
+
+    try {
+      console.log('🔍 DEBUG: Starting community diagnostic...');
+      
+      // Run both debug functions
+      await debugUserCommunities();
+      await debugFeedProvider();
+
+      Alert.alert('Debug Complete', 'Check the console for detailed debug information');
+
+    } catch (error: any) {
+      console.error('Debug error:', error);
+      Alert.alert('Debug Failed', error.message);
+    }
+  };
 
   // Handle the loading state for fetching communities
   if (isCommunitiesLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" />
-      </View>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" />
+          <Text style={styles.loadingText}>Loading communities...</Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
   // Handle any errors that occurred while fetching communities
-  if (communitiesError || !communities) {
+  if (communitiesError) {
     return (
-      <View style={styles.emptyContainer}>
-        <Text style={styles.emptyText}>Could not load communities.</Text>
-      </View>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>Error loading communities: {communitiesError.message}</Text>
+          
+          {/* Debug and Fix buttons */}
+          <View style={{ marginTop: 20, gap: 10 }}>
+            <TouchableOpacity 
+              style={{ backgroundColor: '#ff6b6b', padding: 15, borderRadius: 8 }}
+              onPress={fixCommunityMembership}
+            >
+              <Text style={{ color: 'white', textAlign: 'center', fontWeight: 'bold' }}>
+                🔧 Fix Community Membership
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={{ backgroundColor: '#4ecdc4', padding: 15, borderRadius: 8 }}
+              onPress={debugCommunities}
+            >
+              <Text style={{ color: 'white', textAlign: 'center', fontWeight: 'bold' }}>
+                🔍 Debug Communities
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // If communities array is empty, show fix option
+  if (!communities || communities.length === 0) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.emptyContainer}>
+          <Ionicons name="home-outline" size={64} color="#666" />
+          <Text style={styles.emptyText}>You haven't joined any communities yet.</Text>
+          <Text style={styles.emptySubtext}>
+            Join a community to start seeing posts and connecting with others!
+          </Text>
+          
+          <View style={{ marginTop: 30, gap: 12, width: '100%', maxWidth: 300 }}>
+            <TouchableOpacity 
+              style={{ backgroundColor: '#007AFF', padding: 16, borderRadius: 8 }}
+              onPress={fixCommunityMembership}
+            >
+              <Text style={{ color: 'white', textAlign: 'center', fontWeight: 'bold', fontSize: 16 }}>
+                🏘️ Join General Community
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={{ backgroundColor: '#4ecdc4', padding: 12, borderRadius: 8 }}
+              onPress={debugCommunities}
+            >
+              <Text style={{ color: 'white', textAlign: 'center', fontWeight: 'bold' }}>
+                🔍 Debug Communities
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </SafeAreaView>
     );
   }
 
@@ -218,7 +358,7 @@ export default function FeedScreen() {
         refreshControl={
           <RefreshControl
             refreshing={isLoading}
-            onRefresh={refetch}
+            onRefresh={refetchPosts}
             tintColor="#007AFF"
           />
         }
@@ -322,6 +462,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#f5f5f5',
   },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: '#666',
+  },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -330,9 +475,17 @@ const styles = StyleSheet.create({
     marginTop: 100,
   },
   emptyText: {
-    fontSize: 16,
+    fontSize: 18,
+    color: '#333',
+    textAlign: 'center',
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  emptySubtext: {
+    fontSize: 14,
     color: '#666',
     textAlign: 'center',
+    lineHeight: 20,
   },
   fab: {
     position: 'absolute',

@@ -1,5 +1,11 @@
-// utils/profileSync.ts - Utility to sync profile tables
+// utils/profileSync.ts
 import { supabase } from '@/supabase';
+
+export interface ProfileData {
+  username?: string;
+  nickname?: string;
+  school?: string;
+}
 
 // Debug function to check user's current community memberships
 export async function debugUserCommunities() {
@@ -101,6 +107,100 @@ export async function debugFeedProvider() {
   }
 }
 
+// Debug RLS policies and permissions
+export async function debugRLSPolicies() {
+  console.log('🔐 RLS DEBUG: Checking Row Level Security policies...');
+  
+  try {
+    // Get current user
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      console.error('❌ No authenticated user found');
+      return false;
+    }
+    
+    console.log('👤 Current user:', user.id);
+    
+    // Test 1: Try to read user_communities with detailed error info
+    console.log('🔍 TEST 1: Reading user_communities...');
+    const { data: ucData, error: ucError } = await supabase
+      .from('user_communities')
+      .select('*')
+      .eq('user_id', user.id);
+    
+    console.log('📥 user_communities result:', {
+      success: !ucError,
+      dataCount: ucData?.length || 0,
+      error: ucError,
+      errorMessage: ucError?.message,
+      errorCode: ucError?.code,
+      errorDetails: ucError?.details,
+      errorHint: ucError?.hint
+    });
+    
+    // Test 2: Try to read user_communities without WHERE clause (should fail if RLS is enabled)
+    console.log('🔍 TEST 2: Reading all user_communities (should fail with RLS)...');
+    const { data: allUC, error: allUCError } = await supabase
+      .from('user_communities')
+      .select('*')
+      .limit(1);
+    
+    console.log('📥 All user_communities result:', {
+      success: !allUCError,
+      dataCount: allUC?.length || 0,
+      error: allUCError?.message,
+      errorCode: allUCError?.code
+    });
+    
+    // Test 3: Check if we can read communities table
+    console.log('🔍 TEST 3: Reading communities table...');
+    const { data: communities, error: commError } = await supabase
+      .from('communities')
+      .select('*')
+      .limit(5);
+    
+    console.log('📥 Communities result:', {
+      success: !commError,
+      dataCount: communities?.length || 0,
+      error: commError?.message
+    });
+    
+    // Test 4: Try a direct INSERT to user_communities (to test INSERT policy)
+    console.log('🔍 TEST 4: Testing INSERT policy...');
+    const testCommunityId = communities?.[0]?.id;
+    if (testCommunityId) {
+      const { data: insertData, error: insertError } = await supabase
+        .from('user_communities')
+        .insert({
+          user_id: user.id,
+          community_id: testCommunityId
+        })
+        .select();
+      
+      console.log('📥 INSERT test result:', {
+        success: !insertError,
+        error: insertError?.message,
+        errorCode: insertError?.code,
+        insertedData: insertData
+      });
+      
+      // Clean up test insert if it succeeded
+      if (insertData && insertData.length > 0) {
+        await supabase
+          .from('user_communities')
+          .delete()
+          .eq('id', insertData[0].id);
+        console.log('🧹 Cleaned up test insert');
+      }
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('❌ RLS debug failed:', error);
+    return false;
+  }
+}
+
 // Force refresh FeedProvider cache
 export async function refreshFeedCache() {
   console.log('🔄 CACHE REFRESH: Forcing FeedProvider cache refresh...');
@@ -117,13 +217,13 @@ export async function refreshFeedCache() {
     console.log('✅ Cache refresh initiated');
     return true;
   } catch (error) {
-    console.error('❌ Cache refresh failed:', error);
+    console.error('❌ Cache refresh failed:', error instanceof Error ? error.message : error);
     return false;
   }
 }
 
 // Manual function to join a community for testing
-export async function joinCommunityManually(communityName: string, communityType: 'school' | 'general' = 'school') {
+export async function joinCommunityManually(communityName: string, communityType: 'school' | 'general' = 'general') {
   console.log('🏘️ MANUAL JOIN: Attempting to join community:', communityName);
   
   try {
@@ -306,296 +406,177 @@ export async function debugProfileStatus(userId: string) {
   }
 }
 
-export async function ensureUserProfilesExist(userId: string, userData?: {
-  username?: string;
-  nickname?: string;
-  school?: string;
-}) {
-  console.log('🔄 Ensuring profiles exist for user:', userId);
-  
-  // Test Supabase connection first
-  console.log('🔍 CONNECTION DEBUG: Testing Supabase connection...');
+export async function ensureUserProfilesExist(userId: string, userData?: ProfileData) {
+  console.log('🔄 PROFILE SYNC: Starting profile sync for user:', userId);
+  console.log('📋 PROFILE SYNC: Profile data:', userData);
+
   try {
-    const { data: connectionTest, error: connectionError } = await supabase
+    // Step 1: Ensure profiles table record exists
+    const { data: existingProfile, error: profileFetchError } = await supabase
       .from('profiles')
-      .select('count')
-      .limit(1);
-    
-    console.log('📥 CONNECTION DEBUG: Connection test result:', {
-      hasData: !!connectionTest,
-      hasError: !!connectionError,
-      errorMessage: connectionError?.message
-    });
-    
-    if (connectionError) {
-      console.error('❌ CONNECTION DEBUG: Supabase connection failed:', connectionError);
-      return false;
-    }
-  } catch (connError) {
-    console.error('❌ CONNECTION DEBUG: Connection test failed:', connError);
-    return false;
-  }
-  
-  // Add timeout to prevent hanging
-  const timeoutPromise = new Promise((_, reject) => {
-    setTimeout(() => reject(new Error('Profile sync timeout')), 10000); // 10 second timeout
-  });
-  
-  try {
-    return await Promise.race([
-      performProfileSync(userId, userData),
-      timeoutPromise
-    ]);
-  } catch (error) {
-    console.error('💥 Profile sync error:', error);
-    return false;
-  }
-}
-
-async function performProfileSync(userId: string, userData?: {
-  username?: string;
-  nickname?: string;
-  school?: string;
-}) {
-  try {
-    console.log('🔍 PROFILE DEBUG: Starting profile sync for user:', userId);
-    console.log('📊 PROFILE DEBUG: User data provided:', userData);
-
-    // Check and create user_profiles record
-    console.log('🔍 PROFILE DEBUG: Checking user_profiles table...');
-    const { data: userProfile, error: userProfileError } = await supabase
-      .from('user_profiles')
-      .select('*')
+      .select('id')
       .eq('id', userId)
       .single();
 
-    console.log('📥 PROFILE DEBUG: user_profiles query result:', {
-      hasData: !!userProfile,
-      userData: userProfile,
-      hasError: !!userProfileError,
-      errorCode: userProfileError?.code,
-      errorMessage: userProfileError?.message
-    });
-
-    if (userProfileError && userProfileError.code === 'PGRST116') {
-      console.log('📝 PROFILE DEBUG: user_profiles not found, creating new record...');
-      
-      const userProfileData = {
-        id: userId,
-        username: userData?.username || `user_${userId.slice(0, 8)}`,
-        display_name: userData?.nickname || 'Player',
-      };
-      
-      console.log('📤 PROFILE DEBUG: Inserting user_profiles with data:', userProfileData);
-      
-      const { data: newUserProfile, error: createUserProfileError } = await supabase
-        .from('user_profiles')
-        .insert(userProfileData)
-        .select()
-        .single();
-
-      console.log('📥 PROFILE DEBUG: user_profiles insert result:', {
-        hasData: !!newUserProfile,
-        insertedData: newUserProfile,
-        hasError: !!createUserProfileError,
-        errorCode: createUserProfileError?.code,
-        errorMessage: createUserProfileError?.message,
-        errorDetails: createUserProfileError?.details
-      });
-
-      if (createUserProfileError) {
-        console.error('❌ PROFILE DEBUG: Failed to create user_profiles:', createUserProfileError);
-      } else {
-        console.log('✅ PROFILE DEBUG: user_profiles created successfully');
-      }
-    } else if (userProfile) {
-      console.log('✅ PROFILE DEBUG: user_profiles already exists');
-    }
-
-    // Check and create profiles record
-    console.log('🔍 PROFILE DEBUG: Checking profiles table...');
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
-
-    console.log('📥 PROFILE DEBUG: profiles query result:', {
-      hasData: !!profile,
-      profileData: profile,
-      hasError: !!profileError,
-      errorCode: profileError?.code,
-      errorMessage: profileError?.message
-    });
-
-    if (profileError && profileError.code === 'PGRST116') {
-      console.log('📝 PROFILE DEBUG: profiles not found, creating new record...');
-      
-      const profileData = {
-        id: userId,
-        user_id: userId,
-        nickname: userData?.nickname || 'Player',
-        school: userData?.school || null,
-        avatar_icon: 'person',
-        avatar_icon_color: '#FFFFFF',
-        avatar_background_color: '#007AFF',
-      };
-      
-      console.log('📤 PROFILE DEBUG: Inserting profiles with data:', profileData);
-      
-      const { data: newProfile, error: createProfileError } = await supabase
+    if (profileFetchError && profileFetchError.code === 'PGRST116') {
+      // Profile doesn't exist, create it
+      console.log('🔄 PROFILE SYNC: Creating profiles record...');
+      const { error: profileInsertError } = await supabase
         .from('profiles')
-        .insert(profileData)
-        .select()
-        .single();
+        .insert({
+          id: userId,
+          user_id: userId,
+          nickname: userData?.nickname || 'Player',
+          school: userData?.school || null,
+          avatar_icon: 'person',
+          avatar_icon_color: '#FFFFFF',
+          avatar_background_color: '#007AFF',
+        });
 
-      console.log('📥 PROFILE DEBUG: profiles insert result:', {
-        hasData: !!newProfile,
-        insertedData: newProfile,
-        hasError: !!createProfileError,
-        errorCode: createProfileError?.code,
-        errorMessage: createProfileError?.message,
-        errorDetails: createProfileError?.details
-      });
-
-      if (createProfileError) {
-        console.error('❌ PROFILE DEBUG: Failed to create profiles:', createProfileError);
-      } else {
-        console.log('✅ PROFILE DEBUG: profiles created successfully');
+      if (profileInsertError) {
+        console.error('❌ PROFILE SYNC: Error creating profiles record:', profileInsertError);
+        throw profileInsertError;
       }
-    } else if (profile) {
-      console.log('✅ PROFILE DEBUG: profiles already exists');
+      console.log('✅ PROFILE SYNC: Created profiles record');
+    } else if (profileFetchError) {
+      console.error('❌ PROFILE SYNC: Error fetching profiles record:', profileFetchError);
+      throw profileFetchError;
+    } else {
+      console.log('✅ PROFILE SYNC: Profiles record already exists');
     }
 
-    console.log('🎉 PROFILE DEBUG: Profile sync completed successfully');
-    return true;
+    // Step 2: Ensure user_profiles table record exists
+    const { data: existingUserProfile, error: userProfileFetchError } = await supabase
+      .from('user_profiles')
+      .select('id')
+      .eq('id', userId)
+      .single();
+
+    if (userProfileFetchError && userProfileFetchError.code === 'PGRST116') {
+      // User profile doesn't exist, create it
+      console.log('🔄 PROFILE SYNC: Creating user_profiles record...');
+      const { error: userProfileInsertError } = await supabase
+        .from('user_profiles')
+        .insert({
+          id: userId,
+          username: userData?.username || 'user' + Date.now(),
+          display_name: userData?.nickname || 'Player',
+        });
+
+      if (userProfileInsertError) {
+        console.error('❌ PROFILE SYNC: Error creating user_profiles record:', userProfileInsertError);
+        throw userProfileInsertError;
+      }
+      console.log('✅ PROFILE SYNC: Created user_profiles record');
+    } else if (userProfileFetchError) {
+      console.error('❌ PROFILE SYNC: Error fetching user_profiles record:', userProfileFetchError);
+      throw userProfileFetchError;
+    } else {
+      console.log('✅ PROFILE SYNC: User_profiles record already exists');
+    }
+
+    console.log('🎉 PROFILE SYNC: Profile sync completed successfully');
+    return { success: true, message: 'Profile sync completed' };
+
   } catch (error) {
-    console.error('💥 PROFILE DEBUG: performProfileSync error:', {
-      error: error,
-      message: error?.message,
-      stack: error?.stack
-    });
-    return false;
+    console.error('💥 PROFILE SYNC: Unexpected error:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 }
 
 export async function joinDefaultCommunity(userId: string) {
-  console.log('🏘️ COMMUNITY DEBUG: Adding user to default community for user:', userId);
-  
+  console.log('🏘️ COMMUNITY DEBUG: Starting joinDefaultCommunity for user:', userId);
+
   try {
-    // Get or create general community
-    console.log('🔍 COMMUNITY DEBUG: Looking for general community...');
-    let { data: community, error: communityError } = await supabase
+    // First, check if user is already in any community
+    const { data: existingMembership, error: membershipError } = await supabase
+      .from('user_communities')
+      .select('id')
+      .eq('user_id', userId)
+      .limit(1);
+
+    if (membershipError) {
+      console.error('❌ COMMUNITY DEBUG: Error checking existing membership:', membershipError);
+    } else if (existingMembership && existingMembership.length > 0) {
+      console.log('✅ COMMUNITY DEBUG: User already has community membership');
+      return { success: true, message: 'User already in a community' };
+    }
+
+    // Check if default general community exists
+    let { data: defaultCommunity, error: findError } = await supabase
       .from('communities')
-      .select('*')
+      .select('id')
       .eq('name', 'general')
       .eq('type', 'general')
       .single();
 
-    console.log('📥 COMMUNITY DEBUG: Community query result:', {
-      hasData: !!community,
-      communityData: community,
-      hasError: !!communityError,
-      errorCode: communityError?.code,
-      errorMessage: communityError?.message
-    });
-
-    if (communityError && communityError.code === 'PGRST116') {
-      // Create general community if it doesn't exist
-      console.log('📝 COMMUNITY DEBUG: General community not found, creating...');
-      
-      const communityData = {
-        name: 'general',
-        description: 'General community for all users',
-        type: 'general',
-      };
-      
-      console.log('📤 COMMUNITY DEBUG: Creating community with data:', communityData);
-      
-      const { data: newCommunity, error: createCommunityError } = await supabase
+    if (findError && findError.code === 'PGRST116') {
+      // Community doesn't exist, create it
+      console.log('🔄 COMMUNITY DEBUG: Creating default general community...');
+      const { data: newCommunity, error: createError } = await supabase
         .from('communities')
-        .insert(communityData)
-        .select()
+        .insert({
+          name: 'general',
+          description: 'General community for all users',
+          type: 'general',
+        })
+        .select('id')
         .single();
 
-      console.log('📥 COMMUNITY DEBUG: Community creation result:', {
-        hasData: !!newCommunity,
-        createdData: newCommunity,
-        hasError: !!createCommunityError,
-        errorCode: createCommunityError?.code,
-        errorMessage: createCommunityError?.message,
-        errorDetails: createCommunityError?.details
+      if (createError) {
+        console.error('❌ COMMUNITY DEBUG: Error creating default community:', createError);
+        throw createError;
+      }
+
+      defaultCommunity = newCommunity;
+      console.log('✅ COMMUNITY DEBUG: Created default community:', defaultCommunity.id);
+    } else if (findError) {
+      console.error('❌ COMMUNITY DEBUG: Error finding default community:', findError);
+      throw findError;
+    }
+
+    if (!defaultCommunity) {
+      throw new Error('Could not find or create default community');
+    }
+
+    // Add user to the default community
+    console.log('🔄 COMMUNITY DEBUG: Adding user to default community...');
+    const { error: joinError } = await supabase
+      .from('user_communities')
+      .insert({
+        user_id: userId,
+        community_id: defaultCommunity.id,
       });
 
-      if (createCommunityError) {
-        console.error('❌ COMMUNITY DEBUG: Failed to create general community:', createCommunityError);
-        return false;
-      }
-      
-      community = newCommunity;
-    }
-
-    if (!community) {
-      console.error('❌ COMMUNITY DEBUG: No general community available after creation attempt');
-      return false;
-    }
-
-    console.log('✅ COMMUNITY DEBUG: General community available:', {
-      id: community.id,
-      name: community.name,
-      type: community.type
-    });
-
-    // Add user to community
-    console.log('🔍 COMMUNITY DEBUG: Checking if user is already in community...');
-    const { data: existingMembership } = await supabase
-      .from('user_communities')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('community_id', community.id)
-      .single();
-
-    if (existingMembership) {
-      console.log('✅ COMMUNITY DEBUG: User already in community');
-      return true;
-    }
-
-    console.log('📝 COMMUNITY DEBUG: Adding user to community...');
-    const membershipData = {
-      user_id: userId,
-      community_id: community.id,
-    };
-
-    console.log('📤 COMMUNITY DEBUG: Inserting membership with data:', membershipData);
-
-    const { data: newMembership, error: joinError } = await supabase
-      .from('user_communities')
-      .insert(membershipData)
-      .select()
-      .single();
-
-    console.log('📥 COMMUNITY DEBUG: Membership insert result:', {
-      hasData: !!newMembership,
-      membershipData: newMembership,
-      hasError: !!joinError,
-      errorCode: joinError?.code,
-      errorMessage: joinError?.message,
-      errorDetails: joinError?.details
-    });
-
     if (joinError) {
-      console.error('❌ COMMUNITY DEBUG: Failed to join general community:', joinError);
-      return false;
+      // Check if it's a duplicate key error (user already joined)
+      if (joinError.code === '23505') {
+        console.log('✅ COMMUNITY DEBUG: User already in community (duplicate ignored)');
+        return { success: true, message: 'User already in community' };
+      }
+      console.error('❌ COMMUNITY DEBUG: Error joining community:', joinError);
+      throw joinError;
     }
 
-    console.log('✅ COMMUNITY DEBUG: User successfully joined general community');
-    return true;
+    console.log('🎉 COMMUNITY DEBUG: Successfully joined default community!');
+    return { success: true, message: 'Joined default community' };
+
   } catch (error) {
-    console.error('💥 COMMUNITY DEBUG: Community join error:', {
-      error: error,
-      message: error?.message,
-      stack: error?.stack
-    });
-    return false;
+    console.error('💥 COMMUNITY DEBUG: Unexpected error:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
-} 
+}
+
+// Also add a function to manually fix existing users
+export const fixUserCommunityMembership = async () => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    console.log('No authenticated user');
+    return;
+  }
+
+  console.log('🔧 Fixing community membership for current user...');
+  const result = await joinDefaultCommunity(user.id);
+  console.log('Fix result:', result);
+  return result;
+};
