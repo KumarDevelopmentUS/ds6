@@ -121,13 +121,13 @@ const PostCardComponent: React.FC<PostCardProps> = ({
             />
           ) : (
             composedGesture ? (
-              <GestureDetector gesture={composedGesture}>
-                <AnimatedImage
-                  source={{ uri: post?.image_url }}
-                  style={[styles.modalImage, animatedStyle]}
-                  contentFit="contain"
-                />
-              </GestureDetector>
+          <GestureDetector gesture={composedGesture}>
+            <AnimatedImage
+              source={{ uri: post?.image_url }}
+              style={[styles.modalImage, animatedStyle]}
+              contentFit="contain"
+            />
+          </GestureDetector>
             ) : (
               <AnimatedImage
                 source={{ uri: post?.image_url }}
@@ -157,7 +157,7 @@ const PostCardComponent: React.FC<PostCardProps> = ({
                 <Text style={styles.authorName}>{post.author_name}</Text>
                 {/* Display @username below the author name, as requested */}
                 {post.author_username ? (
-                  <Text style={styles.username}>@{post.author_username}</Text>
+                <Text style={styles.username}>@{post.author_username}</Text>
                 ) : null}
                 <Text style={styles.timestamp}>{new Date(post.created_at).toLocaleDateString()}</Text>
               </View>

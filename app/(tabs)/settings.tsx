@@ -72,10 +72,10 @@ export default function AccountScreen() {
     }, 1000); // If no response in 1 second, proceed
     
     try {
-      Alert.alert(
-        'Logout',
-        'Are you sure you want to logout?',
-        [
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
           { 
             text: 'Cancel', 
             style: 'cancel',
@@ -85,17 +85,17 @@ export default function AccountScreen() {
               setIsLoggingOut(false);
             }
           },
-          {
-            text: 'Logout',
-            style: 'destructive',
+        {
+          text: 'Logout',
+          style: 'destructive',
             onPress: () => {
               console.log('🔴 LOGOUT DEBUG: User confirmed logout');
               clearTimeout(alertTimeout);
               performLogout();
-            },
           },
-        ]
-      );
+        },
+      ]
+    );
     } catch (error) {
       console.log('🔴 LOGOUT DEBUG: Alert.alert failed, proceeding directly');
       clearTimeout(alertTimeout);

@@ -6,16 +6,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-  Alert,
-  FlatList,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  View
+    Alert,
+    FlatList,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import { ThemedButton } from '../../components/themed/ThemedButton';
 import { ThemedInput } from '../../components/themed/ThemedInput';
@@ -222,47 +222,44 @@ export default function SignUpScreen() {
           {/* Form */}
           <ThemedView variant="card" style={styles.formCard}>
             <ThemedInput
+              placeholder="First Name"
+              value={formData.nickname}
+              onChangeText={(text) => setFormData({ ...formData, nickname: text })}
+              icon={<Ionicons name="person-outline" size={24} color={theme.colors.textSecondary} />}
+              style={{ marginBottom: 20 }}
+            />
+            <ThemedInput
               placeholder="Username"
               value={formData.username}
               onChangeText={(text) => setFormData({ ...formData, username: text })}
               autoCapitalize="none"
-              icon={<Ionicons name="at" size={20} color={theme.colors.textSecondary} />}
+              icon={<Ionicons name="at" size={24} color={theme.colors.textSecondary} />}
+              style={{ marginBottom: 20 }}
             />
-
-            <ThemedInput
-              placeholder="First Name"
-              value={formData.nickname}
-              onChangeText={(text) => setFormData({ ...formData, nickname: text })}
-              icon={<Ionicons name="person-outline" size={20} color={theme.colors.textSecondary} />}
-              style={{ marginTop: theme.spacing.md }}
-            />
-
             <ThemedInput
               placeholder="Email"
               value={formData.email}
               onChangeText={(text) => setFormData({ ...formData, email: text })}
               keyboardType="email-address"
               autoCapitalize="none"
-              icon={<Ionicons name="mail-outline" size={20} color={theme.colors.textSecondary} />}
-              style={{ marginTop: theme.spacing.md }}
+              icon={<Ionicons name="mail-outline" size={24} color={theme.colors.textSecondary} />}
+              style={{ marginBottom: 20 }}
             />
-
             <ThemedInput
               placeholder="Password"
               value={formData.password}
               onChangeText={(text) => setFormData({ ...formData, password: text })}
               secureTextEntry
-              icon={<Ionicons name="lock-closed-outline" size={20} color={theme.colors.textSecondary} />}
-              style={{ marginTop: theme.spacing.md }}
+              icon={<Ionicons name="lock-closed-outline" size={24} color={theme.colors.textSecondary} />}
+              style={{ marginBottom: 20 }}
             />
-
             <ThemedInput
               placeholder="Confirm Password"
               value={formData.confirmPassword}
               onChangeText={(text) => setFormData({ ...formData, confirmPassword: text })}
               secureTextEntry
-              icon={<Ionicons name="lock-closed-outline" size={20} color={theme.colors.textSecondary} />}
-              style={{ marginTop: theme.spacing.md }}
+              icon={<Ionicons name="lock-closed-outline" size={24} color={theme.colors.textSecondary} />}
+              style={{ marginBottom: 20 }}
             />
 
             {/* School Selector */}

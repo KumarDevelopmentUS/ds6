@@ -15,16 +15,16 @@ export const ThemedInput: React.FC<ThemedInputProps> = ({
   const { theme } = useTheme();
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.inputBackground }]}>
-      {icon && <View style={styles.icon}>{icon}</View>}
+    <View style={[styles.container, { backgroundColor: theme.colors.inputBackground }, style]}> 
+      {icon && (
+        <View style={styles.iconContainer}>{icon}</View>
+      )}
       <TextInput
         style={[
           styles.input,
           { 
             color: theme.colors.text,
-            flex: 1,
-          },
-          style
+          }
         ]}
         placeholderTextColor={theme.colors.textSecondary}
         {...props}
@@ -39,13 +39,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 8,
     paddingHorizontal: 16,
-    height: 50,
+    height: 56,
+    marginBottom: 0,
   },
-  icon: {
+  iconContainer: {
     marginRight: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 24,
+    height: 24,
   },
   input: {
+    flex: 1,
     fontSize: 16,
     height: '100%',
+    paddingVertical: 0,
+    textAlignVertical: 'center',
   },
 });
