@@ -14,6 +14,8 @@ export interface Post {
   author_avatar_icon: string;
   author_avatar_icon_color: string;
   author_avatar_background_color: string;
+  username?: string;
+  author_username?: string;
 }
 
 export interface Comment {

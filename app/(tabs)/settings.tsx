@@ -26,6 +26,7 @@ export default function AccountScreen() {
     avatar_background_color: string;
   } | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useEffect(() => {
     loadUserAndProfile();
@@ -55,22 +56,88 @@ export default function AccountScreen() {
   };
 
   const handleLogout = async () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: async () => {
-            setLoading(true);
-            await supabase.auth.signOut();
-            router.replace('/(auth)/login');
+    if (isLoggingOut) {
+      console.log('🔴 LOGOUT DEBUG: Already logging out, ignoring call');
+      return;
+    }
+    
+    console.log('🔴 LOGOUT DEBUG: handleLogout called');
+    setIsLoggingOut(true);
+    console.log('🔴 LOGOUT DEBUG: About to show Alert.alert');
+    
+    // Add a timeout to reset state if Alert doesn't work
+    const alertTimeout = setTimeout(() => {
+      console.log('🔴 LOGOUT DEBUG: Alert timeout - proceeding with logout');
+      performLogout();
+    }, 1000); // If no response in 1 second, proceed
+    
+    try {
+      Alert.alert(
+        'Logout',
+        'Are you sure you want to logout?',
+        [
+          { 
+            text: 'Cancel', 
+            style: 'cancel',
+            onPress: () => {
+              console.log('🔴 LOGOUT DEBUG: User cancelled logout');
+              clearTimeout(alertTimeout);
+              setIsLoggingOut(false);
+            }
           },
-        },
-      ]
-    );
+          {
+            text: 'Logout',
+            style: 'destructive',
+            onPress: () => {
+              console.log('🔴 LOGOUT DEBUG: User confirmed logout');
+              clearTimeout(alertTimeout);
+              performLogout();
+            },
+          },
+        ]
+      );
+    } catch (error) {
+      console.log('🔴 LOGOUT DEBUG: Alert.alert failed, proceeding directly');
+      clearTimeout(alertTimeout);
+      performLogout();
+    }
+    
+    console.log('🔴 LOGOUT DEBUG: Alert.alert called, waiting for user response');
+  };
+
+  const performLogout = async () => {
+    console.log('🔴 LOGOUT DEBUG: performLogout called');
+    setLoading(true);
+    console.log('🔴 LOGOUT DEBUG: Loading set to true');
+    
+    try {
+      console.log('🔴 LOGOUT DEBUG: Calling supabase.auth.signOut()');
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.error('🔴 LOGOUT DEBUG: signOut error:', error);
+        Alert.alert('Logout Error', error.message);
+        setLoading(false);
+        setIsLoggingOut(false);
+        return;
+      }
+      
+      console.log('🔴 LOGOUT DEBUG: signOut successful, checking session...');
+      const { data: { session } } = await supabase.auth.getSession();
+      console.log('🔴 LOGOUT DEBUG: Current session after signOut:', session);
+      
+      console.log('🔴 LOGOUT DEBUG: Navigating to home...');
+      router.replace('/(tabs)/home');
+      console.log('🔴 LOGOUT DEBUG: Navigation completed');
+      
+    } catch (error) {
+      console.error('🔴 LOGOUT DEBUG: Unexpected error during logout:', error);
+      Alert.alert('Error', 'An unexpected error occurred during logout');
+    } finally {
+      console.log('🔴 LOGOUT DEBUG: Setting loading to false');
+      setLoading(false);
+      setIsLoggingOut(false);
+    }
   };
 
   const settingsOptions = [
@@ -303,7 +370,8 @@ export default function AccountScreen() {
           title="Logout"
           variant="secondary"
           onPress={handleLogout}
-          loading={loading}
+          loading={loading || isLoggingOut}
+          disabled={isLoggingOut}
           style={styles.logoutButton}
           icon={<Ionicons name="log-out-outline" size={24} color={theme.colors.error} />}
         />

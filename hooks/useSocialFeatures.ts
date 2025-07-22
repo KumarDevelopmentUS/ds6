@@ -165,7 +165,7 @@ export const usePosts = (communityId?: number) => {
         ...post,
         image_url: detailsMap[post.id]?.image_url || null,
         community_name: detailsMap[post.id]?.community_name || null,
-        author_username: post.username || '', // Map username for @ display
+        author_username: post.username || null, // Map username for @ display
       }));
       
       return combinedPosts as Post[];

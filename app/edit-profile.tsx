@@ -5,18 +5,18 @@ import { useQueryClient } from '@tanstack/react-query'; // 1. Import useQueryCli
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  Dimensions,
-  FlatList,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  View
+    ActivityIndicator,
+    Alert,
+    Dimensions,
+    FlatList,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import { ThemedButton } from '../components/themed/ThemedButton';
 import { ThemedInput } from '../components/themed/ThemedInput';
@@ -214,7 +214,7 @@ export default function EditProfileScreen() {
         <ThemedView variant="card" style={styles.formCard}>
           <ThemedText style={{ marginBottom: 4 }}>Username (cannot be changed)</ThemedText>
           <View style={styles.disabledInput}>
-            <Ionicons name="person-circle-outline" size={20} color={theme.colors.textSecondary} />
+            <Ionicons name="at-outline" size={20} color={theme.colors.textSecondary} />
             <ThemedText style={{ marginLeft: 10 }}>{profile.username}</ThemedText>
           </View>
 
@@ -222,7 +222,7 @@ export default function EditProfileScreen() {
           <ThemedInput
             value={profile.nickname}
             onChangeText={(text) => setProfile({ ...profile, nickname: text })}
-            icon={<Ionicons name="at-outline" size={20} color={theme.colors.textSecondary} />}
+            icon={<Ionicons name="person-circle-outline" size={20} color={theme.colors.textSecondary} />}
           />
           
           <ThemedText style={{ marginTop: theme.spacing.md, marginBottom: 4 }}>School</ThemedText>

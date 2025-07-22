@@ -542,50 +542,15 @@ export async function joinDefaultCommunity(userId: string) {
       return { success: true, message: 'User already in a community' };
     }
 
-    // Check if default general community exists
-    let { data: defaultCommunity, error: findError } = await supabase
-      .from('communities')
-      .select('id')
-      .eq('name', 'general')
-      .eq('type', 'general')
-      .single();
-
-    if (findError && findError.code === 'PGRST116') {
-      // Community doesn't exist, create it
-      console.log('🔄 COMMUNITY DEBUG: Creating default general community...');
-      const { data: newCommunity, error: createError } = await supabase
-        .from('communities')
-        .insert({
-          name: 'general',
-          description: 'General community for all users',
-          type: 'general',
-        })
-        .select('id')
-        .single();
-
-      if (createError) {
-        console.error('❌ COMMUNITY DEBUG: Error creating default community:', createError);
-        throw createError;
-      }
-
-      defaultCommunity = newCommunity;
-      console.log('✅ COMMUNITY DEBUG: Created default community:', defaultCommunity.id);
-    } else if (findError) {
-      console.error('❌ COMMUNITY DEBUG: Error finding default community:', findError);
-      throw findError;
-    }
-
-    if (!defaultCommunity) {
-      throw new Error('Could not find or create default community');
-    }
-
-    // Add user to the default community
-    console.log('🔄 COMMUNITY DEBUG: Adding user to default community...');
+    // Use the specific General community (ID 1) instead of searching by name
+    const defaultCommunityId = 1; // This is the original "General" community
+    
+    console.log('🔄 COMMUNITY DEBUG: Adding user to General community (ID 1)...');
     const { error: joinError } = await supabase
       .from('user_communities')
       .insert({
         user_id: userId,
-        community_id: defaultCommunity.id,
+        community_id: defaultCommunityId,
       });
 
     if (joinError) {
@@ -598,8 +563,8 @@ export async function joinDefaultCommunity(userId: string) {
       throw joinError;
     }
 
-    console.log('🎉 COMMUNITY DEBUG: Successfully joined default community!');
-    return { success: true, message: 'Joined default community' };
+    console.log('🎉 COMMUNITY DEBUG: Successfully joined General community (ID 1)!');
+    return { success: true, message: 'Joined General community' };
 
   } catch (error) {
     console.error('💥 COMMUNITY DEBUG: Unexpected error:', error);

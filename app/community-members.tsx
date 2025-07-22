@@ -109,8 +109,8 @@ export default function CommunityMembersScreen() {
         memberIds = data.map(m => m.user_id);
       }
 
-      // Remove current user from the list
-      memberIds = memberIds.filter(id => id !== currentUserId);
+      // Keep all members including current user
+      // memberIds = memberIds.filter(id => id !== currentUserId); // Removed this line
 
       if (memberIds.length === 0) {
         setMembers([]);

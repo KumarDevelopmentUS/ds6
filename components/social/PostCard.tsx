@@ -25,10 +25,8 @@ import { Post as BasePost } from '../../types/social';
 import { UserAvatar } from './UserAvatar';
 import { VoteButtons } from './VoteButtons';
 
-// Extend the base Post type to include the author's username for display
-type Post = BasePost & {
-  author_username: string; // Added for @username display
-};
+// Use the Post type from types/social.ts which now includes username
+type Post = BasePost;
 
 const AnimatedImage = Animated.createAnimatedComponent(Image);
 
@@ -55,7 +53,7 @@ const PostCardComponent: React.FC<PostCardProps> = ({
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
 
-  const pinchGesture = Gesture.Pinch()
+  const pinchGesture = Platform.OS !== 'web' ? Gesture.Pinch()
     .onUpdate(event => {
       scale.value = event.scale;
     })
@@ -63,9 +61,9 @@ const PostCardComponent: React.FC<PostCardProps> = ({
       scale.value = withTiming(1);
       translateX.value = withTiming(0);
       translateY.value = withTiming(0);
-    });
+    }) : null;
 
-  const panGesture = Gesture.Pan()
+  const panGesture = Platform.OS !== 'web' ? Gesture.Pan()
     .onUpdate(event => {
       translateX.value = event.translationX;
       translateY.value = event.translationY;
@@ -74,9 +72,11 @@ const PostCardComponent: React.FC<PostCardProps> = ({
       scale.value = withTiming(1);
       translateX.value = withTiming(0);
       translateY.value = withTiming(0);
-    });
+    }) : null;
 
-  const composedGesture = Gesture.Simultaneous(pinchGesture, panGesture);
+  const composedGesture = Platform.OS !== 'web' && pinchGesture && panGesture 
+    ? Gesture.Simultaneous(pinchGesture, panGesture) 
+    : null;
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [
@@ -109,13 +109,33 @@ const PostCardComponent: React.FC<PostCardProps> = ({
           style={styles.modalContainer}
           onPress={() => setImageModalVisible(false)}
         >
-          <GestureDetector gesture={composedGesture}>
-            <AnimatedImage
-              source={{ uri: post?.image_url }}
-              style={[styles.modalImage, animatedStyle]}
-              contentFit="contain"
+          {Platform.OS === 'web' ? (
+            <img
+              src={post?.image_url}
+              style={{
+                maxWidth: '90%',
+                maxHeight: '90%',
+                objectFit: 'contain',
+              }}
+              alt="Post"
             />
-          </GestureDetector>
+          ) : (
+            composedGesture ? (
+              <GestureDetector gesture={composedGesture}>
+                <AnimatedImage
+                  source={{ uri: post?.image_url }}
+                  style={[styles.modalImage, animatedStyle]}
+                  contentFit="contain"
+                />
+              </GestureDetector>
+            ) : (
+              <AnimatedImage
+                source={{ uri: post?.image_url }}
+                style={[styles.modalImage, animatedStyle]}
+                contentFit="contain"
+              />
+            )
+          )}
         </Pressable>
       </Modal>
 
@@ -136,30 +156,30 @@ const PostCardComponent: React.FC<PostCardProps> = ({
               <View>
                 <Text style={styles.authorName}>{post.author_name}</Text>
                 {/* Display @username below the author name, as requested */}
-                <Text style={styles.username}>@{post.author_username}</Text>
+                {post.author_username ? (
+                  <Text style={styles.username}>@{post.author_username}</Text>
+                ) : null}
+                <Text style={styles.timestamp}>{new Date(post.created_at).toLocaleDateString()}</Text>
               </View>
-              {displayName && (
+              {displayName ? (
                 <View style={styles.communityBadge}>
                   <Text style={styles.communityName}>{displayName}</Text>
                 </View>
-              )}
+              ) : null}
             </View>
-            <Text style={styles.timestamp}>
-              {new Date(post.created_at).toLocaleDateString()}
-            </Text>
           </View>
         </View>
 
         <Text style={styles.title}>{post.title}</Text>
 
-        {post.content && (
+        {post.content ? (
           <Text style={styles.content} numberOfLines={3}>
             {post.content}
           </Text>
-        )}
+        ) : null}
 
-        {post.image_url &&
-          (isIOSSimulator ? (
+        {post.image_url ? (
+          isIOSSimulator ? (
             <TouchableOpacity
               style={styles.simulatorImageContainer}
               onPress={handleOpenInBrowser}
@@ -182,7 +202,8 @@ const PostCardComponent: React.FC<PostCardProps> = ({
                 />
               </View>
             </TouchableOpacity>
-          ))}
+          )
+        ) : null}
 
         <View style={styles.footer}>
           <VoteButtons

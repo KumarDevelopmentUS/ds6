@@ -1,22 +1,22 @@
 // app/(auth)/login.tsx
-import { supabase } from '@/supabase';
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
-import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  TouchableOpacity,
-  View,
-} from 'react-native';
 import { ThemedButton } from '@/components/themed/ThemedButton';
 import { ThemedInput } from '@/components/themed/ThemedInput';
 import { ThemedText } from '@/components/themed/ThemedText';
 import { ThemedView } from '@/components/themed/ThemedView';
 import { useTheme } from '@/contexts/ThemeContext';
+import { supabase } from '@/supabase';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import React, { useState } from 'react';
+import {
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    TouchableOpacity,
+    View,
+} from 'react-native';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -47,7 +47,8 @@ export default function LoginScreen() {
   };
 
   const handleBack = () => {
-    router.back();
+    console.log('🏠 LOGIN: Home button pressed, navigating to home');
+    router.replace('/(tabs)/home');
   };
 
   return (
@@ -60,9 +61,12 @@ export default function LoginScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Back Button */}
-        <TouchableOpacity onPress={handleBack} style={styles.backButton}>
+        <TouchableOpacity
+          onPress={handleBack}
+          style={styles.backButton}
+        >
           <Ionicons name="arrow-back" size={24} color="#3b82f6" />
-          <ThemedText style={styles.backText}>Back</ThemedText>
+          <ThemedText style={styles.backText}>Home</ThemedText>
         </TouchableOpacity>
 
         <ThemedView style={styles.content}>
