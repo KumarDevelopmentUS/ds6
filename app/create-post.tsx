@@ -80,14 +80,34 @@ export default function CreatePostScreen() {
     }
   };
   
-  // Check if we received a photo from the camera screen
+  // Check if we received data from the camera screen (photo + preserved form data)
   useEffect(() => {
     if (params.photoUri && typeof params.photoUri === 'string') {
       handleSetImage(params.photoUri);
-      // Optional: Clear the param so it's not re-used if the user navigates away and back
-      router.setParams({ photoUri: undefined });
+      
+      // Restore form data if it was preserved from camera navigation
+      if (params.title && typeof params.title === 'string') {
+        setTitle(params.title);
+      }
+      if (params.content && typeof params.content === 'string') {
+        setContent(params.content);
+      }
+      if (params.selectedCommunity && typeof params.selectedCommunity === 'string') {
+        const communityId = parseInt(params.selectedCommunity, 10);
+        if (!isNaN(communityId)) {
+          setSelectedCommunity(communityId);
+        }
+      }
+      
+      // Clear the params so they're not re-used if the user navigates away and back
+      router.setParams({ 
+        photoUri: undefined,
+        title: undefined,
+        content: undefined,
+        selectedCommunity: undefined
+      });
     }
-  }, [params.photoUri]);
+  }, [params.photoUri, params.title, params.content, params.selectedCommunity]);
 
   // Request media library permission on mount
   useEffect(() => {
@@ -174,29 +194,19 @@ export default function CreatePostScreen() {
   const takePhotoWithCamera = async () => {
     setShowMediaOptions(false);
     try {
-      const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission needed', 'Camera permission is required to take photos.', [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Open Settings', onPress: () => Linking.openSettings() }
-        ]);
-        return;
-      }
-
-      const result = await ImagePicker.launchCameraAsync({
-        allowsEditing: false,
-        quality: 0.7,
-      });
-
-      if (!result.canceled) {
-        const uri = result.assets?.[0]?.uri;
-        if (uri) {
-          handleSetImage(uri);
+      // Navigate to the custom camera screen with current form data
+      router.push({
+        pathname: '/camera',
+        params: {
+          title: title,
+          content: content,
+          selectedCommunity: selectedCommunity?.toString() || '',
+          returnPath: '/create-post'
         }
-      }
+      });
     } catch (error: any) {
-      console.error("Camera error:", error);
-      Alert.alert("Camera Error", error.message || "Could not take a photo.");
+      console.error("Camera navigation error:", error);
+      Alert.alert("Camera Error", "Could not open camera. Please try again.");
     }
   };
 
@@ -305,97 +315,114 @@ export default function CreatePostScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
       >
-        <ScrollView style={styles.scrollView} keyboardShouldPersistTaps="handled">
-          <View style={styles.form}>
-            <Text style={styles.sectionTitle}>Create a New Post</Text>
-            
-            <Text style={styles.label}>Select Community</Text>
-            <View style={styles.communitySelector}>
-              {userCommunityMemberships?.map((membership) => {
-                const community = membership.communities;
-                const school = community.type === 'school' ? getSchoolByValue(community.name) : undefined;
-                const displayName = school ? school.display : community.name;
-                
-                return (
-                  <TouchableOpacity
-                    key={community.id}
-                    style={[
-                      styles.communityOption,
-                      selectedCommunity === community.id && styles.communityOptionSelected
-                    ]}
-                    onPress={() => setSelectedCommunity(community.id)}
-                  >
-                    <Text
-                      style={[
-                        styles.communityOptionText,
-                        selectedCommunity === community.id && styles.communityOptionTextSelected
-                      ]}
-                    >
-                      {displayName}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
+        <ScrollView 
+          contentContainerStyle={styles.scrollContainer}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.container}>
+            <View style={styles.header}>
+              <TouchableOpacity 
+                onPress={() => router.back()} 
+                style={styles.backButton}
+                accessibilityLabel="Go back"
+              >
+                <Ionicons name="arrow-back" size={24} color="#007AFF" />
+              </TouchableOpacity>
+              <Text style={styles.headerTitle}>Create Post</Text>
+              <View style={styles.headerSpacer} />
             </View>
 
-            <Text style={styles.label}>Title</Text>
-            <TextInput
-              style={styles.input}
-              value={title}
-              onChangeText={setTitle}
-              placeholder="Enter post title"
-              maxLength={100}
-            />
-
-            <Text style={styles.label}>Content (optional)</Text>
-            <TextInput
-              style={[styles.input, styles.contentInput]}
-              value={content}
-              onChangeText={setContent}
-              placeholder="What's on your mind?"
-              multiline
-              maxLength={500}
-            />
-            <Text style={styles.charCount}>{content.length}/500</Text>
-            
-            <TouchableOpacity 
-              onPress={() => setShowMediaOptions(true)} 
-              style={styles.imageButton}
-              accessibilityLabel="Add media to your post"
-            >
-              <Ionicons name="camera-outline" size={24} color="#007AFF" />
-              <Text style={styles.imageButtonText}>Add Photo</Text>
-            </TouchableOpacity>
-
-            {imageUri && imageAspectRatio && (
-              <View style={styles.imagePreviewContainer}>
-                <Image 
-                  source={{ uri: imageUri }} 
-                  style={[styles.imagePreview, { aspectRatio: imageAspectRatio }]} 
-                />
-                <TouchableOpacity
-                  onPress={() => handleSetImage(null)}
-                  style={styles.removeImageButton}
-                  accessibilityLabel="Remove selected image"
-                >
-                  <Ionicons name="close-circle" size={24} color="#FF3B30" />
-                </TouchableOpacity>
+            <View style={styles.form}>
+              <Text style={styles.sectionTitle}>Create a New Post</Text>
+              
+              <Text style={styles.label}>Select Community</Text>
+              <View style={styles.communitySelector}>
+                {userCommunityMemberships?.map((membership) => {
+                  const community = membership.communities;
+                  const school = community.type === 'school' ? getSchoolByValue(community.name) : undefined;
+                  const displayName = school ? school.display : community.name;
+                  
+                  return (
+                    <TouchableOpacity
+                      key={community.id}
+                      style={[
+                        styles.communityOption,
+                        selectedCommunity === community.id && styles.communityOptionSelected
+                      ]}
+                      onPress={() => setSelectedCommunity(community.id)}
+                    >
+                      <Text
+                        style={[
+                          styles.communityOptionText,
+                          selectedCommunity === community.id && styles.communityOptionTextSelected
+                        ]}
+                      >
+                        {displayName}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
-            )}
 
-            <TouchableOpacity
-              onPress={handleSubmit}
-              disabled={isCreating || !title.trim() || !selectedCommunity}
-              style={[
-                styles.submitButton, 
-                (isCreating || !title.trim() || !selectedCommunity) && styles.submitButtonDisabled
-              ]}
-              accessibilityLabel="Create and submit your post"
-            >
-              <Text style={styles.submitButtonText}>
-                {isCreating ? 'Creating...' : 'Create Post'}
-              </Text>
-            </TouchableOpacity>
+              <Text style={styles.label}>Title</Text>
+              <TextInput
+                style={styles.input}
+                value={title}
+                onChangeText={setTitle}
+                placeholder="Enter post title"
+                maxLength={100}
+              />
+
+              <Text style={styles.label}>Content (optional)</Text>
+              <TextInput
+                style={[styles.input, styles.contentInput]}
+                value={content}
+                onChangeText={setContent}
+                placeholder="What's on your mind?"
+                multiline
+                maxLength={500}
+              />
+              <Text style={styles.charCount}>{content.length}/500</Text>
+              
+              <TouchableOpacity 
+                onPress={() => setShowMediaOptions(true)} 
+                style={styles.imageButton}
+                accessibilityLabel="Add media to your post"
+              >
+                <Ionicons name="camera-outline" size={24} color="#007AFF" />
+                <Text style={styles.imageButtonText}>Add Photo</Text>
+              </TouchableOpacity>
+
+              {imageUri && imageAspectRatio && (
+                <View style={styles.imagePreviewContainer}>
+                  <Image 
+                    source={{ uri: imageUri }} 
+                    style={[styles.imagePreview, { aspectRatio: imageAspectRatio }]} 
+                  />
+                  <TouchableOpacity
+                    onPress={() => handleSetImage(null)}
+                    style={styles.removeImageButton}
+                    accessibilityLabel="Remove selected image"
+                  >
+                    <Ionicons name="close-circle" size={24} color="#FF3B30" />
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              <TouchableOpacity
+                onPress={handleSubmit}
+                disabled={isCreating || !title.trim() || !selectedCommunity}
+                style={[
+                  styles.submitButton, 
+                  (isCreating || !title.trim() || !selectedCommunity) && styles.submitButtonDisabled
+                ]}
+                accessibilityLabel="Create and submit your post"
+              >
+                <Text style={styles.submitButtonText}>
+                  {isCreating ? 'Creating...' : 'Create Post'}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -458,7 +485,7 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#fff',
   },
   keyboardView: {
     flex: 1,
@@ -466,8 +493,35 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
+  scrollContainer: {
+    flexGrow: 1,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  backButton: {
+    padding: 8,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#000',
+    flex: 1,
+    textAlign: 'center',
+  },
+  headerSpacer: {
+    width: 40, // Adjust as needed for spacing
+  },
   form: {
     padding: 16,
+    paddingTop: 8, // Reduced since we have header now
   },
   sectionTitle: {
     fontSize: 18,

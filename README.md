@@ -1,6 +1,25 @@
-# Welcome to your Expo app 👋
+# DieStats - Real-time Die Game Tracker 🎲
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Track your die-throwing game stats in real-time with friends. Join live matches, view detailed statistics, and compete with your community.
+
+## Features
+
+- 📊 Real-time stat tracking for die games
+- 👥 Multiplayer live sessions
+- 📱 Cross-platform (iOS, Android, Web)
+- 📈 Detailed analytics and history
+- 🏆 Community features and leaderboards
+- 📸 Photo sharing for game moments
+
+## Privacy Policy
+
+This app collects minimal data necessary for functionality:
+- User authentication data (email, user ID)
+- Game statistics and match history
+- Profile information (nickname, school, avatar)
+- Photos uploaded by users for posts
+
+We use Supabase for secure data storage and do not share personal data with third parties. Camera access is only used when you choose to take photos for posts or profile pictures.
 
 ## Get started
 
@@ -10,41 +29,53 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
    npm install
    ```
 
-2. Start the app
+2. Set up environment variables
+
+   Create a `.env` file with:
+   ```
+   EXPO_PUBLIC_SUPABASE_URL=your_supabase_url
+   EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+   EXPO_PUBLIC_APP_URL=https://ds6-pi.vercel.app
+   ```
+
+3. Start the app
 
    ```bash
    npx expo start
    ```
 
-In the output, you'll find options to open the app in a
+## Building for Production
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+### iOS TestFlight
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+1. Set up your Apple Developer Account
+2. Update `app.json` with your bundle identifier
+3. Update `eas.json` with your Apple Team ID and credentials
+4. Build for TestFlight:
 
-## Get a fresh project
+   ```bash
+   npm run build:ios:production
+   ```
 
-When you're ready, run:
+5. Submit to TestFlight:
 
-```bash
-npm run reset-project
-```
+   ```bash
+   npm run submit:ios
+   ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+### Web Deployment
 
-## Learn more
+The web version is automatically deployed to Vercel at https://ds6-pi.vercel.app
 
-To learn more about developing your project with Expo, look at the following resources:
+## Development
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+- [Expo documentation](https://docs.expo.dev/)
+- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/)
 
-## Join the community
+## Support
 
-Join our community of developers creating universal apps.
+For support or questions, contact [your-email@example.com]
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## License
+
+Private - All rights reserved

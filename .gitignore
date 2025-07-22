@@ -36,6 +36,22 @@ yarn-error.*
 # local env files
 .env*.local
 .env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# EAS credentials and sensitive data
+credentials.json
+google-services.json
+GoogleService-Info.plist
+
+# Apple certificates and keys
+*.cer
+*.p12
+*.p8
+*.mobileprovision
+*.provisionprofile
 
 # typescript
 *.tsbuildinfo

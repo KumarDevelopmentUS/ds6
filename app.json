@@ -1,29 +1,42 @@
 {
   "expo": {
-    "name": "DieStatsAlpha",
-    "slug": "DieStatsAlpha",
+    "name": "DieStats6",
+    "slug": "DieStats6",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "diestatsalpha",
+    "scheme": "diestats",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": false,
+    "newArchEnabled": true,
+    "description": "Track your die-throwing game stats in real-time with friends. Join live matches, view detailed statistics, and compete with your community.",
+    "primaryColor": "#007AFF",
+    "backgroundColor": "#ffffff",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.DieStatsAlpha",
+      "bundleIdentifier": "com.diestats.app",
+      "buildNumber": "1",
       "infoPlist": {
+        "NSCameraUsageDescription": "This app uses the camera to take photos for posts and profile pictures.",
+        "NSPhotoLibraryUsageDescription": "This app accesses your photo library to select images for posts and profile pictures.",
         "NSAppTransportSecurity": {
-  "NSAllowsArbitraryLoads": true, 
-  "NSExceptionDomains": {
-    "pralctamjnxchqpmazpf.supabase.co": { 
-      "NSExceptionAllowsInsecureHTTPLoads": true,
-      "NSIncludesSubdomains": true,
-      "NSTemporaryExceptionAllowsInsecureHTTPLoads": true,
-      "NSExceptionRequiresForwardSecrecy": false
-    }
-  }
-}
-      }
+          "NSExceptionDomains": {
+            "pralctamjnxchqpmazpf.supabase.co": {
+              "NSExceptionRequiresForwardSecrecy": false,
+              "NSExceptionMinimumTLSVersion": "1.0",
+              "NSIncludesSubdomains": true
+            },
+            "ds6-pi.vercel.app": {
+              "NSExceptionRequiresForwardSecrecy": false,
+              "NSExceptionMinimumTLSVersion": "1.0",
+              "NSIncludesSubdomains": true
+            }
+          }
+        },
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "associatedDomains": [
+        "applinks:ds6-pi.vercel.app"
+      ]
     },
     "android": {
       "adaptiveIcon": {
@@ -31,7 +44,11 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.anonymous.DieStatsAlpha"
+      "package": "com.anonymous.DieStatsAlpha",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -52,13 +69,20 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera to take photos for posts."
+          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera to take photos for posts and profile pictures."
         }
       ],
       "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "312581b2-b627-43e7-bf3f-aea1bb49d58b"
+      }
+    },
+    "owner": "earulandu"
   }
 }
