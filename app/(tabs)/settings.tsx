@@ -7,14 +7,15 @@ import { Alert, ScrollView, StyleSheet, Switch, TouchableOpacity, View } from 'r
 import { ThemedButton } from '../../components/themed/ThemedButton';
 import { ThemedText } from '../../components/themed/ThemedText';
 import { ThemedView } from '../../components/themed/ThemedView';
-import { useTheme } from '../../contexts/ThemeContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { useFeed } from '../../contexts/FeedContext';
+import { useTheme } from '../../contexts/ThemeContext';
 
 export default function AccountScreen() {
   const router = useRouter();
   const { theme, colorScheme, toggleColorScheme } = useTheme();
   const { communities: userCommunities, isLoading: communitiesLoading } = useFeed();
-  const [user, setUser] = useState<any>(null);
+  const { session } = useAuth();
   const [profile, setProfile] = useState<{
     id: string;
     first_name: string;
@@ -28,13 +29,11 @@ export default function AccountScreen() {
 
   useEffect(() => {
     loadUserAndProfile();
-  }, []);
+  }, [session]);
 
   const loadUserAndProfile = async () => {
     setLoading(true);
-    const { data: { session } } = await supabase.auth.getSession();
     const currentUser = session?.user || null;
-    setUser(currentUser);
 
     if (currentUser) {
       const { data, error } = await supabase
@@ -49,6 +48,8 @@ export default function AccountScreen() {
       } else if (data) {
         setProfile(data);
       }
+    } else {
+      setProfile(null);
     }
     setLoading(false);
   };
@@ -128,7 +129,7 @@ export default function AccountScreen() {
       showsVerticalScrollIndicator={false}
     >
       {/* User Info */}
-      {user && profile ? (
+      {session?.user && profile ? (
         <ThemedView variant="card" style={styles.userCard}>
           {profile.avatar_icon ? (
             <View style={[
@@ -149,14 +150,14 @@ export default function AccountScreen() {
           <ThemedText variant="subtitle" style={styles.userName}>
             {profile.first_name || profile.nickname || 'Player'}
           </ThemedText>
-          <ThemedText variant="caption">{user.email}</ThemedText>
+          <ThemedText variant="caption">{session.user.email}</ThemedText>
         </ThemedView>
       ) : (
         <ThemedText style={styles.guestText}>Loading user profile...</ThemedText>
       )}
 
       {/* Communities Section */}
-      {user && (
+      {session?.user && (
         <ThemedView variant="section">
           <View style={styles.sectionHeader}>
             <Ionicons
@@ -297,7 +298,7 @@ export default function AccountScreen() {
       ))}
 
       {/* Logout Button */}
-      {user && (
+      {session?.user && (
         <ThemedButton
           title="Logout"
           variant="secondary"
