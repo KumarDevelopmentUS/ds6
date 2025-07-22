@@ -1,7 +1,6 @@
 // contexts/ThemeContext.tsx
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useColorScheme } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 
 type ColorScheme = 'light' | 'dark';
 
@@ -112,8 +111,7 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const systemColorScheme = useColorScheme() ?? 'light';
-  const [colorScheme, setColorScheme] = useState<ColorScheme>(systemColorScheme);
+  const [colorScheme, setColorScheme] = useState<ColorScheme>('light'); // Default to light mode
 
   useEffect(() => {
     loadThemePreference();
@@ -124,9 +122,15 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const savedTheme = await AsyncStorage.getItem('colorScheme');
       if (savedTheme === 'light' || savedTheme === 'dark') {
         setColorScheme(savedTheme);
+      } else {
+        // If no saved preference, default to light mode
+        setColorScheme('light');
+        saveThemePreference('light');
       }
     } catch (error) {
       console.error('Error loading theme preference:', error);
+      // On error, default to light mode
+      setColorScheme('light');
     }
   };
 

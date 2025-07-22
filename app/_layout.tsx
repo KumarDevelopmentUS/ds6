@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { FeedProvider } from '@/contexts/FeedContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { supabase } from '@/supabase';
+import type { Session } from '@supabase/supabase-js';
 import { ensureUserProfilesExist } from '@/utils/profileSync';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SplashScreen, Stack, useRouter, useSegments } from 'expo-router';

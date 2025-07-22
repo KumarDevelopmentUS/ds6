@@ -273,7 +273,7 @@ export default function CreatePostScreen() {
                 <Text style={styles.communityFixTitle}>No Communities Found</Text>
                 <Text style={styles.communityFixText}>
                   You need to join at least one community before you can create posts. 
-                  Let's get you set up with the general community!
+                  Let&apos;s get you set up with the general community!
                 </Text>
                 
                 <TouchableOpacity 

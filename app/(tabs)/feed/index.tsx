@@ -190,7 +190,7 @@ export default function FeedScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.emptyContainer}>
           <Ionicons name="home-outline" size={64} color="#666" />
-          <Text style={styles.emptyText}>You haven't joined any communities yet.</Text>
+          <Text style={styles.emptyText}>You haven&apos;t joined any communities yet.</Text>
           <Text style={styles.emptySubtext}>
             Join a community to start seeing posts and connecting with others!
           </Text>

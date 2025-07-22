@@ -1,10 +1,11 @@
 // app/components/themed/ThemedInput.tsx
 import React from 'react';
-import { StyleSheet, TextInput, TextInputProps, View } from 'react-native';
+import { StyleSheet, TextInput, TextInputProps, View, ViewStyle } from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 
-interface ThemedInputProps extends TextInputProps {
+interface ThemedInputProps extends Omit<TextInputProps, 'style'> {
   icon?: React.ReactNode;
+  style?: ViewStyle;
 }
 
 export const ThemedInput: React.FC<ThemedInputProps> = ({ 

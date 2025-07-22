@@ -292,7 +292,7 @@ export default function AccountScreen() {
                   style={styles.noCommunitiesIcon}
                 />
                 <ThemedText variant="body" style={styles.noCommunitiesText}>
-                  You're not part of any communities yet
+                  You&apos;re not part of any communities yet
                 </ThemedText>
                 <ThemedText variant="caption" style={styles.noCommunitiesSubtext}>
                   Join communities by selecting a school during signup or ask an admin to add you
