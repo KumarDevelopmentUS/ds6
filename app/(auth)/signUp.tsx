@@ -222,11 +222,19 @@ export default function SignUpScreen() {
           {/* Form */}
           <ThemedView variant="card" style={styles.formCard}>
             <ThemedInput
-              placeholder="Username" // Changed from First Name
+              placeholder="Username"
               value={formData.username}
               onChangeText={(text) => setFormData({ ...formData, username: text })}
               autoCapitalize="none"
-              icon={<Ionicons name="person-circle-outline" size={20} color={theme.colors.textSecondary} />}
+              icon={<Ionicons name="at" size={20} color={theme.colors.textSecondary} />}
+            />
+
+            <ThemedInput
+              placeholder="First Name"
+              value={formData.nickname}
+              onChangeText={(text) => setFormData({ ...formData, nickname: text })}
+              icon={<Ionicons name="person-outline" size={20} color={theme.colors.textSecondary} />}
+              style={{ marginTop: theme.spacing.md }}
             />
 
             <ThemedInput
@@ -236,14 +244,6 @@ export default function SignUpScreen() {
               keyboardType="email-address"
               autoCapitalize="none"
               icon={<Ionicons name="mail-outline" size={20} color={theme.colors.textSecondary} />}
-              style={{ marginTop: theme.spacing.md }}
-            />
-
-            <ThemedInput
-              placeholder="Nickname"
-              value={formData.nickname}
-              onChangeText={(text) => setFormData({ ...formData, nickname: text })}
-              icon={<Ionicons name="at" size={20} color={theme.colors.textSecondary} />}
               style={{ marginTop: theme.spacing.md }}
             />
 
