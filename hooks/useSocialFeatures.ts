@@ -164,7 +164,8 @@ export const usePosts = (communityId?: number) => {
       const combinedPosts = postsWithCounts.map((post: any) => ({
         ...post,
         image_url: detailsMap[post.id]?.image_url || null,
-        community_name: detailsMap[post.id]?.community_name || null
+        community_name: detailsMap[post.id]?.community_name || null,
+        author_username: post.username || '', // Map username for @ display
       }));
       
       return combinedPosts as Post[];
