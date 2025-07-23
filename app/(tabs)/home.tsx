@@ -368,7 +368,7 @@ export default function MainMenuScreen() {
       </ThemedView>
 
       {/* Debug Section - Only show for authenticated users */}
-      {session && (
+      {false && session && (
         <ThemedView variant="card" style={styles.debugCard}>
           <View style={styles.debugHeader}>
             <Ionicons name="bug" size={24} color={theme.colors.warning} />
@@ -428,7 +428,7 @@ export default function MainMenuScreen() {
             />
           </View>
         </ThemedView>
-              )}
+      )}
       </ScrollView>
     </SafeAreaView>
   );
