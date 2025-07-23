@@ -1,22 +1,22 @@
 // app/stats.tsx
+import { HapticBackButton } from '@/components/HapticBackButton';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  Dimensions,
-  ScrollView,
-  StyleSheet,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Dimensions,
+    ScrollView,
+    StyleSheet,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { ThemedButton } from '../components/themed/ThemedButton';
 import { ThemedText } from '../components/themed/ThemedText';
 import { ThemedView } from '../components/themed/ThemedView';
 import { useTheme } from '../contexts/ThemeContext';
-import { HapticBackButton } from '@/components/HapticBackButton';
 
 interface OverallStats {
   totalMatches: number;
@@ -1040,6 +1040,27 @@ export default function StatisticsScreen() {
             <ThemedText variant="body">Missed Catches</ThemedText>
             <ThemedText variant="body" color="primary">{stats.totalMissedCatches}</ThemedText>
           </View>
+        </ThemedView>
+
+        {/* Player Statistics Section */}
+        <ThemedView variant="card" style={styles.detailsCard}>
+          <ThemedText variant="subtitle" style={styles.sectionTitle}>
+            Player Statistics
+          </ThemedText>
+          <View style={styles.detailRow}><ThemedText variant="body">Throws</ThemedText><ThemedText variant="body" color="primary">{stats.totalThrows}</ThemedText></View>
+          <View style={styles.detailRow}><ThemedText variant="body">Hits</ThemedText><ThemedText variant="body" color="primary">{stats.totalHits}</ThemedText></View>
+          <View style={styles.detailRow}><ThemedText variant="body">Hit%</ThemedText><ThemedText variant="body" color="primary">{stats.hitRate.toFixed(1)}%</ThemedText></View>
+          <View style={styles.detailRow}><ThemedText variant="body">Catches</ThemedText><ThemedText variant="body" color="primary">{stats.totalCatches}</ThemedText></View>
+          <View style={styles.detailRow}><ThemedText variant="body">Catch%</ThemedText><ThemedText variant="body" color="primary">{stats.catchRate.toFixed(1)}%</ThemedText></View>
+          <View style={styles.detailRow}><ThemedText variant="body">Rating</ThemedText><ThemedText variant="body" color="primary">{((stats.hitRate + stats.catchRate) / 2).toFixed(1)}%</ThemedText></View>
+          <View style={styles.detailRow}><ThemedText variant="body">Blunders</ThemedText><ThemedText variant="body" color="primary">{stats.totalDrop + stats.totalMiss + stats.totalTwoHands + stats.totalBody}</ThemedText></View>
+          <View style={styles.detailRow}><ThemedText variant="body">Score</ThemedText><ThemedText variant="body" color="primary">{stats.totalScore}</ThemedText></View>
+          <View style={styles.detailRow}><ThemedText variant="body">Aura</ThemedText><ThemedText variant="body" color="primary">{stats.totalAura}</ThemedText></View>
+          <View style={styles.detailRow}><ThemedText variant="body">Goals</ThemedText><ThemedText variant="body" color="primary">{stats.totalGoals}</ThemedText></View>
+          <View style={styles.detailRow}><ThemedText variant="body">Streak</ThemedText><ThemedText variant="body" color="primary">{stats.longestStreak}</ThemedText></View>
+          <View style={styles.detailRow}><ThemedText variant="body">On Fire Throws</ThemedText><ThemedText variant="body" color="primary">{stats.totalOnFireCount}</ThemedText></View>
+          <View style={styles.detailRow}><ThemedText variant="body">FIFA</ThemedText><ThemedText variant="body" color="primary">{stats.totalFifaSuccess}/{stats.totalFifaAttempts}</ThemedText></View>
+          <View style={styles.detailRow}><ThemedText variant="body">Special</ThemedText><ThemedText variant="body" color="primary">{stats.totalSpecialThrows}</ThemedText></View>
         </ThemedView>
 
         {/* Insights */}

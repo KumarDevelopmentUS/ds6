@@ -1,25 +1,25 @@
 // app/friends.tsx
+import { HapticBackButton } from '@/components/HapticBackButton';
+import { getSchoolByValue } from '@/constants/schools';
+import { useTheme } from '@/contexts/ThemeContext';
 import { supabase } from '@/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  FlatList,
-  ScrollView,
-  SectionList,
-  StyleSheet,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    FlatList,
+    ScrollView,
+    SectionList,
+    StyleSheet,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { ThemedButton } from '../components/themed/ThemedButton';
 import { ThemedInput } from '../components/themed/ThemedInput';
 import { ThemedText } from '../components/themed/ThemedText';
 import { ThemedView } from '../components/themed/ThemedView';
-import { getSchoolByValue } from '@/constants/schools';
-import { HapticBackButton } from '@/components/HapticBackButton';
-import { useTheme } from '@/contexts/ThemeContext';
 
 type UserProfile = {
   id: string;
@@ -338,10 +338,10 @@ export default function FriendsScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <HapticBackButton 
-        onPress={() => router.back()} 
+      <HapticBackButton
+        onPress={() => router.back()}
         style={styles.backButton}
-        color={theme.colors.text}
+        color={theme.colors.primary}
       />
 
       <View style={styles.tabContainer}>

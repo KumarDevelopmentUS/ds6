@@ -9,7 +9,6 @@ import { supabase } from '@/supabase';
 import { debugFeedProvider, debugRLSPolicies, debugUserCommunities, forceFeedRefetch, joinCommunityManually, refreshFeedCache, testDatabaseConnection } from '@/utils/profileSync';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { nanoid } from 'nanoid/non-secure';
 import React, { useEffect, useState } from 'react';
 import { Alert, SafeAreaView, ScrollView, StyleSheet, View } from 'react-native';
 
@@ -38,39 +37,28 @@ const diceFacts = [
   "The word 'Dice' is derived from the Old French word 'dé', which means 'die'!",
   "Does anyone read these facts? If you do, you're rolling with the best!",
   "The ancient Babylonians used dice made from whale bones for their sacred rituals!",
-"In medieval times, dice were considered so addictive that many kingdoms banned them entirely.",
-"The first loaded dice were discovered in a 2,000-year-old Roman archaeological site.",
-"Casino dice weigh exactly 2.5 grams and must be perfectly balanced to 1/5000th of an inch.",
-"The ancient Vikings believed that dice rolls could predict the outcome of battles.",
-"In 17th century France, dice games were so popular that Louis XIV banned them at court.",
-"The probability of rolling three sixes in a row is 1 in 216, or about 0.46%.",
-"Ancient Chinese emperors used ivory dice inlaid with gold for royal gaming sessions.",
-"The term 'loaded dice' originally referred to dice weighted with mercury or lead.",
-"In ancient Greece, dice were thrown to choose which gods to worship each day.",
-"The world record for most dice rolled simultaneously is 33,616 dice in one throw!",
-"Medieval monks were forbidden from playing dice games, calling them 'the devil's bones'.",
-"The first transparent dice were created in 1960 to prevent casino cheating.",
-"Ancient Egyptian pharaohs were buried with golden dice for entertainment in the afterlife.",
-"The phrase 'dice with death' originated from Roman gladiator gambling traditions.",
-"In feudal Japan, samurai used dice to determine battle formations and strategies.",
-"The smallest functional dice ever made measures just 0.3 millimeters per side.",
-"Ancient Persian dice were carved from precious gems and passed down through generations.",
-"The mathematical study of dice probability laid the foundation for modern statistics.",
-"In colonial America, dice games were banned in most settlements as immoral gambling.",
-"The first electronic dice were invented in 1975 for early computer gaming systems.",
-"Are you still rolling through these facts? You must really love the randomness of knowledge!",
-"In ancient China, dice were used to predict the future and fortune-telling.",
-"The probability of rolling a 12 with two dice is 1 in 36, or about 2.78%.",
-"The probability of rolling a 10 with two dice is 1 in 12, or about 8.33%.",
-"The probability of rolling a 9 with two dice is 1 in 12, or about 8.33%.",
-"The probability of rolling a 8 with two dice is 1 in 12, or about 8.33%.",
-"The probability of rolling a 7 with two dice is 1 in 6, or about 16.67%.",
-"The probability of rolling a 6 with two dice is 1 in 6, or about 16.67%.",
-"The probability of rolling a 5 with two dice is 1 in 6, or about 16.67%.",
-"The probability of rolling a 4 with two dice is 1 in 6, or about 16.67%.",
-"The probability of rolling a 3 with two dice is 1 in 6, or about 16.67%.",
-"The probability of rolling a 2 with two dice is 1 in 6, or about 16.67%.",
-"The probability of rolling a 1 with two dice is 1 in 6, or about 16.67%.",
+  "In medieval times, dice were considered so addictive that many kingdoms banned them entirely.",
+  "The first loaded dice were discovered in a 2,000-year-old Roman archaeological site.",
+  "Casino dice weigh exactly 2.5 grams and must be perfectly balanced to 1/5000th of an inch.",
+  "The ancient Vikings believed that dice rolls could predict the outcome of battles.",
+  "In 17th century France, dice games were so popular that Louis XIV banned them at court.",
+  "The probability of rolling three sixes in a row is 1 in 216, or about 0.46%.",
+  "Ancient Chinese emperors used ivory dice inlaid with gold for royal gaming sessions.",
+  "The term 'loaded dice' originally referred to dice weighted with mercury or lead.",
+  "In ancient Greece, dice were thrown to choose which gods to worship each day.",
+  "The world record for most dice rolled simultaneously is 33,616 dice in one throw!",
+  "Medieval monks were forbidden from playing dice games, calling them 'the devil's bones'.",
+  "The first transparent dice were created in 1960 to prevent casino cheating.",
+  "Ancient Egyptian pharaohs were buried with golden dice for entertainment in the afterlife.",
+  "The phrase 'dice with death' originated from Roman gladiator gambling traditions.",
+  "In feudal Japan, samurai used dice to determine battle formations and strategies.",
+  "The smallest functional dice ever made measures just 0.3 millimeters per side.",
+  "Ancient Persian dice were carved from precious gems and passed down through generations.",
+  "The mathematical study of dice probability laid the foundation for modern statistics.",
+  "In colonial America, dice games were banned in most settlements as immoral gambling.",
+  "The first electronic dice were invented in 1975 for early computer gaming systems.",
+  "Are you still rolling through these facts? You must really love the randomness of knowledge!",
+  "In ancient China, dice were used to predict the future and fortune-telling.",
 ];
 
 export default function MainMenuScreen() {
@@ -198,7 +186,12 @@ export default function MainMenuScreen() {
   };
 
   const handleQuickStart = () => {
-    const roomCode = nanoid(6);
+    // Generate room code with only capital letters
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    let roomCode = '';
+    for (let i = 0; i < 6; i++) {
+      roomCode += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
     router.push({
       pathname: '/tracker/[roomCode]',
       params: { roomCode },
@@ -211,9 +204,10 @@ export default function MainMenuScreen() {
       'Enter room code:',
       code => {
         if (code && code.length === 6) {
+          const upperCode = code.toUpperCase(); // Convert to uppercase
           router.push({
             pathname: '/tracker/[roomCode]',
-            params: { roomCode: code },
+            params: { roomCode: upperCode },
           } as any);
         } else {
           Alert.alert('Invalid Code', 'Room code must be 6 characters');
@@ -221,25 +215,6 @@ export default function MainMenuScreen() {
       },
       'plain-text'
     );
-    const handleJoinRoom = () => {
-      Alert.prompt(
-        'Join Room',
-        'Enter room code:',
-        code => {
-          if (code && code.length === 6) {
-            // 👇 ADD THIS CONSOLE LOG
-            console.log(`🚀 [NAV] Attempting to navigate to /tracker/${code}`);
-            router.push({
-              pathname: '/tracker/[roomCode]',
-              params: { roomCode: code },
-            } as any);
-          } else {
-            Alert.alert('Invalid Code', 'Room code must be 6 characters');
-          }
-        },
-        'plain-text'
-      );
-    };
   };
 
   const handleAuthRequired = (action: string) => {
@@ -329,7 +304,7 @@ export default function MainMenuScreen() {
         <ThemedButton
           title="Join Room"
           variant="outline"
-          onPress={handleJoinRoom}
+          onPress={() => router.push('/tracker/join')}
           size="large"
           icon={
             <Ionicons

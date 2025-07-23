@@ -1,4 +1,4 @@
-// app/tracker/[roomCode]/page.tsx
+// app/tracker/[roomCode].tsx
 'use client';
 
 import { HapticBackButton } from '@/components/HapticBackButton';
@@ -19,7 +19,7 @@ import QRCodeSVG from 'react-native-qrcode-svg';
 
 // Simple ID generator for room codes
 const generateId = (length: number = 6): string => {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'; // Only capital letters
   let result = '';
   for (let i = 0; i < length; i++) {
     result += chars.charAt(Math.floor(Math.random() * chars.length));
@@ -99,7 +99,7 @@ interface LiveMatch {
 
 const DieStatsTracker: React.FC = () => {
   const { roomCode } = useLocalSearchParams();
-  const roomCodeString = Array.isArray(roomCode) ? roomCode[0] : roomCode || generateId(6);
+  const roomCodeString = Array.isArray(roomCode) ? roomCode[0].toUpperCase() : (roomCode || generateId(6)).toUpperCase();
   const router = useRouter();
 
   // Core game state, initialized with default values
@@ -1006,11 +1006,10 @@ const DieStatsTracker: React.FC = () => {
 
       {/* Back Button at top of screen */}
       {isSetupVisible && (
-        <View style={styles.screenTopBackButton}>
-          <HapticBackButton 
-            onPress={() => router.back()} 
-          />
-        </View>
+        <HapticBackButton 
+          onPress={() => router.back()} 
+          style={styles.backButton}
+        />
       )}
 
       {/* Match Setup Section (shown based on isSetupVisible state) */}
@@ -1671,15 +1670,16 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   headerCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 8,
+    marginTop: 100, // Increased space for the back button and safe area
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    padding: 24,
-    marginBottom: 16,
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
   },
   headerTitle: {
     fontSize: 28,
@@ -2031,7 +2031,7 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontWeight: 'bold',
   },
-  screenTopBackButton: {
+  backButton: {
     position: 'absolute',
     top: 60,
     left: 20,

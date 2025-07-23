@@ -156,7 +156,7 @@ export default function AccountScreen() {
       ],
     },
     {
-      title: 'Game Settings',
+      title: 'App Preferences', // Renamed from 'Game Settings'
       icon: 'game-controller-outline',
       items: [
         {
@@ -212,13 +212,19 @@ export default function AccountScreen() {
               />
             </View>
           ) : (
-            <View style={[styles.avatar, { backgroundColor: theme.colors.primary }]}>
+            <View style={[styles.avatar, { backgroundColor: theme.colors.primary }]}> 
               <Ionicons name="person" size={40} color="#FFFFFF" />
             </View>
           )}
           <ThemedText variant="subtitle" style={styles.userName}>
             {profile.first_name || profile.nickname || 'Player'}
           </ThemedText>
+          {/* Username under nickname */}
+          {session.user.user_metadata?.username && (
+            <ThemedText variant="caption" style={{ marginBottom: 2, color: theme.colors.textSecondary }}>
+              @{session.user.user_metadata.username}
+            </ThemedText>
+          )}
           <ThemedText variant="caption">{session.user.email}</ThemedText>
         </ThemedView>
       ) : (
