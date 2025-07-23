@@ -7,16 +7,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    Alert,
-    FlatList,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    TextInput,
-    TouchableOpacity,
-    View
+  Alert,
+  FlatList,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { ThemedButton } from '../../components/themed/ThemedButton';
 import { ThemedInput } from '../../components/themed/ThemedInput';
@@ -42,6 +42,7 @@ export default function SignUpScreen() {
   const [filteredSchools, setFilteredSchools] = useState(SCHOOLS);
   const [errors, setErrors] = useState({
     username: '',
+    nickname: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -62,6 +63,16 @@ export default function SignUpScreen() {
   const validateUsername = (username: string) => {
     if (username.length > 0 && username.length < 5) {
       return 'Username must be at least 5 characters long';
+    }
+    if (username.length > 0 && !/^[a-zA-Z0-9._]+$/.test(username)) {
+      return 'Username can only contain letters, numbers, dots (.), and underscores (_)';
+    }
+    return '';
+  };
+
+  const validateNickname = (nickname: string) => {
+    if (nickname.length > 0 && !/^[a-zA-Z0-9._]+$/.test(nickname)) {
+      return 'Nickname can only contain letters, numbers, dots (.), and underscores (_)';
     }
     return '';
   };
@@ -107,6 +118,9 @@ export default function SignUpScreen() {
     switch (field) {
       case 'username':
         error = validateUsername(value);
+        break;
+      case 'nickname':
+        error = validateNickname(value);
         break;
       case 'email':
         error = validateEmail(value);
@@ -162,6 +176,18 @@ export default function SignUpScreen() {
     if (username.length < 5) {
       console.log('❌ SIGNUP DEBUG: Validation failed - username too short');
       Alert.alert('Username Too Short', 'Username must be at least 5 characters long.');
+      return;
+    }
+
+    if (!/^[a-zA-Z0-9._]+$/.test(username)) {
+      console.log('❌ SIGNUP DEBUG: Validation failed - username contains invalid characters');
+      Alert.alert('Invalid Username', 'Username can only contain letters, numbers, dots (.), and underscores (_).');
+      return;
+    }
+
+    if (!/^[a-zA-Z0-9._]+$/.test(nickname)) {
+      console.log('❌ SIGNUP DEBUG: Validation failed - nickname contains invalid characters');
+      Alert.alert('Invalid Nickname', 'Nickname can only contain letters, numbers, dots (.), and underscores (_).');
       return;
     }
 
@@ -324,13 +350,20 @@ export default function SignUpScreen() {
 
           {/* Form */}
           <ThemedView variant="card" style={styles.formCard}>
-            <ThemedInput
-              placeholder="First Name"
-              value={formData.nickname}
-              onChangeText={(text) => setFormData({ ...formData, nickname: text })}
-              icon={<Ionicons name="person-outline" size={24} color={theme.colors.textSecondary} />}
-              style={{ marginBottom: 20 }}
-            />
+            <View style={{ marginBottom: 20 }}>
+              <ThemedInput
+                placeholder="First Name"
+                value={formData.nickname}
+                onChangeText={(text) => handleInputChange('nickname', text)}
+                icon={<Ionicons name="person-outline" size={24} color={theme.colors.textSecondary} />}
+                style={{ marginBottom: errors.nickname ? 5 : 0 }}
+              />
+              {errors.nickname ? (
+                <ThemedText variant="caption" style={[styles.errorText, { color: theme.colors.error }]}>
+                  {errors.nickname}
+                </ThemedText>
+              ) : null}
+            </View>
             <View style={{ marginBottom: 20 }}>
               <ThemedInput
                 placeholder="Username"
