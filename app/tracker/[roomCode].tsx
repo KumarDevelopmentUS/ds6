@@ -5,7 +5,7 @@ import { HapticBackButton } from '@/components/HapticBackButton';
 import { supabase } from '@/supabase';
 import * as Clipboard from 'expo-clipboard';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   Alert,
   ScrollView,
@@ -201,8 +201,8 @@ const DieStatsTracker: React.FC = () => {
       router.replace(`/tracker/${roomCodeString}`);
     }
 
-    // Set the join link for sharing - clean join URL
-    setJoinLink(`${process.env.EXPO_PUBLIC_APP_URL || 'https://ds6-pi.vercel.app'}/tracker/join/${roomCodeString}`);
+    // Set the join link for sharing - using query parameters
+    setJoinLink(`${process.env.EXPO_PUBLIC_APP_URL || 'https://ds6-pi.vercel.app'}/tracker/join?roomCode=${roomCodeString}`);
   }, [roomCode, roomCodeString, router]);
 
   // Effect to manage Supabase authentication session directly within this component
@@ -238,9 +238,6 @@ const DieStatsTracker: React.FC = () => {
     // Only proceed if auth is not loading and we have a roomCode string
     if (loadingAuth || !roomCodeString) return;
 
-    // Debounce to prevent excessive calls
-    let timeoutId: ReturnType<typeof setTimeout>;
-    
     const loadExistingMatch = async () => {
       console.log(`Loading match for room ${roomCodeString}`);
 
@@ -279,23 +276,16 @@ const DieStatsTracker: React.FC = () => {
       }
     };
 
-    // Debounce the call by 500ms to prevent rapid successive calls
-    timeoutId = setTimeout(loadExistingMatch, 500);
-    
-    return () => clearTimeout(timeoutId);
+    loadExistingMatch();
   }, [roomCodeString, currentUser, loadingAuth]); // Depend on roomCodeString, currentUser, and loadingAuth
 
-  // Throttled Supabase Realtime listener for live match updates
+  // Supabase Realtime listener for live match updates
   useEffect(() => {
     if (!liveSessionId) {
       return;
     }
 
-    console.log(`Setting up throttled live subscription`);
-    
-    // Throttle updates to once every 3 seconds
-    let lastUpdateTime = 0;
-    const THROTTLE_DELAY = 3000; // 3 seconds
+    console.log(`Setting up live subscription`);
 
     const subscription = supabase
       .channel(`live_match:${liveSessionId}`)
@@ -307,13 +297,7 @@ const DieStatsTracker: React.FC = () => {
           filter: `id=eq.${liveSessionId}`
         },
         (payload) => {
-          const now = Date.now();
-          if (now - lastUpdateTime < THROTTLE_DELAY) {
-            return; // Skip this update
-          }
-          lastUpdateTime = now;
-          
-          console.log('Applying throttled update');
+          console.log('Applying live update');
           const updatedMatch = payload.new as LiveMatch;
 
           // Update local state with live data
@@ -510,7 +494,7 @@ const DieStatsTracker: React.FC = () => {
     }
   };
 
-  // Throttled function to update live match data in Supabase
+  // Function to update live match data in Supabase
   const updateLiveMatchData = useCallback(async () => {
     if (!liveSessionId) {
       return;
@@ -530,21 +514,12 @@ const DieStatsTracker: React.FC = () => {
         console.error('Error syncing match data:', error.message);
         setErrorMessage('Failed to sync play data');
       } else {
-        console.log('Match data synced');
+        console.log('Match data synced immediately');
       }
     } catch (error) {
       console.error('Error syncing play:', error);
     }
   }, [liveSessionId, playerStats, teamPenalties, userSlotMap]);
-
-  // Debounced version to prevent excessive database calls
-  const debouncedUpdateLiveMatchData = useMemo(() => {
-    let timeoutId: ReturnType<typeof setTimeout>;
-    return () => {
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(updateLiveMatchData, 2000); // Wait 2 seconds before updating
-    };
-  }, [updateLiveMatchData]);
 
   // Helper function to check if in Match Point, Advantage, or Overtime
   const getGameState = () => {

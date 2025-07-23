@@ -3,11 +3,5 @@
   "outputDirectory": "dist",
   "devCommand": "npx expo start --web",
   "installCommand": "npm install",
-  "framework": null,
-  "rewrites": [
-    {
-      "source": "/tracker/join/:roomCode",
-      "destination": "/tracker/join?roomCode=$1"
-    }
-  ]
+  "framework": null
 } 

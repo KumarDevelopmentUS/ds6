@@ -1,8 +1,8 @@
 // app/camera.tsx
+import { HapticBackButton } from '@/components/HapticBackButton';
 import { Ionicons } from '@expo/vector-icons';
 import { CameraType, CameraView, useCameraPermissions } from 'expo-camera';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { HapticBackButton } from '@/components/HapticBackButton';
 import React, { useEffect, useRef, useState } from 'react';
 import {
     ActivityIndicator,
@@ -79,7 +79,7 @@ export default function CameraScreen() {
 
       // Navigate back to create-post with the photo AND preserved form data
       router.navigate({
-        pathname: formData.returnPath,
+        pathname: formData.returnPath as any,
         params: { 
           photoUri: picture.uri,
           // Preserve all form data
@@ -141,7 +141,7 @@ export default function CameraScreen() {
             onPress={() => {
               // Preserve form data when going back from permission screen
               router.navigate({
-                pathname: formData.returnPath,
+                pathname: formData.returnPath as any,
                 params: {
                   title: formData.title,
                   content: formData.content,
@@ -163,7 +163,7 @@ export default function CameraScreen() {
         <HapticBackButton onPress={() => {
           // Preserve form data even when going back without taking a photo
           router.navigate({
-            pathname: formData.returnPath,
+            pathname: formData.returnPath as any,
             params: {
               title: formData.title,
               content: formData.content,
