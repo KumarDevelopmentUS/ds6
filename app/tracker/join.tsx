@@ -51,6 +51,8 @@ export default function JoinMatchScreen() {
   const [isJoining, setIsJoining] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [showLogin, setShowLogin] = useState(false);
+  const [selectedPlayer, setSelectedPlayer] = useState<number | null>(null);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   
   // Auth state for login
   const [email, setEmail] = useState('');
@@ -405,7 +407,10 @@ export default function JoinMatchScreen() {
                       isSlotTaken && styles.playerSlotTaken,
                       isMySlot && styles.playerSlotMine,
                     ]}
-                    onPress={() => handleJoinAsPlayer(playerId)}
+                    onPress={() => {
+                      setSelectedPlayer(playerId);
+                      setShowConfirmDialog(true);
+                    }}
                     disabled={isJoining || isSlotTaken}
                   >
                     <Text style={[
@@ -450,8 +455,8 @@ export default function JoinMatchScreen() {
         {/* Navigation */}
         <View style={styles.navButtons}>
           <ThemedButton
-            title="View Match"
-            onPress={() => router.push(`/tracker/${roomCode}`)}
+            title="View Scoreboard"
+            onPress={() => router.push(`/tracker/scoreboard?roomCode=${roomCode}`)}
             variant="outline"
             style={styles.navButton}
           />
@@ -462,6 +467,41 @@ export default function JoinMatchScreen() {
             style={styles.navButton}
           />
         </View>
+
+        {/* Confirmation Dialog */}
+        {showConfirmDialog && selectedPlayer && (
+          <View style={styles.overlay}>
+            <View style={styles.confirmDialog}>
+              <ThemedText variant="subtitle" style={styles.confirmTitle}>
+                Confirm Player Selection
+              </ThemedText>
+              <ThemedText variant="body" style={styles.confirmMessage}>
+                Are you sure you want to join as {liveMatch?.matchSetup.playerNames[selectedPlayer - 1]} (Player {selectedPlayer})?
+              </ThemedText>
+              <View style={styles.confirmButtons}>
+                <ThemedButton
+                  title="Cancel"
+                  onPress={() => {
+                    setShowConfirmDialog(false);
+                    setSelectedPlayer(null);
+                  }}
+                  variant="outline"
+                  style={styles.confirmButton}
+                />
+                <ThemedButton
+                  title="Confirm"
+                  onPress={() => {
+                    setShowConfirmDialog(false);
+                    handleJoinAsPlayer(selectedPlayer);
+                    setSelectedPlayer(null);
+                  }}
+                  loading={isJoining}
+                  style={styles.confirmButton}
+                />
+              </View>
+            </View>
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -583,6 +623,40 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   button: {
+    flex: 1,
+  },
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  confirmDialog: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 24,
+    margin: 20,
+    maxWidth: 400,
+    width: '90%',
+  },
+  confirmTitle: {
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  confirmMessage: {
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  confirmButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  confirmButton: {
     flex: 1,
   },
 }); 

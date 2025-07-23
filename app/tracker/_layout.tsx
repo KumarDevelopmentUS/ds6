@@ -19,6 +19,12 @@ export default function TrackerLayout() {
           presentation: 'modal',
         }}
       />
+      <Stack.Screen
+        name="scoreboard"
+        options={{
+          headerShown: false,
+        }}
+      />
     </Stack>
   );
 }
