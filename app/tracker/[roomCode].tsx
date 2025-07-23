@@ -1,4 +1,4 @@
-// app/tracker/[roomCode].tsx
+// app/tracker/[roomCode]/page.tsx
 'use client';
 
 import { HapticBackButton } from '@/components/HapticBackButton';
@@ -19,7 +19,7 @@ import QRCodeSVG from 'react-native-qrcode-svg';
 
 // Simple ID generator for room codes
 const generateId = (length: number = 6): string => {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'; // Only capital letters
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   let result = '';
   for (let i = 0; i < length; i++) {
     result += chars.charAt(Math.floor(Math.random() * chars.length));
@@ -99,7 +99,7 @@ interface LiveMatch {
 
 const DieStatsTracker: React.FC = () => {
   const { roomCode } = useLocalSearchParams();
-  const roomCodeString = Array.isArray(roomCode) ? roomCode[0].toUpperCase() : (roomCode || generateId(6)).toUpperCase();
+  const roomCodeString = Array.isArray(roomCode) ? roomCode[0] : roomCode || generateId(6);
   const router = useRouter();
 
   // Core game state, initialized with default values

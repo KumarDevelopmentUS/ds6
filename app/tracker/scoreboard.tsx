@@ -55,7 +55,6 @@ interface LiveMatch {
 
 export default function ScoreboardScreen() {
   const { roomCode } = useLocalSearchParams();
-  const upperRoomCode = Array.isArray(roomCode) ? roomCode[0].toUpperCase() : (roomCode || '').toUpperCase();
   const router = useRouter();
   const { theme } = useTheme();
   
@@ -88,13 +87,13 @@ export default function ScoreboardScreen() {
 
   // Load match data
   const loadMatchData = useCallback(async () => {
-    if (!upperRoomCode || Array.isArray(upperRoomCode)) return;
+    if (!roomCode || Array.isArray(roomCode)) return;
     
     try {
       const { data, error } = await supabase
         .from('live_matches')
         .select('*')
-        .eq('roomCode', upperRoomCode)
+        .eq('roomCode', roomCode)
         .in('status', ['waiting', 'active', 'finished'])
         .single();
 
@@ -122,7 +121,7 @@ export default function ScoreboardScreen() {
       console.error('Error loading match:', error);
       setErrorMessage('Failed to load match data');
     }
-  }, [upperRoomCode]);
+  }, [roomCode]);
 
   // Initial load
   useEffect(() => {
@@ -188,7 +187,7 @@ export default function ScoreboardScreen() {
         <View style={styles.centerContainer}>
           <ThemedText variant="title" color="error">Match Not Found</ThemedText>
           <ThemedText variant="body" style={styles.errorText}>
-            {errorMessage || `The match with room code "${upperRoomCode}" could not be found.`}
+            {errorMessage || `The match with room code "${roomCode}" could not be found.`}
           </ThemedText>
         </View>
       </SafeAreaView>
@@ -215,7 +214,7 @@ export default function ScoreboardScreen() {
         <ThemedView variant="card" style={styles.matchHeader}>
           <ThemedText variant="title">{liveMatch.matchSetup.title}</ThemedText>
           <ThemedText variant="subtitle">{liveMatch.matchSetup.arena}</ThemedText>
-          <ThemedText variant="caption">Room: {upperRoomCode}</ThemedText>
+          <ThemedText variant="caption">Room: {roomCode}</ThemedText>
           <ThemedText variant="caption">
             Status: {liveMatch.status === 'waiting' ? 'Waiting to Start' : 
                     liveMatch.status === 'active' ? 'In Progress' : 'Finished'}

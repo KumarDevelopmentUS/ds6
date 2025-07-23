@@ -9,8 +9,9 @@ import { supabase } from '@/supabase';
 import { debugFeedProvider, debugRLSPolicies, debugUserCommunities, forceFeedRefetch, joinCommunityManually, refreshFeedCache, testDatabaseConnection } from '@/utils/profileSync';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { nanoid } from 'nanoid/non-secure';
 import React, { useEffect, useState } from 'react';
-import { Alert, SafeAreaView, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Modal, Platform, SafeAreaView, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 
 // Array of fun dice facts
 const diceFacts = [
@@ -59,6 +60,17 @@ const diceFacts = [
   "The first electronic dice were invented in 1975 for early computer gaming systems.",
   "Are you still rolling through these facts? You must really love the randomness of knowledge!",
   "In ancient China, dice were used to predict the future and fortune-telling.",
+  "The probability of rolling a 12 with two dice is 1 in 36, or about 2.78%.",
+  "The probability of rolling a 10 with two dice is 1 in 12, or about 8.33%.",
+  "The probability of rolling a 9 with two dice is 1 in 12, or about 8.33%.",
+  "The probability of rolling a 8 with two dice is 1 in 12, or about 8.33%.",
+  "The probability of rolling a 7 with two dice is 1 in 6, or about 16.67%.",
+  "The probability of rolling a 6 with two dice is 1 in 6, or about 16.67%.",
+  "The probability of rolling a 5 with two dice is 1 in 6, or about 16.67%.",
+  "The probability of rolling a 4 with two dice is 1 in 6, or about 16.67%.",
+  "The probability of rolling a 3 with two dice is 1 in 6, or about 16.67%.",
+  "The probability of rolling a 2 with two dice is 1 in 6, or about 16.67%.",
+  "The probability of rolling a 1 with two dice is 1 in 6, or about 16.67%.",
 ];
 
 export default function MainMenuScreen() {
@@ -72,6 +84,10 @@ export default function MainMenuScreen() {
     avgScore: 0,
   });
   const [randomFact, setRandomFact] = useState('');
+  
+  // Web modal state for join room
+  const [showJoinModal, setShowJoinModal] = useState(false);
+  const [roomCodeInput, setRoomCodeInput] = useState('');
 
   useEffect(() => {
     loadUserData();
@@ -186,12 +202,7 @@ export default function MainMenuScreen() {
   };
 
   const handleQuickStart = () => {
-    // Generate room code with only capital letters
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    let roomCode = '';
-    for (let i = 0; i < 6; i++) {
-      roomCode += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
+    const roomCode = nanoid(6);
     router.push({
       pathname: '/tracker/[roomCode]',
       params: { roomCode },
@@ -199,22 +210,32 @@ export default function MainMenuScreen() {
   };
 
   const handleJoinRoom = () => {
-    Alert.prompt(
-      'Join Room',
-      'Enter room code:',
-      code => {
-        if (code && code.length === 6) {
-          const upperCode = code.toUpperCase(); // Convert to uppercase
-          router.push({
-            pathname: '/tracker/[roomCode]',
-            params: { roomCode: upperCode },
-          } as any);
-        } else {
-          Alert.alert('Invalid Code', 'Room code must be 6 characters');
-        }
-      },
-      'plain-text'
-    );
+    if (Platform.OS === 'web') {
+      setShowJoinModal(true);
+    } else {
+      Alert.prompt(
+        'Join Room',
+        'Enter room code:',
+        code => {
+          if (code && code.length === 6) {
+            router.push(`/tracker/join?roomCode=${code}`);
+          } else {
+            Alert.alert('Invalid Code', 'Room code must be 6 characters');
+          }
+        },
+        'plain-text'
+      );
+    }
+  };
+
+  const handleWebJoinRoom = () => {
+    if (roomCodeInput.length === 6) {
+      setShowJoinModal(false);
+      setRoomCodeInput('');
+      router.push(`/tracker/join?roomCode=${roomCodeInput}`);
+    } else {
+      Alert.alert('Invalid Code', 'Room code must be 6 characters');
+    }
   };
 
   const handleAuthRequired = (action: string) => {
@@ -439,6 +460,53 @@ export default function MainMenuScreen() {
         </ThemedView>
       )}
       </ScrollView>
+
+      {/* Web Join Room Modal */}
+      {Platform.OS === 'web' && (
+        <Modal
+          visible={showJoinModal}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setShowJoinModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <ThemedView variant="card" style={styles.modalContent}>
+              <ThemedText variant="subtitle" style={styles.modalTitle}>
+                Join Room
+              </ThemedText>
+              <ThemedText variant="body" style={styles.modalDescription}>
+                Enter room code:
+              </ThemedText>
+              <TextInput
+                style={styles.modalInput}
+                value={roomCodeInput}
+                onChangeText={setRoomCodeInput}
+                placeholder="Room code (6 characters)"
+                maxLength={6}
+                autoCapitalize="characters"
+                autoFocus={true}
+              />
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.modalButtonSecondary]}
+                  onPress={() => {
+                    setShowJoinModal(false);
+                    setRoomCodeInput('');
+                  }}
+                >
+                  <ThemedText variant="body">Cancel</ThemedText>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.modalButtonPrimary]}
+                  onPress={handleWebJoinRoom}
+                >
+                  <ThemedText variant="body" style={{ color: '#fff' }}>Join</ThemedText>
+                </TouchableOpacity>
+              </View>
+            </ThemedView>
+          </View>
+        </Modal>
+      )}
     </SafeAreaView>
   );
 }
@@ -528,5 +596,54 @@ const styles = StyleSheet.create({
   debugButton: {
     flex: 1,
     minWidth: 100,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    width: '100%',
+    maxWidth: 400,
+    padding: 24,
+    borderRadius: 12,
+  },
+  modalTitle: {
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  modalDescription: {
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    marginBottom: 20,
+    textAlign: 'center',
+    textTransform: 'uppercase',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  modalButton: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  modalButtonSecondary: {
+    backgroundColor: '#f5f5f5',
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  modalButtonPrimary: {
+    backgroundColor: '#007AFF',
   },
 });

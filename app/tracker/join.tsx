@@ -37,14 +37,11 @@ interface LiveMatch {
   participants: string[];
   userSlotMap: { [key: string]: string | null };
   livePlayerStats: any;
-  liveTeamPenalties: { 1: number; 2: number };
   matchStartTime: string | null;
-  winnerTeam: number | null;
 }
 
 export default function JoinMatchScreen() {
   const { roomCode } = useLocalSearchParams();
-  const upperRoomCode = Array.isArray(roomCode) ? roomCode[0].toUpperCase() : (roomCode || '').toUpperCase();
   const router = useRouter();
   const { session } = useAuth();
   const { theme } = useTheme();
@@ -64,14 +61,15 @@ export default function JoinMatchScreen() {
   const [username, setUsername] = useState('');
 
   // Load live match data
-  const loadMatchData = useCallback(async () => {
-    if (!upperRoomCode || Array.isArray(upperRoomCode)) return;
+  const loadLiveMatch = useCallback(async () => {
+    if (!roomCode || Array.isArray(roomCode)) return;
     
+    setIsLoading(true);
     try {
       const { data, error } = await supabase
         .from('live_matches')
         .select('*')
-        .eq('roomCode', upperRoomCode)
+        .eq('roomCode', roomCode)
         .in('status', ['waiting', 'active'])
         .single();
 
@@ -87,26 +85,33 @@ export default function JoinMatchScreen() {
       setLiveMatch({
         id: data.id,
         roomCode: data.roomCode,
-        hostId: data.hostId || '',
+        hostId: data.hostId,
         status: data.status,
-        matchSetup: data.matchSetup,
-        livePlayerStats: data.livePlayerStats || {},
-        liveTeamPenalties: data.liveTeamPenalties || { 1: 0, 2: 0 },
-        matchStartTime: data.matchStartTime,
-        winnerTeam: data.winnerTeam,
+        matchSetup: data.matchSetup || {
+          title: 'Match',
+          arena: 'Arena',
+          playerNames: ['Player1', 'Player2', 'Player3', 'Player4'],
+          teamNames: ['Team 1', 'Team 2'],
+          gameScoreLimit: 11,
+          sinkPoints: 3,
+          winByTwo: true,
+        },
         participants: data.participants || [],
         userSlotMap: data.userSlotMap || {},
+        livePlayerStats: data.livePlayerStats || {},
+        matchStartTime: data.matchStartTime,
       });
-      setErrorMessage('');
     } catch (error) {
-      console.error('Error loading match:', error);
-      setErrorMessage('Failed to load match data');
+      console.error('Error loading live match:', error);
+      setErrorMessage('Failed to load match');
+    } finally {
+      setIsLoading(false);
     }
-  }, [upperRoomCode]);
+  }, [roomCode]);
 
   useEffect(() => {
-    loadMatchData();
-  }, [loadMatchData]);
+    loadLiveMatch();
+  }, [loadLiveMatch]);
 
   // Handle authentication
   const handleLogin = async () => {
@@ -223,7 +228,7 @@ export default function JoinMatchScreen() {
       Alert.alert('Success', `You have successfully joined as ${nickname}!`, [
         {
           text: 'Go to Match',
-          onPress: () => router.push(`/tracker/${upperRoomCode}`)
+          onPress: () => router.push(`/tracker/${roomCode}`)
         }
       ]);
       
@@ -255,7 +260,7 @@ export default function JoinMatchScreen() {
 
       if (error) throw error;
 
-      router.push(`/tracker/${upperRoomCode}`);
+      router.push(`/tracker/${roomCode}`);
     } catch (error: any) {
       console.error('Error joining as spectator:', error);
       setErrorMessage('Failed to join as spectator: ' + error.message);
@@ -310,7 +315,7 @@ export default function JoinMatchScreen() {
           <ThemedText variant="title">Join Match</ThemedText>
           <ThemedText variant="subtitle">{liveMatch.matchSetup.title}</ThemedText>
           <ThemedText variant="body">{liveMatch.matchSetup.arena}</ThemedText>
-          <ThemedText variant="caption">Room Code: {upperRoomCode}</ThemedText>
+          <ThemedText variant="caption">Room Code: {roomCode}</ThemedText>
           <ThemedText variant="caption">
             Status: {liveMatch.status === 'waiting' ? 'Waiting to Start' : 'In Progress'}
           </ThemedText>
@@ -333,7 +338,7 @@ export default function JoinMatchScreen() {
                 />
                 <ThemedButton
                   title="Continue as Guest"
-                  onPress={() => router.push(`/tracker/${upperRoomCode}`)}
+                  onPress={() => router.push(`/tracker/${roomCode}`)}
                   variant="outline"
                   style={styles.button}
                 />
@@ -451,7 +456,7 @@ export default function JoinMatchScreen() {
         <View style={styles.navButtons}>
           <ThemedButton
             title="View Scoreboard"
-            onPress={() => router.push(`/tracker/scoreboard?roomCode=${upperRoomCode}`)}
+            onPress={() => router.push(`/tracker/scoreboard?roomCode=${roomCode}`)}
             variant="outline"
             style={styles.navButton}
           />
