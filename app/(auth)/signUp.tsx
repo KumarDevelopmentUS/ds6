@@ -1,11 +1,11 @@
 // app/(auth)/signUp.tsx
+import { HapticBackButton } from '@/components/HapticBackButton';
 import { SCHOOLS, searchSchools } from '@/constants/schools';
 import { supabase } from '@/supabase';
 import { ensureUserProfilesExist, joinDefaultCommunity } from '@/utils/profileSync';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { HapticBackButton } from '@/components/HapticBackButton';
 import {
     Alert,
     FlatList,
@@ -40,6 +40,12 @@ export default function SignUpScreen() {
   const [showSchoolPicker, setShowSchoolPicker] = useState(false);
   const [schoolSearch, setSchoolSearch] = useState('');
   const [filteredSchools, setFilteredSchools] = useState(SCHOOLS);
+  const [errors, setErrors] = useState({
+    username: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+  });
 
   const handleSchoolSearch = (text: string) => {
     setSchoolSearch(text);
@@ -51,6 +57,64 @@ export default function SignUpScreen() {
     setFormData({ ...formData, school: school.value, schoolName: school.name });
     setShowSchoolPicker(false);
     setSchoolSearch('');
+  };
+
+  const validateUsername = (username: string) => {
+    if (username.length > 0 && username.length < 5) {
+      return 'Username must be at least 5 characters long';
+    }
+    return '';
+  };
+
+  const validateEmail = (email: string) => {
+    if (email.length > 0 && email.toLowerCase().endsWith('.edu')) {
+      return 'Educational (.edu) email addresses are not permitted';
+    }
+    return '';
+  };
+
+  const validatePassword = (password: string) => {
+    if (password.length > 0 && password.length < 6) {
+      return 'Password must be at least 6 characters long';
+    }
+    return '';
+  };
+
+  const validateConfirmPassword = (password: string, confirmPassword: string) => {
+    if (confirmPassword.length > 0 && password !== confirmPassword) {
+      return 'Passwords do not match';
+    }
+    return '';
+  };
+
+  const handleInputChange = (field: string, value: string) => {
+    setFormData({ ...formData, [field]: value });
+    
+    // Real-time validation
+    let error = '';
+    switch (field) {
+      case 'username':
+        error = validateUsername(value);
+        break;
+      case 'email':
+        error = validateEmail(value);
+        break;
+      case 'password':
+        error = validatePassword(value);
+        // Also validate confirm password if it exists
+        if (formData.confirmPassword) {
+          setErrors(prev => ({ 
+            ...prev, 
+            confirmPassword: validateConfirmPassword(value, formData.confirmPassword) 
+          }));
+        }
+        break;
+      case 'confirmPassword':
+        error = validateConfirmPassword(formData.password, value);
+        break;
+    }
+    
+    setErrors(prev => ({ ...prev, [field]: error }));
   };
 
   const handleSignUp = async () => {
@@ -80,6 +144,18 @@ export default function SignUpScreen() {
     if (password.length < 6) {
       console.log('❌ SIGNUP DEBUG: Validation failed - password too short');
       Alert.alert('Weak Password', 'Password must be at least 6 characters long.');
+      return;
+    }
+
+    if (username.length < 5) {
+      console.log('❌ SIGNUP DEBUG: Validation failed - username too short');
+      Alert.alert('Username Too Short', 'Username must be at least 5 characters long.');
+      return;
+    }
+
+    if (email.toLowerCase().endsWith('.edu')) {
+      console.log('❌ SIGNUP DEBUG: Validation failed - .edu email not allowed');
+      Alert.alert('Email Not Allowed', 'Educational (.edu) email addresses are not permitted for registration.');
       return;
     }
 
@@ -227,39 +303,67 @@ export default function SignUpScreen() {
               icon={<Ionicons name="person-outline" size={24} color={theme.colors.textSecondary} />}
               style={{ marginBottom: 20 }}
             />
-            <ThemedInput
-              placeholder="Username"
-              value={formData.username}
-              onChangeText={(text) => setFormData({ ...formData, username: text })}
-              autoCapitalize="none"
-              icon={<Ionicons name="at" size={24} color={theme.colors.textSecondary} />}
-              style={{ marginBottom: 20 }}
-            />
-            <ThemedInput
-              placeholder="Email"
-              value={formData.email}
-              onChangeText={(text) => setFormData({ ...formData, email: text })}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              icon={<Ionicons name="mail-outline" size={24} color={theme.colors.textSecondary} />}
-              style={{ marginBottom: 20 }}
-            />
-            <ThemedInput
-              placeholder="Password"
-              value={formData.password}
-              onChangeText={(text) => setFormData({ ...formData, password: text })}
-              secureTextEntry
-              icon={<Ionicons name="lock-closed-outline" size={24} color={theme.colors.textSecondary} />}
-              style={{ marginBottom: 20 }}
-            />
-            <ThemedInput
-              placeholder="Confirm Password"
-              value={formData.confirmPassword}
-              onChangeText={(text) => setFormData({ ...formData, confirmPassword: text })}
-              secureTextEntry
-              icon={<Ionicons name="lock-closed-outline" size={24} color={theme.colors.textSecondary} />}
-              style={{ marginBottom: 20 }}
-            />
+            <View style={{ marginBottom: 20 }}>
+              <ThemedInput
+                placeholder="Username"
+                value={formData.username}
+                onChangeText={(text) => handleInputChange('username', text)}
+                autoCapitalize="none"
+                icon={<Ionicons name="at" size={24} color={theme.colors.textSecondary} />}
+                style={{ marginBottom: errors.username ? 5 : 0 }}
+              />
+              {errors.username ? (
+                <ThemedText variant="caption" style={[styles.errorText, { color: theme.colors.error }]}>
+                  {errors.username}
+                </ThemedText>
+              ) : null}
+            </View>
+            <View style={{ marginBottom: 20 }}>
+              <ThemedInput
+                placeholder="Email"
+                value={formData.email}
+                onChangeText={(text) => handleInputChange('email', text)}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                icon={<Ionicons name="mail-outline" size={24} color={theme.colors.textSecondary} />}
+                style={{ marginBottom: errors.email ? 5 : 0 }}
+              />
+              {errors.email ? (
+                <ThemedText variant="caption" style={[styles.errorText, { color: theme.colors.error }]}>
+                  {errors.email}
+                </ThemedText>
+              ) : null}
+            </View>
+            <View style={{ marginBottom: 20 }}>
+              <ThemedInput
+                placeholder="Password"
+                value={formData.password}
+                onChangeText={(text) => handleInputChange('password', text)}
+                secureTextEntry
+                icon={<Ionicons name="lock-closed-outline" size={24} color={theme.colors.textSecondary} />}
+                style={{ marginBottom: errors.password ? 5 : 0 }}
+              />
+              {errors.password ? (
+                <ThemedText variant="caption" style={[styles.errorText, { color: theme.colors.error }]}>
+                  {errors.password}
+                </ThemedText>
+              ) : null}
+            </View>
+            <View style={{ marginBottom: 20 }}>
+              <ThemedInput
+                placeholder="Confirm Password"
+                value={formData.confirmPassword}
+                onChangeText={(text) => handleInputChange('confirmPassword', text)}
+                secureTextEntry
+                icon={<Ionicons name="lock-closed-outline" size={24} color={theme.colors.textSecondary} />}
+                style={{ marginBottom: errors.confirmPassword ? 5 : 0 }}
+              />
+              {errors.confirmPassword ? (
+                <ThemedText variant="caption" style={[styles.errorText, { color: theme.colors.error }]}>
+                  {errors.confirmPassword}
+                </ThemedText>
+              ) : null}
+            </View>
 
             {/* School Selector */}
             <TouchableOpacity
@@ -461,5 +565,10 @@ const styles = StyleSheet.create({
   emptyContainer: {
     paddingVertical: 40,
     alignItems: 'center',
+  },
+  errorText: {
+    fontSize: 12,
+    fontWeight: '500',
+    marginTop: 5,
   },
 });
