@@ -304,7 +304,7 @@ export default function MainMenuScreen() {
         <ThemedButton
           title="Join Room"
           variant="outline"
-          onPress={() => router.push('/tracker/join')}
+          onPress={handleJoinRoom}
           size="large"
           icon={
             <Ionicons
