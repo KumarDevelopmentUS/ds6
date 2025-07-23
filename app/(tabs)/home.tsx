@@ -9,9 +9,18 @@ import { supabase } from '@/supabase';
 import { debugFeedProvider, debugRLSPolicies, debugUserCommunities, forceFeedRefetch, joinCommunityManually, refreshFeedCache, testDatabaseConnection } from '@/utils/profileSync';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { nanoid } from 'nanoid/non-secure';
 import React, { useEffect, useState } from 'react';
 import { Alert, Modal, Platform, SafeAreaView, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+
+// Custom room code generator that only uses capital letters
+const generateRoomCode = (length: number = 6): string => {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'; // Only capital letters
+  let result = '';
+  for (let i = 0; i < length; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+};
 
 // Array of fun dice facts
 const diceFacts = [
@@ -202,7 +211,7 @@ export default function MainMenuScreen() {
   };
 
   const handleQuickStart = () => {
-    const roomCode = nanoid(6);
+    const roomCode = generateRoomCode();
     router.push({
       pathname: '/tracker/[roomCode]',
       params: { roomCode },
@@ -217,10 +226,13 @@ export default function MainMenuScreen() {
         'Join Room',
         'Enter room code:',
         code => {
-          if (code && code.length === 6) {
-            router.push(`/tracker/join?roomCode=${code}`);
-          } else {
-            Alert.alert('Invalid Code', 'Room code must be 6 characters');
+          if (code) {
+            const cleanCode = code.toUpperCase().replace(/[^A-Z]/g, ''); // Only allow capital letters
+            if (cleanCode.length === 6) {
+              router.push(`/tracker/join?roomCode=${cleanCode}`);
+            } else {
+              Alert.alert('Invalid Code', 'Room code must be 6 capital letters');
+            }
           }
         },
         'plain-text'
@@ -229,13 +241,19 @@ export default function MainMenuScreen() {
   };
 
   const handleWebJoinRoom = () => {
-    if (roomCodeInput.length === 6) {
+    const cleanCode = roomCodeInput.replace(/[^A-Z]/g, ''); // Only allow capital letters
+    if (cleanCode.length === 6) {
       setShowJoinModal(false);
       setRoomCodeInput('');
-      router.push(`/tracker/join?roomCode=${roomCodeInput}`);
+      router.push(`/tracker/join?roomCode=${cleanCode}`);
     } else {
-      Alert.alert('Invalid Code', 'Room code must be 6 characters');
+      Alert.alert('Invalid Code', 'Room code must be 6 capital letters');
     }
+  };
+
+  const handleRoomCodeInput = (text: string) => {
+    const upperText = text.toUpperCase().replace(/[^A-Z]/g, ''); // Convert to uppercase and filter
+    setRoomCodeInput(upperText);
   };
 
   const handleAuthRequired = (action: string) => {
@@ -475,16 +493,18 @@ export default function MainMenuScreen() {
                 Join Room
               </ThemedText>
               <ThemedText variant="body" style={styles.modalDescription}>
-                Enter room code:
+                Enter room code (6 capital letters):
               </ThemedText>
               <TextInput
                 style={styles.modalInput}
                 value={roomCodeInput}
-                onChangeText={setRoomCodeInput}
-                placeholder="Room code (6 characters)"
+                onChangeText={handleRoomCodeInput}
+                placeholder="ABCDEF"
                 maxLength={6}
                 autoCapitalize="characters"
                 autoFocus={true}
+                autoComplete="off"
+                autoCorrect={false}
               />
               <View style={styles.modalButtons}>
                 <TouchableOpacity

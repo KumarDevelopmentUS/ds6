@@ -19,7 +19,7 @@ import QRCodeSVG from 'react-native-qrcode-svg';
 
 // Simple ID generator for room codes
 const generateId = (length: number = 6): string => {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'; // Only capital letters
   let result = '';
   for (let i = 0; i < length; i++) {
     result += chars.charAt(Math.floor(Math.random() * chars.length));
