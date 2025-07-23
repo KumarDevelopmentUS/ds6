@@ -7,6 +7,7 @@ import { fixUserCommunityMembership } from '@/utils/profileSync';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { HapticBackButton } from '@/components/HapticBackButton';
 import React, { useEffect, useState } from 'react';
 import {
     ActivityIndicator,
@@ -36,6 +37,7 @@ export default function CreatePostScreen() {
   const [selectedCommunity, setSelectedCommunity] = useState<number | null>(null);
   const [showMediaOptions, setShowMediaOptions] = useState(false);
   const [showCommunityFix, setShowCommunityFix] = useState(false);
+  const [isRestoringFromCamera, setIsRestoringFromCamera] = useState(false);
 
   const { createPost, isCreating } = useCreatePost();
   const { communities: userCommunityMemberships, isLoading: areCommunitiesLoading, error: communitiesError, refetch } = useFeed();
@@ -83,6 +85,7 @@ export default function CreatePostScreen() {
   // Check if we received data from the camera screen (photo + preserved form data)
   useEffect(() => {
     if (params.photoUri && typeof params.photoUri === 'string') {
+      setIsRestoringFromCamera(true); // Flag that we're restoring
       handleSetImage(params.photoUri);
       
       // Restore form data if it was preserved from camera navigation
@@ -106,6 +109,9 @@ export default function CreatePostScreen() {
         content: undefined,
         selectedCommunity: undefined
       });
+      
+      // Reset the flag after a short delay to allow effects to settle
+      setTimeout(() => setIsRestoringFromCamera(false), 100);
     }
   }, [params.photoUri, params.title, params.content, params.selectedCommunity]);
 
@@ -123,14 +129,15 @@ export default function CreatePostScreen() {
     setSelectedCommunity(null);
   };
 
+  // Auto-select first community if none selected (but not when restoring from camera)
   useEffect(() => {
-    if (userCommunityMemberships && userCommunityMemberships.length > 0 && !selectedCommunity) {
+    if (userCommunityMemberships && userCommunityMemberships.length > 0 && !selectedCommunity && !isRestoringFromCamera) {
       setSelectedCommunity(userCommunityMemberships[0].communities.id);
       setShowCommunityFix(false);
     } else if (!areCommunitiesLoading && (!userCommunityMemberships || userCommunityMemberships.length === 0)) {
       setShowCommunityFix(true);
     }
-  }, [userCommunityMemberships, selectedCommunity, areCommunitiesLoading]);
+  }, [userCommunityMemberships, selectedCommunity, areCommunitiesLoading, isRestoringFromCamera]);
 
   // Community membership fix function
   const fixCommunityMembership = async () => {
@@ -295,12 +302,12 @@ export default function CreatePostScreen() {
                   </Text>
                 </TouchableOpacity>
                 
-                <TouchableOpacity 
+                <HapticBackButton 
                   style={styles.backButton}
                   onPress={() => router.back()}
-                >
-                  <Text style={styles.backButtonText}>Go Back</Text>
-                </TouchableOpacity>
+                  text="Go Back"
+                  color="#007AFF"
+                />
               </View>
             </View>
           </ScrollView>
@@ -321,13 +328,12 @@ export default function CreatePostScreen() {
         >
           <View style={styles.container}>
             <View style={styles.header}>
-              <TouchableOpacity 
-                onPress={() => router.back()} 
-                style={styles.backButton}
-                accessibilityLabel="Go back"
-              >
-                <Ionicons name="arrow-back" size={24} color="#007AFF" />
-              </TouchableOpacity>
+                              <HapticBackButton 
+                  onPress={() => router.back()} 
+                  style={styles.backButton}
+                  color="#007AFF"
+                  text=""
+                />
               <Text style={styles.headerTitle}>Create Post</Text>
               <View style={styles.headerSpacer} />
             </View>

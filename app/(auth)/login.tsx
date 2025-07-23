@@ -8,6 +8,7 @@ import { supabase } from '@/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
+import { HapticBackButton } from '@/components/HapticBackButton';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -61,13 +62,12 @@ export default function LoginScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Back Button */}
-        <TouchableOpacity
+        <HapticBackButton
           onPress={handleBack}
           style={styles.backButton}
-        >
-          <Ionicons name="arrow-back" size={24} color="#3b82f6" />
-          <ThemedText style={styles.backText}>Home</ThemedText>
-        </TouchableOpacity>
+          color="#3b82f6"
+          text="Home"
+        />
 
         <ThemedView style={styles.content}>
           {/* Logo/Icon */}

@@ -1,4 +1,5 @@
 // app/(tabs)/_layout.tsx
+import { HapticTab } from '@/components/HapticTab';
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import React from 'react';
@@ -15,12 +16,14 @@ export default function TabLayout() {
           // tabBarStyle: { backgroundColor: '#fff' },
           // headerStyle: { backgroundColor: '#fff' },
           headerTitleStyle: { fontWeight: '600' },
+          tabBarButton: HapticTab,
         }}
       >
         <Tabs.Screen
           name="home"
           options={{
             title: 'Home',
+            headerShown: false,
             tabBarIcon: ({ color, size }) => (
               <Ionicons name="home-outline" color={color} size={size} />
             ),
@@ -40,6 +43,7 @@ export default function TabLayout() {
           name="settings"
           options={{
             title: 'Settings',
+            headerShown: false,
             tabBarIcon: ({ color, size }) => (
               <Ionicons name="settings-outline" color={color} size={size} />
             ),

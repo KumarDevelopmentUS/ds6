@@ -11,7 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { nanoid } from 'nanoid/non-secure';
 import React, { useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, SafeAreaView, ScrollView, StyleSheet, View } from 'react-native';
 
 // Array of fun dice facts
 const diceFacts = [
@@ -225,11 +225,11 @@ export default function MainMenuScreen() {
   };
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-    >
+    <SafeAreaView style={styles.container}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
       {/* Header */}
       <ThemedView style={styles.header}>
         <ThemedText variant="title">Hello, {userName}! 👋</ThemedText>
@@ -428,14 +428,16 @@ export default function MainMenuScreen() {
             />
           </View>
         </ThemedView>
-      )}
-    </ScrollView>
+              )}
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#f5f5f5',
   },
   content: {
     padding: 20,

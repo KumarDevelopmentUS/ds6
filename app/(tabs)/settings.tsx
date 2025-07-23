@@ -3,17 +3,19 @@ import { supabase } from '@/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Switch, TouchableOpacity, View } from 'react-native';
+import { Alert, SafeAreaView, ScrollView, StyleSheet, Switch, TouchableOpacity, View } from 'react-native';
 import { ThemedButton } from '../../components/themed/ThemedButton';
 import { ThemedText } from '../../components/themed/ThemedText';
 import { ThemedView } from '../../components/themed/ThemedView';
 import { useAuth } from '../../contexts/AuthContext';
 import { useFeed } from '../../contexts/FeedContext';
+import { useHaptics } from '../../contexts/HapticsContext';
 import { useTheme } from '../../contexts/ThemeContext';
 
 export default function AccountScreen() {
   const router = useRouter();
   const { theme, colorScheme, toggleColorScheme } = useTheme();
+  const { vibrationEnabled, setVibrationEnabled } = useHaptics();
   const { communities: userCommunities, isLoading: communitiesLoading } = useFeed();
   const { session } = useAuth();
   const [profile, setProfile] = useState<{
@@ -165,8 +167,8 @@ export default function AccountScreen() {
         },
         {
           label: 'Vibration',
-          value: true,
-          onToggle: () => {},
+          value: vibrationEnabled,
+          onToggle: setVibrationEnabled,
           type: 'switch' as const,
         },
       ],
@@ -190,11 +192,11 @@ export default function AccountScreen() {
   ];
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-    >
+    <SafeAreaView style={styles.container}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
       {/* User Info */}
       {session?.user && profile ? (
         <ThemedView variant="card" style={styles.userCard}>
@@ -377,12 +379,14 @@ export default function AccountScreen() {
         />
       )}
     </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#f5f5f5',
   },
   content: {
     padding: 20,

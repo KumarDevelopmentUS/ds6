@@ -2,6 +2,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { CameraType, CameraView, useCameraPermissions } from 'expo-camera';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { HapticBackButton } from '@/components/HapticBackButton';
 import React, { useEffect, useRef, useState } from 'react';
 import {
     ActivityIndicator,
@@ -159,7 +160,7 @@ export default function CameraScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => {
+        <HapticBackButton onPress={() => {
           // Preserve form data even when going back without taking a photo
           router.navigate({
             pathname: formData.returnPath,
@@ -169,9 +170,7 @@ export default function CameraScreen() {
               selectedCommunity: formData.selectedCommunity,
             }
           });
-        }} style={styles.headerButton}>
-          <Ionicons name="close" size={30} color="white" />
-        </TouchableOpacity>
+        }} style={styles.headerButton} color="white" text="" iconSize={30} />
         <Text style={styles.headerTitle}>Take a Photo</Text>
         <TouchableOpacity onPress={toggleCameraFacing} style={styles.headerButton}>
           <Ionicons name="camera-reverse-outline" size={30} color="white" />

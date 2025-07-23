@@ -1,9 +1,11 @@
 // app/tracker/[roomCode]/page.tsx
 'use client';
 
+import { HapticBackButton } from '@/components/HapticBackButton';
 import { supabase } from '@/supabase';
+import * as Clipboard from 'expo-clipboard';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   ScrollView,
@@ -127,6 +129,7 @@ const DieStatsTracker: React.FC = () => {
   const [userSlotMap, setUserSlotMap] = useState<{ [key: string]: string | null }>({});
 
 
+
   // UI state for managing different views and interactions
   const [isSetupVisible, setIsSetupVisible] = useState(true); // Control setup visibility, starts true
   const [showStats, setShowStats] = useState(false);
@@ -198,8 +201,8 @@ const DieStatsTracker: React.FC = () => {
       router.replace(`/tracker/${roomCodeString}`);
     }
 
-    // Set the join link for sharing
-    setJoinLink(`${process.env.EXPO_PUBLIC_APP_URL || 'https://yourapp.com'}/tracker/${roomCodeString}/join`);
+    // Set the join link for sharing - clean join URL
+    setJoinLink(`${process.env.EXPO_PUBLIC_APP_URL || 'https://ds6-pi.vercel.app'}/tracker/join/${roomCodeString}`);
   }, [roomCode, roomCodeString, router]);
 
   // Effect to manage Supabase authentication session directly within this component
@@ -230,63 +233,69 @@ const DieStatsTracker: React.FC = () => {
     };
   }, []); // Empty dependency array ensures this effect runs only once on mount
 
-  // Effect to load existing live match data when the component mounts or currentUser/roomCode changes
+  // Effect to check user access and load existing match data
   useEffect(() => {
     // Only proceed if auth is not loading and we have a roomCode string
     if (loadingAuth || !roomCodeString) return;
 
+    // Debounce to prevent excessive calls
+    let timeoutId: ReturnType<typeof setTimeout>;
+    
     const loadExistingMatch = async () => {
-      console.log(`DieStatsTracker: Checking for existing match with room code ${roomCodeString}`);
+      console.log(`Loading match for room ${roomCodeString}`);
 
       try {
         const { data, error } = await supabase
           .from('live_matches')
           .select('*')
           .eq('roomCode', roomCodeString)
-          .eq('status', 'active')
+          .in('status', ['waiting', 'active'])
           .single();
 
         if (error) {
-          // Ignore "no rows found" errors (PGRST116), log other errors
           if (error.code !== 'PGRST116') {
-            console.log('Error checking for active match:', error);
+            console.log('Error loading match:', error.message);
           }
-          // If no active match found, the setup section should remain visible
           setIsSetupVisible(true);
           return;
         }
 
         if (data) {
-          console.log('Found existing match:', data);
+          console.log('Match loaded successfully');
           setLiveSessionId(data.id);
           setMatchSetup(data.matchSetup);
           setPlayerStats(data.livePlayerStats);
           setTeamPenalties(data.liveTeamPenalties as { 1: number; 2: number });
           setMatchStartTime(data.matchStartTime ? new Date(data.matchStartTime) : null);
           setUserSlotMap(data.userSlotMap || {});
-          setIsSetupVisible(false); // Hide setup if an active match is loaded
+          setIsSetupVisible(false);
           
-          // Determine if the current user is the host
           if (currentUser && data.hostId === currentUser.id) {
             setIsHost(true);
           }
         }
       } catch (error) {
-        console.error('Error loading existing match:', error);
+        console.error('Error loading match:', error);
       }
     };
 
-    loadExistingMatch();
+    // Debounce the call by 500ms to prevent rapid successive calls
+    timeoutId = setTimeout(loadExistingMatch, 500);
+    
+    return () => clearTimeout(timeoutId);
   }, [roomCodeString, currentUser, loadingAuth]); // Depend on roomCodeString, currentUser, and loadingAuth
 
-  // Supabase Realtime listener for live match updates
+  // Throttled Supabase Realtime listener for live match updates
   useEffect(() => {
     if (!liveSessionId) {
-      console.log('Live session ID not available, skipping live match subscription.');
       return;
     }
 
-    console.log(`DieStatsTracker: Setting up live match subscription for session ${liveSessionId}`);
+    console.log(`Setting up throttled live subscription`);
+    
+    // Throttle updates to once every 3 seconds
+    let lastUpdateTime = 0;
+    const THROTTLE_DELAY = 3000; // 3 seconds
 
     const subscription = supabase
       .channel(`live_match:${liveSessionId}`)
@@ -298,7 +307,13 @@ const DieStatsTracker: React.FC = () => {
           filter: `id=eq.${liveSessionId}`
         },
         (payload) => {
-          console.log('Live match update received:', payload);
+          const now = Date.now();
+          if (now - lastUpdateTime < THROTTLE_DELAY) {
+            return; // Skip this update
+          }
+          lastUpdateTime = now;
+          
+          console.log('Applying throttled update');
           const updatedMatch = payload.new as LiveMatch;
 
           // Update local state with live data
@@ -398,7 +413,7 @@ const DieStatsTracker: React.FC = () => {
     }
   };
 
-  // Handles a player joining an active match
+  // Handles a player joining an active match via join interface
   const handleJoinMatch = async (playerSlot: number) => {
     if (!currentUser || !liveSessionId) {
       Alert.alert('Login Required', 'Please login to join the match.');
@@ -495,10 +510,9 @@ const DieStatsTracker: React.FC = () => {
     }
   };
 
-  // Function to update live match data in Supabase (triggered after each play)
-  const updateLiveMatchData = async () => {
+  // Throttled function to update live match data in Supabase
+  const updateLiveMatchData = useCallback(async () => {
     if (!liveSessionId) {
-      console.log('No live session to update.');
       return;
     }
 
@@ -513,13 +527,24 @@ const DieStatsTracker: React.FC = () => {
         .eq('id', liveSessionId);
 
       if (error) {
-        console.error('Error updating live match:', error);
+        console.error('Error syncing match data:', error.message);
         setErrorMessage('Failed to sync play data');
+      } else {
+        console.log('Match data synced');
       }
     } catch (error) {
       console.error('Error syncing play:', error);
     }
-  };
+  }, [liveSessionId, playerStats, teamPenalties, userSlotMap]);
+
+  // Debounced version to prevent excessive database calls
+  const debouncedUpdateLiveMatchData = useMemo(() => {
+    let timeoutId: ReturnType<typeof setTimeout>;
+    return () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(updateLiveMatchData, 2000); // Wait 2 seconds before updating
+    };
+  }, [updateLiveMatchData]);
 
   // Helper function to check if in Match Point, Advantage, or Overtime
   const getGameState = () => {
@@ -962,8 +987,14 @@ const DieStatsTracker: React.FC = () => {
   };
 
   // Handles copying the join link
-  const handleCopyJoinLink = () => {
-    Alert.alert('Join Link', joinLink);
+  const handleCopyJoinLink = async () => {
+    try {
+      await Clipboard.setStringAsync(joinLink);
+      Alert.alert('Link Copied', 'Join link copied to clipboard!');
+    } catch (error) {
+      console.error('Error copying link:', error);
+      Alert.alert('Copy Failed', 'Failed to copy join link.');
+    }
   };
 
   const team1Score = calculateTeamScore(1);
@@ -977,6 +1008,8 @@ const DieStatsTracker: React.FC = () => {
   const getQRValue = () => {
     return joinLink;
   };
+
+
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -995,6 +1028,15 @@ const DieStatsTracker: React.FC = () => {
           </Text>
         )}
       </View>
+
+      {/* Back Button at top of screen */}
+      {isSetupVisible && (
+        <View style={styles.screenTopBackButton}>
+          <HapticBackButton 
+            onPress={() => router.back()} 
+          />
+        </View>
+      )}
 
       {/* Match Setup Section (shown based on isSetupVisible state) */}
       {isSetupVisible && (
@@ -1101,6 +1143,8 @@ const DieStatsTracker: React.FC = () => {
       {/* Conditional rendering for main game sections */}
       {liveSessionId && (
         <>
+
+
           {/* QR Code and Join Link Section */}
           <View style={styles.card}>
             <Text style={styles.sectionHeader}>Players can join using:</Text>
@@ -1478,6 +1522,15 @@ const DieStatsTracker: React.FC = () => {
               <TouchableOpacity style={styles.actionButton} onPress={handleNewGame}>
                 <Text style={styles.actionButtonText}>New Game</Text>
               </TouchableOpacity>
+              
+              {/* Home Button */}
+              <TouchableOpacity 
+                style={styles.homeActionButton}
+                onPress={() => router.push('/')}
+              >
+                <Text style={styles.homeActionButtonText}>🏠 Go to Home</Text>
+              </TouchableOpacity>
+              
               {/* Toggle Setup Visibility Button */}
               <TouchableOpacity
                 style={styles.actionButton}
@@ -2003,6 +2056,25 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontWeight: 'bold',
   },
+  screenTopBackButton: {
+    position: 'absolute',
+    top: 60,
+    left: 20,
+    zIndex: 20,
+  },
+  homeActionButton: {
+    backgroundColor: '#28a745',
+    padding: 12,
+    borderRadius: 6,
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  homeActionButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+
 });
 
 export default DieStatsTracker;

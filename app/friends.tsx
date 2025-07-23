@@ -18,6 +18,7 @@ import { ThemedInput } from '../components/themed/ThemedInput';
 import { ThemedText } from '../components/themed/ThemedText';
 import { ThemedView } from '../components/themed/ThemedView';
 import { getSchoolByValue } from '@/constants/schools';
+import { HapticBackButton } from '@/components/HapticBackButton';
 import { useTheme } from '@/contexts/ThemeContext';
 
 type UserProfile = {
@@ -297,10 +298,12 @@ export default function FriendsScreen() {
     return (
       <View style={styles.fullScreenView}>
         <View style={styles.profileHeader}>
-            <TouchableOpacity style={styles.backButtonInline} onPress={() => setViewingProfileOf(null)}>
-                <Ionicons name="arrow-back" size={24} color={theme.colors.primary} />
-                <ThemedText color='primary' style={{marginLeft: 8}}>Back to Friends</ThemedText>
-            </TouchableOpacity>
+            <HapticBackButton 
+              style={styles.backButtonInline} 
+              onPress={() => setViewingProfileOf(null)}
+              text="Back to Friends"
+              color={theme.colors.primary}
+            />
         </View>
 
         <ScrollView contentContainerStyle={styles.profileContent}>
@@ -335,10 +338,11 @@ export default function FriendsScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-        <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
-        <ThemedText style={styles.backText}>Back</ThemedText>
-      </TouchableOpacity>
+      <HapticBackButton 
+        onPress={() => router.back()} 
+        style={styles.backButton}
+        color={theme.colors.text}
+      />
 
       <View style={styles.tabContainer}>
         {['friends', 'requests', 'expand'].map((tab) => (

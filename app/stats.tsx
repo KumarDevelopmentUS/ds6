@@ -16,6 +16,7 @@ import { ThemedButton } from '../components/themed/ThemedButton';
 import { ThemedText } from '../components/themed/ThemedText';
 import { ThemedView } from '../components/themed/ThemedView';
 import { useTheme } from '../contexts/ThemeContext';
+import { HapticBackButton } from '@/components/HapticBackButton';
 
 interface OverallStats {
   totalMatches: number;
@@ -771,13 +772,11 @@ export default function StatisticsScreen() {
   };
 
   const BackButton = () => (
-    <TouchableOpacity
+    <HapticBackButton
       onPress={() => router.back()}
       style={styles.backButton}
-    >
-      <Ionicons name="arrow-back" size={24} color="#3b82f6" />
-      <ThemedText style={styles.backText}>Back</ThemedText>
-    </TouchableOpacity>
+      color="#3b82f6"
+    />
   );
 
   if (!session?.user) {

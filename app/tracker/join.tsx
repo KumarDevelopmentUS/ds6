@@ -1,21 +1,24 @@
 // app/tracker/join.tsx
-'use client';
-
-import { createClient } from '@supabase/supabase-js';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-
-// Import useCallback and useEffect from React
+import { HapticBackButton } from '@/components/HapticBackButton';
 import { ThemedButton } from '@/components/themed/ThemedButton';
 import { ThemedInput } from '@/components/themed/ThemedInput';
 import { ThemedText } from '@/components/themed/ThemedText';
 import { ThemedView } from '@/components/themed/ThemedView';
+import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
+import { supabase } from '@/supabase';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
-
-// Supabase client
-const supabase = createClient(
-  process.env.EXPO_PUBLIC_SUPABASE_URL!,
-  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!
-);
+import {
+    ActivityIndicator,
+    Alert,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
+} from 'react-native';
 
 interface LiveMatch {
   id: string;
@@ -32,53 +35,39 @@ interface LiveMatch {
     winByTwo: boolean;
   };
   participants: string[];
-  playerMap: { [key: string]: number };
+  userSlotMap: { [key: string]: string | null };
+  livePlayerStats: any;
   matchStartTime: string | null;
 }
 
-const JoinMatchPage: React.FC = () => {
-  const params = useLocalSearchParams();
+export default function JoinMatchScreen() {
+  const { roomCode } = useLocalSearchParams();
   const router = useRouter();
-  const roomCode = params.roomCode as string;
-
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const { session } = useAuth();
+  const { theme } = useTheme();
+  
   const [liveMatch, setLiveMatch] = useState<LiveMatch | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isJoining, setIsJoining] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const [selectedPlayerSlot, setSelectedPlayerSlot] = useState<number | null>(
-    null
-  );
   const [showLogin, setShowLogin] = useState(false);
-
-  // Auth state
+  
+  // Auth state for login
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
   const [username, setUsername] = useState('');
 
-  // Get current user
-  useEffect(() => {
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      setCurrentUser(session?.user || null);
-      if (session?.user) {
-        setShowLogin(false);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  // --- FIX 1: Wrap loadLiveMatch in useCallback ---
+  // Load live match data
   const loadLiveMatch = useCallback(async () => {
+    if (!roomCode || Array.isArray(roomCode)) return;
+    
     setIsLoading(true);
     try {
       const { data, error } = await supabase
         .from('live_matches')
         .select('*')
-        .eq('room_code', roomCode)
+        .eq('roomCode', roomCode)
         .in('status', ['waiting', 'active'])
         .single();
 
@@ -93,13 +82,22 @@ const JoinMatchPage: React.FC = () => {
 
       setLiveMatch({
         id: data.id,
-        roomCode: data.room_code,
-        hostId: data.host_id,
+        roomCode: data.roomCode,
+        hostId: data.hostId,
         status: data.status,
-        matchSetup: data.match_setup,
+        matchSetup: data.matchSetup || {
+          title: 'Match',
+          arena: 'Arena',
+          playerNames: ['Player1', 'Player2', 'Player3', 'Player4'],
+          teamNames: ['Team 1', 'Team 2'],
+          gameScoreLimit: 11,
+          sinkPoints: 3,
+          winByTwo: true,
+        },
         participants: data.participants || [],
-        playerMap: data.player_map || {},
-        matchStartTime: data.match_start_time,
+        userSlotMap: data.userSlotMap || {},
+        livePlayerStats: data.livePlayerStats || {},
+        matchStartTime: data.matchStartTime,
       });
     } catch (error) {
       console.error('Error loading live match:', error);
@@ -107,15 +105,13 @@ const JoinMatchPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [roomCode]); // Dependency for useCallback
+  }, [roomCode]);
 
-  // --- FIX 2: Add loadLiveMatch to the dependency array ---
   useEffect(() => {
-    if (roomCode) {
-      loadLiveMatch();
-    }
-  }, [roomCode, loadLiveMatch]); // Correctly add loadLiveMatch here
+    loadLiveMatch();
+  }, [loadLiveMatch]);
 
+  // Handle authentication
   const handleLogin = async () => {
     if (!email || !password) {
       setErrorMessage('Please enter email and password');
@@ -125,7 +121,6 @@ const JoinMatchPage: React.FC = () => {
     setIsLoading(true);
     try {
       if (isSignUp) {
-        // Sign up
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
@@ -138,21 +133,17 @@ const JoinMatchPage: React.FC = () => {
         });
 
         if (error) throw error;
-
         if (data.user) {
           setErrorMessage('Please check your email to confirm your account');
         }
       } else {
-        // Sign in
         const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
 
         if (error) throw error;
-
         if (data.user) {
-          setCurrentUser(data.user);
           setShowLogin(false);
           setErrorMessage('');
         }
@@ -165,78 +156,108 @@ const JoinMatchPage: React.FC = () => {
     }
   };
 
-  const handleJoinAsPlayer = async () => {
-    if (!currentUser || !liveMatch || selectedPlayerSlot === null) {
-      setErrorMessage('Please select a player slot');
+  // Handle joining as a specific player
+  const handleJoinAsPlayer = async (playerSlot: number) => {
+    if (!session?.user || !liveMatch) {
+      setErrorMessage('Must be logged in to join');
       return;
     }
 
-    // Check if player slot is already taken
-    const isSlotTaken = Object.values(liveMatch.playerMap).includes(
-      selectedPlayerSlot
+    // Check if slot is already taken by another user
+    if (liveMatch.userSlotMap[playerSlot.toString()] && 
+        liveMatch.userSlotMap[playerSlot.toString()] !== session.user.id) {
+      Alert.alert('Slot Taken', `Player slot ${playerSlot} is already taken by another user.`);
+      return;
+    }
+
+    // Check if user is already in a different slot
+    const existingSlot = Object.keys(liveMatch.userSlotMap).find(
+      key => liveMatch.userSlotMap[key] === session.user.id
     );
-    if (isSlotTaken) {
-      setErrorMessage('This player slot is already taken');
+    if (existingSlot && existingSlot !== playerSlot.toString()) {
+      Alert.alert('Already Joined', `You are already assigned to Player slot ${existingSlot}. You can only join one slot per match.`);
       return;
     }
 
     setIsJoining(true);
     try {
-      const updatedPlayerMap = {
-        ...liveMatch.playerMap,
-        [currentUser.id]: selectedPlayerSlot,
+      // Get user profile for nickname
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('nickname')
+        .eq('id', session.user.id)
+        .single();
+
+      const nickname = profileData?.nickname || session.user.email?.split('@')[0] || `Player ${playerSlot}`;
+
+      // Update match data
+      const updatedUserSlotMap = { 
+        ...liveMatch.userSlotMap, 
+        [playerSlot.toString()]: session.user.id 
       };
-
-      const updatedParticipants = liveMatch.participants.includes(
-        currentUser.id
-      )
+      
+      const updatedParticipants = liveMatch.participants.includes(session.user.id)
         ? liveMatch.participants
-        : [...liveMatch.participants, currentUser.id];
+        : [...liveMatch.participants, session.user.id];
 
-      const { error } = await supabase
+      const updatedPlayerNames = [...liveMatch.matchSetup.playerNames];
+      updatedPlayerNames[playerSlot - 1] = nickname;
+
+      const updatedPlayerStats = { ...liveMatch.livePlayerStats };
+      if (updatedPlayerStats[playerSlot]) {
+        updatedPlayerStats[playerSlot].name = nickname;
+      }
+
+      const { error: updateError } = await supabase
         .from('live_matches')
         .update({
-          player_map: updatedPlayerMap,
+          userSlotMap: updatedUserSlotMap,
           participants: updatedParticipants,
+          matchSetup: {
+            ...liveMatch.matchSetup,
+            playerNames: updatedPlayerNames
+          },
+          livePlayerStats: updatedPlayerStats
         })
         .eq('id', liveMatch.id);
 
-      if (error) throw error;
+      if (updateError) throw updateError;
 
-      // Redirect to the main tracker page
-      router.push(`/tracker/${roomCode}`);
+      Alert.alert('Success', `You have successfully joined as ${nickname}!`, [
+        {
+          text: 'Go to Match',
+          onPress: () => router.push(`/tracker/${roomCode}`)
+        }
+      ]);
+      
     } catch (error: any) {
       console.error('Error joining match:', error);
-      setErrorMessage('Failed to join match: ' + error.message);
+      setErrorMessage(`Failed to join match: ${error.message}`);
     } finally {
       setIsJoining(false);
     }
   };
 
+  // Handle joining as spectator
   const handleJoinAsSpectator = async () => {
-    if (!currentUser || !liveMatch) {
+    if (!session?.user || !liveMatch) {
       setErrorMessage('Must be logged in to join as spectator');
       return;
     }
 
     setIsJoining(true);
     try {
-      const updatedParticipants = liveMatch.participants.includes(
-        currentUser.id
-      )
+      const updatedParticipants = liveMatch.participants.includes(session.user.id)
         ? liveMatch.participants
-        : [...liveMatch.participants, currentUser.id];
+        : [...liveMatch.participants, session.user.id];
 
       const { error } = await supabase
         .from('live_matches')
-        .update({
-          participants: updatedParticipants,
-        })
+        .update({ participants: updatedParticipants })
         .eq('id', liveMatch.id);
 
       if (error) throw error;
 
-      // Redirect to the main tracker page
       router.push(`/tracker/${roomCode}`);
     } catch (error: any) {
       console.error('Error joining as spectator:', error);
@@ -246,370 +267,322 @@ const JoinMatchPage: React.FC = () => {
     }
   };
 
-  const getPlayerSlotStatus = (
-    slotNumber: number
-  ): 'available' | 'taken' | 'you' => {
-    if (!liveMatch || !currentUser) return 'available';
-
-    const userInSlot = Object.keys(liveMatch.playerMap).find(
-      userId => liveMatch.playerMap[userId] === slotNumber
-    );
-
-    if (userInSlot === currentUser.id) return 'you';
-    if (userInSlot) return 'taken';
-    return 'available';
-  };
-
-  const getUsernameForSlot = (slotNumber: number): string => {
-    if (!liveMatch) return '';
-
-    const userId = Object.keys(liveMatch.playerMap).find(
-      id => liveMatch.playerMap[id] === slotNumber
-    );
-
-    if (userId) {
-      // In a real app, you'd fetch the username from user_profiles
-      return `User ${userId.slice(0, 8)}`;
-    }
-
-    return '';
-  };
-
   if (isLoading) {
     return (
-      <ThemedView
-        style={{
-          flex: 1,
-          justifyContent: 'center',
-          alignItems: 'center',
-          padding: 20,
-        }}
-      >
-        <ThemedText variant="title">Loading...</ThemedText>
-      </ThemedView>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <ThemedText style={styles.loadingText}>Loading match...</ThemedText>
+        </View>
+      </SafeAreaView>
     );
   }
 
   if (!liveMatch) {
     return (
-      <ThemedView
-        style={{
-          flex: 1,
-          justifyContent: 'center',
-          alignItems: 'center',
-          padding: 20,
-        }}
-      >
-        <ThemedText variant="title" color="error">
-          Match Not Found
-        </ThemedText>
-        {/* --- FIX 3: Replace " with &quot; --- */}
-        <ThemedText
-          variant="body"
-          style={{ textAlign: 'center', marginBottom: 20 }}
-        >
-          The match with room code &quot;{roomCode}&quot; could not be found or
-          has ended.
-        </ThemedText>
-        <ThemedButton title="Go Home" onPress={() => router.push('/')} />
-      </ThemedView>
-    );
-  }
-
-  if (liveMatch.status === 'finished') {
-    return (
-      <ThemedView
-        style={{
-          flex: 1,
-          justifyContent: 'center',
-          alignItems: 'center',
-          padding: 20,
-        }}
-      >
-        <ThemedText variant="title" color="warning">
-          Match Finished
-        </ThemedText>
-        <ThemedText
-          variant="body"
-          style={{ textAlign: 'center', marginBottom: 20 }}
-        >
-          This match has already finished.
-        </ThemedText>
-        <ThemedButton
-          title="View Results"
-          onPress={() => router.push(`/tracker/${roomCode}`)}
+      <SafeAreaView style={styles.container}>
+        <HapticBackButton 
+          onPress={() => router.back()} 
+          style={styles.backButton}
         />
-      </ThemedView>
+        <View style={styles.centerContainer}>
+          <ThemedText variant="title" color="error">Match Not Found</ThemedText>
+          <ThemedText variant="body" style={styles.errorText}>
+            The match with room code "{roomCode}" could not be found or has ended.
+          </ThemedText>
+          <ThemedButton 
+            title="Go Home" 
+            onPress={() => router.push('/')}
+            style={styles.button}
+          />
+        </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <ThemedView style={{ flex: 1, padding: 20 }}>
-      {/* Header */}
-      <ThemedView variant="card" style={{ marginBottom: 20 }}>
-        <ThemedText variant="title">Join Match</ThemedText>
-        <ThemedText variant="subtitle">{liveMatch.matchSetup.title}</ThemedText>
-        <ThemedText variant="body">{liveMatch.matchSetup.arena}</ThemedText>
-        <ThemedText variant="caption">Room Code: {roomCode}</ThemedText>
-        <ThemedText variant="caption">
-          Status:{' '}
-          {liveMatch.status === 'waiting' ? 'Waiting to Start' : 'In Progress'}
-        </ThemedText>
-        {liveMatch.matchStartTime && (
+    <SafeAreaView style={styles.container}>
+      <HapticBackButton 
+        onPress={() => router.back()} 
+        style={styles.backButton}
+      />
+
+      <ScrollView style={styles.content}>
+        {/* Match Info */}
+        <ThemedView variant="card" style={styles.matchCard}>
+          <ThemedText variant="title">Join Match</ThemedText>
+          <ThemedText variant="subtitle">{liveMatch.matchSetup.title}</ThemedText>
+          <ThemedText variant="body">{liveMatch.matchSetup.arena}</ThemedText>
+          <ThemedText variant="caption">Room Code: {roomCode}</ThemedText>
           <ThemedText variant="caption">
-            Started: {new Date(liveMatch.matchStartTime).toLocaleTimeString()}
+            Status: {liveMatch.status === 'waiting' ? 'Waiting to Start' : 'In Progress'}
           </ThemedText>
-        )}
-      </ThemedView>
-
-      {/* Login Section */}
-      {!currentUser && (
-        <ThemedView variant="card" style={{ marginBottom: 20 }}>
-          <ThemedText variant="subtitle">Login Required</ThemedText>
-          <ThemedText variant="body" style={{ marginBottom: 15 }}>
-            You need to be logged in to join this match.
-          </ThemedText>
-
-          {!showLogin ? (
-            <ThemedView style={{ flexDirection: 'row', gap: 10 }}>
-              <ThemedButton
-                title="Login"
-                onPress={() => setShowLogin(true)}
-                variant="primary"
-              />
-              <ThemedButton
-                title="Continue as Guest"
-                onPress={() => router.push(`/tracker/${roomCode}`)}
-                variant="outline"
-              />
-            </ThemedView>
-          ) : (
-            <ThemedView>
-              {isSignUp && (
-                <ThemedInput
-                  placeholder="Username"
-                  value={username}
-                  onChangeText={setUsername}
-                  style={{ marginBottom: 10 }}
-                />
-              )}
-
-              <ThemedInput
-                placeholder="Email"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                style={{ marginBottom: 10 }}
-              />
-
-              <ThemedInput
-                placeholder="Password"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                style={{ marginBottom: 15 }}
-              />
-
-              <ThemedView
-                style={{ flexDirection: 'row', gap: 10, marginBottom: 15 }}
-              >
-                <ThemedButton
-                  title={isSignUp ? 'Sign Up' : 'Login'}
-                  onPress={handleLogin}
-                  loading={isLoading}
-                  variant="primary"
-                />
-                <ThemedButton
-                  title="Cancel"
-                  onPress={() => setShowLogin(false)}
-                  variant="outline"
-                />
-              </ThemedView>
-
-              <ThemedButton
-                title={
-                  isSignUp
-                    ? 'Already have an account? Login'
-                    : 'Need an account? Sign Up'
-                }
-                onPress={() => setIsSignUp(!isSignUp)}
-                variant="ghost"
-                size="small"
-              />
-            </ThemedView>
-          )}
         </ThemedView>
-      )}
 
-      {/* Team Layout */}
-      {currentUser && (
-        <ThemedView variant="card" style={{ marginBottom: 20 }}>
-          <ThemedText variant="subtitle">Choose Your Role</ThemedText>
-
-          {/* Team 1 */}
-          <ThemedView style={{ marginBottom: 20 }}>
-            <ThemedText
-              variant="body"
-              style={{ fontWeight: 'bold', marginBottom: 10 }}
-            >
-              {liveMatch.matchSetup.teamNames[0]}
+        {/* Login Section */}
+        {!session ? (
+          <ThemedView variant="card" style={styles.authCard}>
+            <ThemedText variant="subtitle">Login Required</ThemedText>
+            <ThemedText variant="body" style={styles.authText}>
+              You need to be logged in to join this match.
             </ThemedText>
 
-            <ThemedView
-              style={{ flexDirection: 'row', gap: 10, marginBottom: 10 }}
-            >
-              {[1, 2].map(slotNumber => {
-                const status = getPlayerSlotStatus(slotNumber);
-                const username = getUsernameForSlot(slotNumber);
-
-                return (
-                  <ThemedView key={slotNumber} style={{ flex: 1 }}>
-                    <ThemedButton
-                      title={`${
-                        liveMatch.matchSetup.playerNames[slotNumber - 1]
-                      }`}
-                      variant={
-                        selectedPlayerSlot === slotNumber
-                          ? 'primary'
-                          : status === 'taken'
-                          ? 'secondary'
-                          : status === 'you'
-                          ? 'primary'
-                          : 'outline'
-                      }
-                      disabled={status === 'taken'}
-                      onPress={() => setSelectedPlayerSlot(slotNumber)}
-                      style={{ marginBottom: 5 }}
-                    />
-                    <ThemedText
-                      variant="caption"
-                      style={{ textAlign: 'center' }}
-                    >
-                      {status === 'taken'
-                        ? `Taken by ${username}`
-                        : status === 'you'
-                        ? 'You'
-                        : 'Available'}
-                    </ThemedText>
-                  </ThemedView>
-                );
-              })}
-            </ThemedView>
+            {!showLogin ? (
+              <View style={styles.authButtons}>
+                <ThemedButton
+                  title="Login"
+                  onPress={() => setShowLogin(true)}
+                  style={styles.button}
+                />
+                <ThemedButton
+                  title="Continue as Guest"
+                  onPress={() => router.push(`/tracker/${roomCode}`)}
+                  variant="outline"
+                  style={styles.button}
+                />
+              </View>
+            ) : (
+              <View>
+                {isSignUp && (
+                  <ThemedInput
+                    placeholder="Username"
+                    value={username}
+                    onChangeText={setUsername}
+                    style={styles.input}
+                  />
+                )}
+                <ThemedInput
+                  placeholder="Email"
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  style={styles.input}
+                />
+                <ThemedInput
+                  placeholder="Password"
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry
+                  style={styles.input}
+                />
+                <View style={styles.authButtons}>
+                  <ThemedButton
+                    title={isSignUp ? 'Sign Up' : 'Login'}
+                    onPress={handleLogin}
+                    loading={isLoading}
+                    style={styles.button}
+                  />
+                  <ThemedButton
+                    title={isSignUp ? 'Have an account?' : 'Need an account?'}
+                    onPress={() => setIsSignUp(!isSignUp)}
+                    variant="outline"
+                    style={styles.button}
+                  />
+                </View>
+              </View>
+            )}
           </ThemedView>
-
-          {/* Team 2 */}
-          <ThemedView style={{ marginBottom: 20 }}>
-            <ThemedText
-              variant="body"
-              style={{ fontWeight: 'bold', marginBottom: 10 }}
-            >
-              {liveMatch.matchSetup.teamNames[1]}
+        ) : (
+          /* Player Selection */
+          <ThemedView variant="card" style={styles.playersCard}>
+            <ThemedText variant="subtitle">Select Player Slot</ThemedText>
+            <ThemedText variant="body" style={styles.instructionText}>
+              Choose which player you want to control:
             </ThemedText>
 
-            <ThemedView
-              style={{ flexDirection: 'row', gap: 10, marginBottom: 10 }}
-            >
-              {[3, 4].map(slotNumber => {
-                const status = getPlayerSlotStatus(slotNumber);
-                const username = getUsernameForSlot(slotNumber);
+            <View style={styles.playerGrid}>
+              {[1, 2, 3, 4].map((playerId) => {
+                const isSlotTaken = liveMatch.userSlotMap[playerId.toString()] && 
+                                   liveMatch.userSlotMap[playerId.toString()] !== session.user?.id;
+                const isMySlot = liveMatch.userSlotMap[playerId.toString()] === session.user?.id;
 
                 return (
-                  <ThemedView key={slotNumber} style={{ flex: 1 }}>
-                    <ThemedButton
-                      title={`${
-                        liveMatch.matchSetup.playerNames[slotNumber - 1]
-                      }`}
-                      variant={
-                        selectedPlayerSlot === slotNumber
-                          ? 'primary'
-                          : status === 'taken'
-                          ? 'secondary'
-                          : status === 'you'
-                          ? 'primary'
-                          : 'outline'
-                      }
-                      disabled={status === 'taken'}
-                      onPress={() => setSelectedPlayerSlot(slotNumber)}
-                      style={{ marginBottom: 5 }}
-                    />
-                    <ThemedText
-                      variant="caption"
-                      style={{ textAlign: 'center' }}
-                    >
-                      {status === 'taken'
-                        ? `Taken by ${username}`
-                        : status === 'you'
-                        ? 'You'
-                        : 'Available'}
-                    </ThemedText>
-                  </ThemedView>
+                  <TouchableOpacity
+                    key={playerId}
+                    style={[
+                      styles.playerSlot,
+                      isSlotTaken && styles.playerSlotTaken,
+                      isMySlot && styles.playerSlotMine,
+                    ]}
+                    onPress={() => handleJoinAsPlayer(playerId)}
+                    disabled={isJoining || isSlotTaken}
+                  >
+                    <Text style={[
+                      styles.playerSlotText,
+                      isSlotTaken && styles.playerSlotTextTaken
+                    ]}>
+                      {liveMatch.matchSetup.playerNames[playerId - 1]}
+                    </Text>
+                    <Text style={styles.playerSlotNumber}>Player {playerId}</Text>
+                    {isSlotTaken && <Text style={styles.takenText}>Taken</Text>}
+                    {isMySlot && <Text style={styles.mySlotText}>You</Text>}
+                  </TouchableOpacity>
                 );
               })}
-            </ThemedView>
-          </ThemedView>
+            </View>
 
-          {/* Action Buttons */}
-          <ThemedView style={{ flexDirection: 'row', gap: 10, marginTop: 20 }}>
-            <ThemedButton
-              title="Join as Player"
-              onPress={handleJoinAsPlayer}
-              loading={isJoining}
-              disabled={selectedPlayerSlot === null}
-              variant="primary"
-              style={{ flex: 1 }}
-            />
             <ThemedButton
               title="Join as Spectator"
               onPress={handleJoinAsSpectator}
-              loading={isJoining}
               variant="outline"
-              style={{ flex: 1 }}
+              loading={isJoining}
+              style={styles.spectatorButton}
             />
           </ThemedView>
+        )}
+
+        {/* Game Rules */}
+        <ThemedView variant="card" style={styles.rulesCard}>
+          <ThemedText variant="subtitle">Game Rules</ThemedText>
+          <ThemedText variant="caption">• First to {liveMatch.matchSetup.gameScoreLimit} points</ThemedText>
+          <ThemedText variant="caption">• Sink worth {liveMatch.matchSetup.sinkPoints} points</ThemedText>
+          <ThemedText variant="caption">• Win by two: {liveMatch.matchSetup.winByTwo ? 'ON' : 'OFF'}</ThemedText>
         </ThemedView>
-      )}
 
-      {/* Game Rules */}
-      <ThemedView variant="card" style={{ marginBottom: 20 }}>
-        <ThemedText variant="subtitle">Game Rules</ThemedText>
-        <ThemedText variant="caption">
-          • First to {liveMatch.matchSetup.gameScoreLimit} points
-        </ThemedText>
-        <ThemedText variant="caption">
-          • Sink worth {liveMatch.matchSetup.sinkPoints} points
-        </ThemedText>
-        <ThemedText variant="caption">
-          • Win by two: {liveMatch.matchSetup.winByTwo ? 'ON' : 'OFF'}
-        </ThemedText>
-      </ThemedView>
+        {/* Error Message */}
+        {errorMessage && (
+          <ThemedView variant="card" style={styles.errorCard}>
+            <ThemedText variant="body" color="error">{errorMessage}</ThemedText>
+          </ThemedView>
+        )}
 
-      {/* Error Message */}
-      {errorMessage && (
-        <ThemedView variant="card" style={{ marginBottom: 20 }}>
-          <ThemedText variant="body" color="error">
-            {errorMessage}
-          </ThemedText>
-        </ThemedView>
-      )}
-
-      {/* Navigation */}
-      <ThemedView style={{ flexDirection: 'row', gap: 10 }}>
-        <ThemedButton
-          title="View Match"
-          onPress={() => router.push(`/tracker/${roomCode}`)}
-          variant="outline"
-          style={{ flex: 1 }}
-        />
-        <ThemedButton
-          title="Home"
-          onPress={() => router.push('/')}
-          variant="ghost"
-          style={{ flex: 1 }}
-        />
-      </ThemedView>
-    </ThemedView>
+        {/* Navigation */}
+        <View style={styles.navButtons}>
+          <ThemedButton
+            title="View Match"
+            onPress={() => router.push(`/tracker/${roomCode}`)}
+            variant="outline"
+            style={styles.navButton}
+          />
+          <ThemedButton
+            title="Home"
+            onPress={() => router.push('/')}
+            variant="ghost"
+            style={styles.navButton}
+          />
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
-};
+}
 
-export default JoinMatchPage;
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  backButton: {
+    position: 'absolute',
+    top: 60,
+    left: 20,
+    zIndex: 10,
+  },
+  content: {
+    flex: 1,
+    padding: 20,
+    paddingTop: 100,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 10,
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorText: {
+    textAlign: 'center',
+    marginVertical: 20,
+  },
+  matchCard: {
+    marginBottom: 20,
+  },
+  authCard: {
+    marginBottom: 20,
+  },
+  authText: {
+    marginBottom: 15,
+  },
+  authButtons: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  input: {
+    marginBottom: 10,
+  },
+  playersCard: {
+    marginBottom: 20,
+  },
+  instructionText: {
+    marginBottom: 15,
+  },
+  playerGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginBottom: 20,
+  },
+  playerSlot: {
+    flex: 1,
+    minWidth: '45%',
+    backgroundColor: '#007AFF',
+    padding: 15,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  playerSlotTaken: {
+    backgroundColor: '#ccc',
+  },
+  playerSlotMine: {
+    backgroundColor: '#28a745',
+  },
+  playerSlotText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  playerSlotTextTaken: {
+    color: '#666',
+  },
+  playerSlotNumber: {
+    color: 'white',
+    fontSize: 12,
+    marginTop: 5,
+  },
+  takenText: {
+    color: '#666',
+    fontSize: 12,
+    fontStyle: 'italic',
+  },
+  mySlotText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  spectatorButton: {
+    marginTop: 10,
+  },
+  rulesCard: {
+    marginBottom: 20,
+  },
+  errorCard: {
+    marginBottom: 20,
+  },
+  navButtons: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  navButton: {
+    flex: 1,
+  },
+  button: {
+    flex: 1,
+  },
+}); 

@@ -8,8 +8,7 @@ export default function TrackerLayout() {
       <Stack.Screen
         name="[roomCode]"
         options={{
-          headerShown: true,
-          headerTitle: 'Match Tracker',
+          headerShown: false,
         }}
       />
       <Stack.Screen

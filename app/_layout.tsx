@@ -1,10 +1,11 @@
 // app/_layout.tsx
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { FeedProvider } from '@/contexts/FeedContext';
+import { HapticsProvider } from '@/contexts/HapticsContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { supabase } from '@/supabase';
-import type { Session } from '@supabase/supabase-js';
 import { ensureUserProfilesExist } from '@/utils/profileSync';
+import type { Session } from '@supabase/supabase-js';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SplashScreen, Stack, useRouter, useSegments } from 'expo-router';
 import React, { useEffect } from 'react';
@@ -166,11 +167,13 @@ export default function RootLayout() {
         <GestureHandlerRootView style={{ flex: 1 }}>
           <QueryClientProvider client={queryClient}>
             <ThemeProvider>
-              <AuthProvider>
-                <FeedProvider>
-                  <RootLayoutNav />
-                </FeedProvider>
-              </AuthProvider>
+              <HapticsProvider>
+                <AuthProvider>
+                  <FeedProvider>
+                    <RootLayoutNav />
+                  </FeedProvider>
+                </AuthProvider>
+              </HapticsProvider>
             </ThemeProvider>
           </QueryClientProvider>
         </GestureHandlerRootView>

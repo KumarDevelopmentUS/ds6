@@ -18,6 +18,7 @@ import { ThemedText } from '../components/themed/ThemedText';
 import { ThemedView } from '../components/themed/ThemedView';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { HapticBackButton } from '@/components/HapticBackButton';
 
 interface SavedMatch {
   id: string;
@@ -242,13 +243,11 @@ export default function GameHistoryScreen() {
         }
       >
         {/* Back Button */}
-        <TouchableOpacity 
+        <HapticBackButton 
           onPress={() => router.back()} 
           style={styles.backButton}
-        >
-          <Ionicons name="arrow-back" size={24} color="#3b82f6" />
-          <Text style={styles.backText}>Back</Text>
-        </TouchableOpacity>
+          color="#3b82f6"
+        />
 
         {/* Header */}
         <ThemedView style={styles.header}>

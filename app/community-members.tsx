@@ -5,6 +5,7 @@ import { supabase } from '@/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
+import { HapticBackButton } from '@/components/HapticBackButton';
 import {
     ActivityIndicator,
     Alert,
@@ -258,9 +259,12 @@ export default function CommunityMembersScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#007AFF" />
-        </TouchableOpacity>
+        <HapticBackButton 
+          onPress={() => router.back()} 
+          style={styles.backButton}
+          color="#007AFF"
+          text=""
+        />
         <Text style={styles.headerTitle}>{communityName} Members</Text>
         <View style={{ width: 40 }} />
       </View>

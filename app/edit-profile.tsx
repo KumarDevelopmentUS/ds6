@@ -1,4 +1,5 @@
 // app/edit-profile.tsx
+import { HapticBackButton } from '@/components/HapticBackButton';
 import { supabase } from '@/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import { useQueryClient } from '@tanstack/react-query'; // 1. Import useQueryClient
@@ -171,10 +172,10 @@ export default function EditProfileScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
-          <ThemedText style={styles.backText}>Back</ThemedText>
-        </TouchableOpacity>
+        <HapticBackButton 
+          onPress={() => router.back()} 
+          style={styles.backButton}
+        />
 
         <ThemedText variant="title" style={styles.screenTitle}>
           Edit Profile
