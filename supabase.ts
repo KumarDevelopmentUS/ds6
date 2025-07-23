@@ -53,5 +53,8 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
+    // Additional settings for maximum session persistence
+    flowType: 'pkce',
+    debug: false,
   },
 });
