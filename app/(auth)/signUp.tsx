@@ -67,8 +67,20 @@ export default function SignUpScreen() {
   };
 
   const validateEmail = (email: string) => {
-    if (email.length > 0 && email.toLowerCase().endsWith('.edu')) {
-      return 'Educational (.edu) email addresses are not permitted';
+    if (email.length > 0) {
+      const lowerEmail = email.toLowerCase();
+      if (lowerEmail.endsWith('.edu')) {
+        return 'Educational (.edu) email addresses are not permitted';
+      }
+      if (lowerEmail.endsWith('.gov')) {
+        return 'Government (.gov) email addresses are not permitted';
+      }
+      if (lowerEmail.endsWith('.mil')) {
+        return 'Military (.mil) email addresses are not permitted';
+      }
+      if (lowerEmail.endsWith('.int')) {
+        return 'International organization (.int) email addresses are not permitted';
+      }
     }
     return '';
   };
@@ -153,9 +165,25 @@ export default function SignUpScreen() {
       return;
     }
 
-    if (email.toLowerCase().endsWith('.edu')) {
+    const lowerEmail = email.toLowerCase();
+    if (lowerEmail.endsWith('.edu')) {
       console.log('❌ SIGNUP DEBUG: Validation failed - .edu email not allowed');
       Alert.alert('Email Not Allowed', 'Educational (.edu) email addresses are not permitted for registration.');
+      return;
+    }
+    if (lowerEmail.endsWith('.gov')) {
+      console.log('❌ SIGNUP DEBUG: Validation failed - .gov email not allowed');
+      Alert.alert('Email Not Allowed', 'Government (.gov) email addresses are not permitted for registration.');
+      return;
+    }
+    if (lowerEmail.endsWith('.mil')) {
+      console.log('❌ SIGNUP DEBUG: Validation failed - .mil email not allowed');
+      Alert.alert('Email Not Allowed', 'Military (.mil) email addresses are not permitted for registration.');
+      return;
+    }
+    if (lowerEmail.endsWith('.int')) {
+      console.log('❌ SIGNUP DEBUG: Validation failed - .int email not allowed');
+      Alert.alert('Email Not Allowed', 'International organization (.int) email addresses are not permitted for registration.');
       return;
     }
 
