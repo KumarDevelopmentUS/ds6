@@ -4,10 +4,10 @@ import React, { useCallback, useRef, useState } from 'react';
 import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import PagerView from 'react-native-pager-view';
 
-// Lazy load tab screens to avoid double-mounting
-const HomeScreen = React.lazy(() => import('./home'));
-const FeedScreen = React.lazy(() => import('./feed/index'));
-const SettingsScreen = React.lazy(() => import('./settings'));
+// Static imports for Expo web static export compatibility
+import FeedScreen from './feed/index';
+import HomeScreen from './home';
+import SettingsScreen from './settings';
 
 const TAB_ROUTES = [
   { key: 'home', title: 'Home', icon: 'home-outline', component: HomeScreen },
@@ -45,9 +45,7 @@ export default function TabLayout() {
       >
         {TAB_ROUTES.map((tab, idx) => (
           <View key={tab.key} style={{ flex: 1 }}>
-            <React.Suspense fallback={null}>
-              <tab.component />
-            </React.Suspense>
+            <tab.component />
           </View>
         ))}
       </PagerView>
