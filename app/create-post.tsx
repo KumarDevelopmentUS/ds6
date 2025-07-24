@@ -10,37 +10,85 @@ import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  KeyboardAvoidingView,
-  Linking,
-  Modal,
-  Platform,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    ActivityIndicator,
+    Alert,
+    Image,
+    KeyboardAvoidingView,
+    Linking,
+    Modal,
+    Platform,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
 
 export default function CreatePostScreen() {
   const router = useRouter();
   const { session } = useAuth();
   const params = useLocalSearchParams();
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
+  
+  // Initialize state from params if present (happens before any useEffect)
+  const getInitialCommunity = () => {
+    if (params.selectedCommunity && typeof params.selectedCommunity === 'string') {
+      const communityId = parseInt(params.selectedCommunity, 10);
+      if (!isNaN(communityId)) {
+        console.log('🔄 INITIAL: Restoring community from params', { param: params.selectedCommunity, parsed: communityId });
+        return communityId;
+      }
+    }
+    return null;
+  };
+  
+  const getInitialTitle = () => {
+    return (params.title && typeof params.title === 'string') ? params.title : '';
+  };
+  
+  const getInitialContent = () => {
+    return (params.content && typeof params.content === 'string') ? params.content : '';
+  };
+  
+  const [title, setTitle] = useState(getInitialTitle());
+  const [content, setContent] = useState(getInitialContent());
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [imageAspectRatio, setImageAspectRatio] = useState<number | undefined>(undefined);
-  const [selectedCommunity, setSelectedCommunity] = useState<number | null>(null);
+  const [selectedCommunity, setSelectedCommunity] = useState<number | null>(getInitialCommunity());
   const [showMediaOptions, setShowMediaOptions] = useState(false);
   const [showCommunityFix, setShowCommunityFix] = useState(false);
-  const [isRestoringFromCamera, setIsRestoringFromCamera] = useState(false);
+  const [isRestoringFromCamera, setIsRestoringFromCamera] = useState(!!params.photoUri);
+  const [hasInitializedCommunity, setHasInitializedCommunity] = useState(!!getInitialCommunity()); // True if restored from params
+
+  // Wrap setSelectedCommunity with logging
+  const setSelectedCommunityWithLog = (value: number | null) => {
+    console.log('🏘️ COMMUNITY CHANGE:', {
+      from: selectedCommunity,
+      to: value,
+      stack: new Error().stack?.split('\n')[2]?.trim() // Get caller info
+    });
+    setSelectedCommunity(value);
+  };
 
   const { createPost, isCreating } = useCreatePost();
   const { communities: userCommunityMemberships, isLoading: areCommunitiesLoading, error: communitiesError, refetch } = useFeed();
+
+  // Handle back navigation to feed
+  const handleBackToFeed = () => {
+    router.push('/(tabs)/feed');
+  };
+
+  // Debug logging for state changes
+  useEffect(() => {
+    console.log('🔍 STATE CHANGE:', {
+      selectedCommunity,
+      isRestoringFromCamera,
+      hasInitializedCommunity,
+      communitiesCount: userCommunityMemberships?.length || 0,
+      areCommunitiesLoading
+    });
+  }, [selectedCommunity, isRestoringFromCamera, hasInitializedCommunity, userCommunityMemberships, areCommunitiesLoading]);
 
   // Debug logging
   console.log('🔍 CREATE POST: Component state:', {
@@ -85,22 +133,12 @@ export default function CreatePostScreen() {
   // Check if we received data from the camera screen (photo + preserved form data)
   useEffect(() => {
     if (params.photoUri && typeof params.photoUri === 'string') {
-      setIsRestoringFromCamera(true); // Flag that we're restoring
-      handleSetImage(params.photoUri);
+      console.log('📷 RESTORATION: Processing photo from camera', {
+        photoUri: params.photoUri,
+        // Form data already restored during state initialization
+      });
       
-      // Restore form data if it was preserved from camera navigation
-      if (params.title && typeof params.title === 'string') {
-        setTitle(params.title);
-      }
-      if (params.content && typeof params.content === 'string') {
-        setContent(params.content);
-      }
-      if (params.selectedCommunity && typeof params.selectedCommunity === 'string') {
-        const communityId = parseInt(params.selectedCommunity, 10);
-        if (!isNaN(communityId)) {
-          setSelectedCommunity(communityId);
-        }
-      }
+      handleSetImage(params.photoUri);
       
       // Clear the params so they're not re-used if the user navigates away and back
       router.setParams({ 
@@ -111,9 +149,12 @@ export default function CreatePostScreen() {
       });
       
       // Reset the flag after a short delay to allow effects to settle
-      setTimeout(() => setIsRestoringFromCamera(false), 100);
+      setTimeout(() => {
+        console.log('📷 RESTORATION: Completed, resetting flag');
+        setIsRestoringFromCamera(false);
+      }, 100);
     }
-  }, [params.photoUri, params.title, params.content, params.selectedCommunity]);
+  }, [params.photoUri]);
 
   // Request media library permission on mount
   useEffect(() => {
@@ -126,24 +167,28 @@ export default function CreatePostScreen() {
     setContent('');
     setImageUri(null);
     setImageAspectRatio(undefined);
-    setSelectedCommunity(null);
+    setSelectedCommunityWithLog(null);
   };
 
   // Auto-select first community if none selected (but not when restoring from camera)
   useEffect(() => {
     // Only auto-select if selectedCommunity is null or undefined (not 0, not NaN)
+    // AND we're not currently restoring from camera AND we haven't already set a community
     if (
       userCommunityMemberships &&
       userCommunityMemberships.length > 0 &&
-      (selectedCommunity === null || selectedCommunity === undefined) &&
-      !isRestoringFromCamera
+      selectedCommunity === null &&
+      !isRestoringFromCamera &&
+      !hasInitializedCommunity // Only auto-select if not already initialized
     ) {
-      setSelectedCommunity(userCommunityMemberships[0].communities.id);
+      console.log('🔄 AUTO-SELECT: Setting first community', userCommunityMemberships[0].communities.id);
+      setSelectedCommunityWithLog(userCommunityMemberships[0].communities.id);
       setShowCommunityFix(false);
+      setHasInitializedCommunity(true); // Mark as initialized
     } else if (!areCommunitiesLoading && (!userCommunityMemberships || userCommunityMemberships.length === 0)) {
       setShowCommunityFix(true);
     }
-  }, [userCommunityMemberships, selectedCommunity, areCommunitiesLoading, isRestoringFromCamera]);
+  }, [userCommunityMemberships, areCommunitiesLoading, isRestoringFromCamera, hasInitializedCommunity]); // Added hasInitializedCommunity to deps
 
   // Community membership fix function
   const fixCommunityMembership = async () => {
@@ -207,6 +252,18 @@ export default function CreatePostScreen() {
   const takePhotoWithCamera = async () => {
     setShowMediaOptions(false);
     try {
+      console.log('📷 CAMERA NAV: Current state before navigation:', {
+        selectedCommunity,
+        title,
+        content
+      });
+      
+      const communityParam = selectedCommunity !== null && selectedCommunity !== undefined ? String(selectedCommunity) : undefined;
+      console.log('📷 CAMERA NAV: Community param being passed:', {
+        originalValue: selectedCommunity,
+        stringifiedParam: communityParam
+      });
+      
       // Navigate to the custom camera screen with current form data
       router.push({
         pathname: '/camera',
@@ -214,7 +271,7 @@ export default function CreatePostScreen() {
           title: title,
           content: content,
           // Always pass selectedCommunity as a stringified number, or undefined if null
-          selectedCommunity: selectedCommunity !== null && selectedCommunity !== undefined ? String(selectedCommunity) : undefined,
+          selectedCommunity: communityParam,
           returnPath: '/create-post'
         }
       });
@@ -311,7 +368,7 @@ export default function CreatePostScreen() {
                 
                 <HapticBackButton 
                   style={styles.backButton}
-                  onPress={() => router.back()}
+                  onPress={handleBackToFeed}
                   text="Go Back"
                   color="#007AFF"
                 />
@@ -336,7 +393,7 @@ export default function CreatePostScreen() {
           <View style={styles.container}>
             <View style={styles.header}>
                               <HapticBackButton 
-                  onPress={() => router.back()} 
+                  onPress={handleBackToFeed} 
                   style={styles.backButton}
                   color="#007AFF"
                   text=""
@@ -362,7 +419,7 @@ export default function CreatePostScreen() {
                         styles.communityOption,
                         selectedCommunity === community.id && styles.communityOptionSelected
                       ]}
-                      onPress={() => setSelectedCommunity(community.id)}
+                      onPress={() => setSelectedCommunityWithLog(community.id)}
                     >
                       <Text
                         style={[

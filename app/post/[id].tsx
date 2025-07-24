@@ -1,24 +1,25 @@
 // app/post/[id].tsx
+import { HapticBackButton } from '@/components/HapticBackButton';
+import { Image } from 'expo-image';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ActivityIndicator,
-  SafeAreaView,
-  FlatList,
-  Modal,
-  TouchableOpacity,
-  Pressable
+import {
+    ActivityIndicator,
+    FlatList,
+    Modal,
+    Pressable,
+    SafeAreaView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import { CommentSection } from '../../components/social/CommentSection';
 import { UserAvatar } from '../../components/social/UserAvatar';
 import { VoteButtons } from '../../components/social/VoteButtons';
-import { CommentSection } from '../../components/social/CommentSection';
-import { usePost, useComments } from '../../hooks/useSocialFeatures';
-import { Image } from 'expo-image';
-import { GestureDetector, Gesture } from 'react-native-gesture-handler';
-import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
+import { useComments, usePost } from '../../hooks/useSocialFeatures';
 
 const AnimatedImage = Animated.createAnimatedComponent(Image);
 
@@ -31,11 +32,17 @@ const blurhash = 'L6PZfSi_.AyE_3t7t7R**0o#DgR4';
 
 export default function PostDetailScreen() {
   const { id } = useLocalSearchParams();
+  const router = useRouter();
   const postId = Array.isArray(id) ? parseInt(id[0], 10) : parseInt(id || '', 10);
   
   const { post, isLoading: postLoading, handleVote, userVote, error: postError } = usePost(postId);
   const { comments, addComment } = useComments(postId);
   const [imageModalVisible, setImageModalVisible] = useState(false);
+
+  // Handle back navigation to feed
+  const handleBackToFeed = () => {
+    router.push('/(tabs)/feed');
+  };
 
   // --- Temporary Gesture State ---
   const scale = useSharedValue(1);
@@ -154,6 +161,18 @@ export default function PostDetailScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Header with Back Button */}
+      <View style={styles.headerContainer}>
+        <HapticBackButton 
+          onPress={handleBackToFeed} 
+          style={styles.backButton}
+          color="#007AFF"
+          text=""
+        />
+        <Text style={styles.headerTitle}>Post</Text>
+        <View style={styles.headerSpacer} />
+      </View>
+
       <Modal
         animationType="fade"
         transparent={true}
@@ -259,5 +278,26 @@ const styles = StyleSheet.create({
       modalImage: {
         width: 380,
         height: 380,
-      }
+      },
+      headerContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingTop: 10,
+        paddingBottom: 8,
+        backgroundColor: '#fff',
+        borderBottomWidth: 1,
+        borderBottomColor: '#e0e0e0',
+      },
+      backButton: {
+        marginRight: 10,
+      },
+      headerTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: '#333',
+      },
+      headerSpacer: {
+        flex: 1,
+      },
 });
