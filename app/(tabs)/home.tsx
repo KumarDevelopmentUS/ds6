@@ -69,17 +69,6 @@ const diceFacts = [
   "The first electronic dice were invented in 1975 for early computer gaming systems.",
   "Are you still rolling through these facts? You must really love the randomness of knowledge!",
   "In ancient China, dice were used to predict the future and fortune-telling.",
-  "The probability of rolling a 12 with two dice is 1 in 36, or about 2.78%.",
-  "The probability of rolling a 10 with two dice is 1 in 12, or about 8.33%.",
-  "The probability of rolling a 9 with two dice is 1 in 12, or about 8.33%.",
-  "The probability of rolling a 8 with two dice is 1 in 12, or about 8.33%.",
-  "The probability of rolling a 7 with two dice is 1 in 6, or about 16.67%.",
-  "The probability of rolling a 6 with two dice is 1 in 6, or about 16.67%.",
-  "The probability of rolling a 5 with two dice is 1 in 6, or about 16.67%.",
-  "The probability of rolling a 4 with two dice is 1 in 6, or about 16.67%.",
-  "The probability of rolling a 3 with two dice is 1 in 6, or about 16.67%.",
-  "The probability of rolling a 2 with two dice is 1 in 6, or about 16.67%.",
-  "The probability of rolling a 1 with two dice is 1 in 6, or about 16.67%.",
 ];
 
 export default function MainMenuScreen() {

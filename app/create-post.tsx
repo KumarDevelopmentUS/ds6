@@ -14,7 +14,6 @@ import {
   Alert,
   Image,
   KeyboardAvoidingView,
-  Linking,
   Modal,
   Platform,
   SafeAreaView,
@@ -174,36 +173,7 @@ export default function CreatePostScreen() {
     }
   };
 
-  const pickImageFromLibrary = async () => {
-    setShowMediaOptions(false);
-    try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission needed', 'Photo library permission is required to select images.', [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Open Settings', onPress: () => Linking.openSettings() }
-        ]);
-        return;
-      }
-
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: false,
-        quality: 0.7,
-      });
-
-      if (!result.canceled) {
-        const uri = result.assets?.[0]?.uri;
-        if (uri) {
-          handleSetImage(uri);
-        }
-      }
-    } catch (error: any) {
-      console.error("Image picker error:", error);
-      Alert.alert("Image Error", error.message || "Could not select an image.");
-    }
-  };
-
+  // Update the Add Photo button to navigate to /photo-library
   const takePhotoWithCamera = async () => {
     setShowMediaOptions(false);
     try {
@@ -397,6 +367,7 @@ export default function CreatePostScreen() {
               />
               <Text style={styles.charCount}>{content.length}/500</Text>
               
+              {/* Restore Add Photo button to open the modal */}
               <TouchableOpacity 
                 onPress={() => setShowMediaOptions(true)} 
                 style={styles.imageButton}
@@ -454,17 +425,42 @@ export default function CreatePostScreen() {
         >
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Choose Photo Source</Text>
-            
-            <TouchableOpacity onPress={pickImageFromLibrary} style={styles.modalOption}>
+            <TouchableOpacity 
+              onPress={() => {
+                setShowMediaOptions(false);
+                router.push({
+                  pathname: '/photo-library',
+                  params: {
+                    title: title,
+                    content: content,
+                    selectedCommunity: selectedCommunity !== null && selectedCommunity !== undefined ? String(selectedCommunity) : undefined,
+                    returnPath: '/create-post',
+                  },
+                });
+              }} 
+              style={styles.modalOption}
+            >
               <Ionicons name="images-outline" size={24} color="#007AFF" />
               <Text style={styles.modalOptionText}>Photo Library</Text>
             </TouchableOpacity>
-            
-            <TouchableOpacity onPress={takePhotoWithCamera} style={styles.modalOption}>
+            <TouchableOpacity 
+              onPress={() => {
+                setShowMediaOptions(false);
+                router.push({
+                  pathname: '/camera',
+                  params: {
+                    title: title,
+                    content: content,
+                    selectedCommunity: selectedCommunity !== null && selectedCommunity !== undefined ? String(selectedCommunity) : undefined,
+                    returnPath: '/create-post',
+                  },
+                });
+              }} 
+              style={styles.modalOption}
+            >
               <Ionicons name="camera-outline" size={24} color="#007AFF" />
               <Text style={styles.modalOptionText}>Take Photo</Text>
             </TouchableOpacity>
-            
             <TouchableOpacity 
               onPress={() => setShowMediaOptions(false)} 
               style={[styles.modalOption, styles.modalCancelOption]}
