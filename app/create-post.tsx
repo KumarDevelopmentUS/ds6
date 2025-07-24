@@ -1,4 +1,5 @@
 // app/create-post.tsx
+import { HapticBackButton } from '@/components/HapticBackButton';
 import { getSchoolByValue } from '@/constants/schools';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFeed } from '@/contexts/FeedContext';
@@ -7,23 +8,22 @@ import { fixUserCommunityMembership } from '@/utils/profileSync';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { HapticBackButton } from '@/components/HapticBackButton';
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    Image,
-    KeyboardAvoidingView,
-    Linking,
-    Modal,
-    Platform,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Alert,
+  Image,
+  KeyboardAvoidingView,
+  Linking,
+  Modal,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
 
 export default function CreatePostScreen() {
@@ -131,7 +131,13 @@ export default function CreatePostScreen() {
 
   // Auto-select first community if none selected (but not when restoring from camera)
   useEffect(() => {
-    if (userCommunityMemberships && userCommunityMemberships.length > 0 && !selectedCommunity && !isRestoringFromCamera) {
+    // Only auto-select if selectedCommunity is null or undefined (not 0, not NaN)
+    if (
+      userCommunityMemberships &&
+      userCommunityMemberships.length > 0 &&
+      (selectedCommunity === null || selectedCommunity === undefined) &&
+      !isRestoringFromCamera
+    ) {
       setSelectedCommunity(userCommunityMemberships[0].communities.id);
       setShowCommunityFix(false);
     } else if (!areCommunitiesLoading && (!userCommunityMemberships || userCommunityMemberships.length === 0)) {
@@ -207,7 +213,8 @@ export default function CreatePostScreen() {
         params: {
           title: title,
           content: content,
-          selectedCommunity: selectedCommunity?.toString() || '',
+          // Always pass selectedCommunity as a stringified number, or undefined if null
+          selectedCommunity: selectedCommunity !== null && selectedCommunity !== undefined ? String(selectedCommunity) : undefined,
           returnPath: '/create-post'
         }
       });
