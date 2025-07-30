@@ -133,8 +133,26 @@ export const usePosts = (communityId?: number) => {
   const user = session?.user;
   
   const { data: posts, isLoading, refetch } = useQuery({
-    queryKey: ['posts', communityId],
+    queryKey: ['posts', communityId, user?.id],
     queryFn: async () => {
+      // If no specific community is selected (All Communities), 
+      // we need to get user's communities to filter posts appropriately
+      let userCommunityIds: number[] = [];
+      if (!communityId && user) {
+        const { data: userCommunities, error: communitiesError } = await supabase
+          .from('user_communities')
+          .select('community_id')
+          .eq('user_id', user.id);
+          
+        if (communitiesError) throw communitiesError;
+        
+        if (!userCommunities || userCommunities.length === 0) {
+          return []; // User is not in any communities, return empty array
+        }
+        
+        userCommunityIds = userCommunities.map(uc => uc.community_id);
+      }
+      
       // First, get posts with counts from the RPC function
       const { data: postsWithCounts, error: rpcError } = await supabase.rpc('get_posts_with_counts', {
         community_id_param: communityId || null
@@ -155,18 +173,27 @@ export const usePosts = (communityId?: number) => {
       const detailsMap = postDetails.reduce((acc: any, post: any) => {
         acc[post.id] = {
           image_url: post.image_url,
-          community_name: post.communities?.name
+          community_name: post.communities?.name,
+          community_id: post.community_id
         };
         return acc;
       }, {});
       
       // Combine the data
-      const combinedPosts = postsWithCounts.map((post: any) => ({
+      let combinedPosts = postsWithCounts.map((post: any) => ({
         ...post,
         image_url: detailsMap[post.id]?.image_url || null,
         community_name: detailsMap[post.id]?.community_name || null,
+        community_id: detailsMap[post.id]?.community_id || null,
         author_username: post.username || null, // Map username for @ display
       }));
+      
+      // Filter posts when "All Communities" is selected to only show posts from user's communities
+      if (!communityId && userCommunityIds.length > 0) {
+        combinedPosts = combinedPosts.filter((post: any) => 
+          userCommunityIds.includes(post.community_id)
+        );
+      }
       
       return combinedPosts as Post[];
     },

@@ -1,11 +1,11 @@
 // app/community-members.tsx
+import { HapticBackButton } from '@/components/HapticBackButton';
 import { getSchoolByValue } from '@/constants/schools';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { HapticBackButton } from '@/components/HapticBackButton';
 import {
     ActivityIndicator,
     Alert,
@@ -37,6 +37,19 @@ export default function CommunityMembersScreen() {
   const router = useRouter();
   const { communityId, communityName } = useLocalSearchParams();
   const { session } = useAuth();
+  
+  // Process community name to use proper school display name if needed
+  const displayCommunityName = (() => {
+    if (typeof communityName !== 'string') return 'Community';
+    
+    // If it looks like a school identifier (contains underscores), try to get the proper school name
+    if (communityName.includes('_') && communityName !== 'All Communities') {
+      const school = getSchoolByValue(communityName);
+      return school ? school.name : communityName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    }
+    
+    return communityName;
+  })();
   const [loading, setLoading] = useState(true);
   const [members, setMembers] = useState<UserProfile[]>([]);
   const [friends, setFriends] = useState<Set<string>>(new Set());
@@ -265,7 +278,7 @@ export default function CommunityMembersScreen() {
           color="#007AFF"
           text=""
         />
-        <Text style={styles.headerTitle}>{communityName} Members</Text>
+        <Text style={styles.headerTitle}>{displayCommunityName} Members</Text>
         <View style={{ width: 40 }} />
       </View>
 

@@ -858,8 +858,9 @@ export default function StatisticsScreen() {
                 onPress={() => setSelectedPeriod(period)}
               >
                 <ThemedText
-                  variant="caption"
+                  variant="body"
                   color={selectedPeriod === period ? 'primary' : undefined}
+                  style={{ fontWeight: selectedPeriod === period ? 'bold' : '500' }}
                 >
                   {period === 'all' ? 'All Time' : period === 'month' ? 'Month' : 'Week'}
                 </ThemedText>
@@ -1275,13 +1276,23 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   periodTab: {
-    paddingVertical: 6,
-    paddingHorizontal: 16,
-    borderRadius: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 20,
     backgroundColor: '#e5e7eb',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
   periodTabActive: {
     backgroundColor: '#3b82f6',
+    shadowColor: '#3b82f6',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
   },
   formCard: {
     marginBottom: 16,

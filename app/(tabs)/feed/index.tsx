@@ -229,7 +229,7 @@ export default function FeedScreen() {
         pathname: '/community-members',
         params: {
           communityId: selectedCommunityId,
-          communityName: selectedCommunity?.name || 'Community'
+          communityName: selectedCommunityDisplayName || 'Community'
         }
       });
     } else {

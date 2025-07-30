@@ -7,6 +7,7 @@ import { Alert, SafeAreaView, ScrollView, StyleSheet, Switch, TouchableOpacity, 
 import { ThemedButton } from '../../components/themed/ThemedButton';
 import { ThemedText } from '../../components/themed/ThemedText';
 import { ThemedView } from '../../components/themed/ThemedView';
+import { getSchoolByValue } from '../../constants/schools';
 import { useAuth } from '../../contexts/AuthContext';
 import { useFeed } from '../../contexts/FeedContext';
 import { useHaptics } from '../../contexts/HapticsContext';
@@ -277,7 +278,9 @@ export default function AccountScreen() {
                     </View>
                     <View style={styles.communityText}>
                       <ThemedText variant="body" style={styles.communityName}>
-                        {membership.communities.name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        {membership.communities.type === 'school' 
+                          ? getSchoolByValue(membership.communities.name)?.name || membership.communities.name
+                          : membership.communities.name}
                       </ThemedText>
                       <ThemedText variant="caption" style={styles.communityType}>
                         {membership.communities.type === 'school' ? 'School Community' : 'General Community'}
