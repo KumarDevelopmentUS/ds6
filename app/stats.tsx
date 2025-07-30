@@ -846,7 +846,7 @@ export default function StatisticsScreen() {
 
         {/* Header */}
         <ThemedView style={styles.header}>
-          <ThemedText variant="title">Statistics</ThemedText>
+          <ThemedText variant="title">Player Statistics</ThemedText>
           <View style={styles.periodSelector}>
             {(['all', 'month', 'week'] as const).map((period) => (
               <TouchableOpacity
@@ -859,8 +859,10 @@ export default function StatisticsScreen() {
               >
                 <ThemedText
                   variant="body"
-                  color={selectedPeriod === period ? 'primary' : undefined}
-                  style={{ fontWeight: selectedPeriod === period ? 'bold' : '500' }}
+                  style={{ 
+                    fontWeight: selectedPeriod === period ? 'bold' : '500',
+                    color: selectedPeriod === period ? '#007AFF' : undefined
+                  }}
                 >
                   {period === 'all' ? 'All Time' : period === 'month' ? 'Month' : 'Week'}
                 </ThemedText>
@@ -938,109 +940,70 @@ export default function StatisticsScreen() {
           </ThemedView>
         </View>
 
-        {/* Player Statistics Section */}
+        {/* Player Overview */}
         {stats && (
           <ThemedView variant="card" style={styles.playerStatsSection}>
             <ThemedText variant="subtitle" style={styles.sectionTitle}>
-              Player Statistics
+              Player Overview
             </ThemedText>
             
             <View style={styles.playerStatsContainer}>
-              <ThemedText variant="body" style={styles.playerName}>
-                {session?.user?.user_metadata?.nickname || session?.user?.user_metadata?.username || 'Player'}
-              </ThemedText>
-              
               <View style={styles.playerStatsList}>
                 <View style={styles.playerStatRow}>
-                  <ThemedText variant="body">Throws:</ThemedText>
-                  <ThemedText variant="body" color="primary">{stats.totalThrows}</ThemedText>
-                </View>
-                
-                <View style={styles.playerStatRow}>
-                  <ThemedText variant="body">Hits:</ThemedText>
-                  <ThemedText variant="body" color="primary">{stats.totalHits}</ThemedText>
-                </View>
-                
-                <View style={styles.playerStatRow}>
-                  <ThemedText variant="body">Hit%:</ThemedText>
-                  <ThemedText variant="body" color="primary">{stats.hitRate.toFixed(1)}%</ThemedText>
-                </View>
-                
-                <View style={styles.playerStatRow}>
-                  <ThemedText variant="body">Catches:</ThemedText>
-                  <ThemedText variant="body" color="primary">{stats.totalCatches}</ThemedText>
-                </View>
-                
-                <View style={styles.playerStatRow}>
-                  <ThemedText variant="body">Catch%:</ThemedText>
-                  <ThemedText variant="body" color="primary">{stats.catchRate.toFixed(1)}%</ThemedText>
-                </View>
-                
-                <View style={styles.playerStatRow}>
-                  <ThemedText variant="body">Rating:</ThemedText>
+                  <ThemedText variant="body">Overall Rating:</ThemedText>
                   <ThemedText variant="body" color="primary">
-                    {((stats.hitRate + stats.catchRate + stats.fifaRate) / 3).toFixed(1)}%
+                    {(stats.hitRate * 0.45 + stats.catchRate * 0.45 + stats.fifaRate * 0.15).toFixed(1)}%
                   </ThemedText>
                 </View>
                 
                 <View style={styles.playerStatRow}>
-                  <ThemedText variant="body">Blunders:</ThemedText>
-                  <ThemedText variant="body" color="primary">{stats.totalMissedCatches}</ThemedText>
+                  <ThemedText variant="body">Total Matches:</ThemedText>
+                  <ThemedText variant="body" color="primary">{stats.totalMatches}</ThemedText>
                 </View>
                 
                 <View style={styles.playerStatRow}>
-                  <ThemedText variant="body">Score:</ThemedText>
+                  <ThemedText variant="body">Total Score:</ThemedText>
                   <ThemedText variant="body" color="primary">{stats.totalScore}</ThemedText>
                 </View>
                 
                 <View style={styles.playerStatRow}>
-                  <ThemedText variant="body">Aura:</ThemedText>
+                  <ThemedText variant="body">Total Aura:</ThemedText>
                   <ThemedText variant="body" color="primary">{stats.totalAura}</ThemedText>
                 </View>
                 
                 <View style={styles.playerStatRow}>
-                  <ThemedText variant="body">Goals:</ThemedText>
-                  <ThemedText variant="body" color="primary">{stats.totalGoals}</ThemedText>
-                </View>
-                
-                <View style={styles.playerStatRow}>
-                  <ThemedText variant="body">Streak:</ThemedText>
+                  <ThemedText variant="body">Longest Streak:</ThemedText>
                   <ThemedText variant="body" color="primary">{stats.longestStreak}</ThemedText>
                 </View>
                 
                 <View style={styles.playerStatRow}>
-                  <ThemedText variant="body">On Fire Throws:</ThemedText>
-                  <ThemedText variant="body" color="primary">{stats.totalOnFireCount}</ThemedText>
-                </View>
-                
-                <View style={styles.playerStatRow}>
-                  <ThemedText variant="body">FIFA:</ThemedText>
-                  <ThemedText variant="body" color="primary">{stats.totalFifaSuccess}/{stats.totalFifaAttempts}</ThemedText>
-                </View>
-                
-                <View style={styles.playerStatRow}>
-                  <ThemedText variant="body">Special:</ThemedText>
-                  <ThemedText variant="body" color="primary">{stats.totalSpecialThrows}</ThemedText>
+                  <ThemedText variant="body">Total Play Time:</ThemedText>
+                  <ThemedText variant="body" color="primary">{formatDuration(stats.totalMatchDuration)}</ThemedText>
                 </View>
               </View>
             </View>
           </ThemedView>
         )}
 
-        {/* Detailed Stats */}
+        {/* Throwing Statistics */}
         <ThemedView variant="card" style={styles.detailsCard}>
           <ThemedText variant="subtitle" style={styles.sectionTitle}>
-            Performance Details
+            Throwing Statistics
           </ThemedText>
           
           <View style={styles.detailRow}>
-            <ThemedText variant="body">Total Matches</ThemedText>
-            <ThemedText variant="body" color="primary">{stats.totalMatches}</ThemedText>
+            <ThemedText variant="body">Total Throws</ThemedText>
+            <ThemedText variant="body" color="primary">{stats.totalThrows}</ThemedText>
           </View>
           
           <View style={styles.detailRow}>
-            <ThemedText variant="body">Total Score</ThemedText>
-            <ThemedText variant="body" color="primary">{stats.totalScore}</ThemedText>
+            <ThemedText variant="body">Total Hits</ThemedText>
+            <ThemedText variant="body" color="primary">{stats.totalHits}</ThemedText>
+          </View>
+          
+          <View style={styles.detailRow}>
+            <ThemedText variant="body">Hit Rate</ThemedText>
+            <ThemedText variant="body" color="primary">{stats.hitRate.toFixed(1)}%</ThemedText>
           </View>
           
           <View style={styles.detailRow}>
@@ -1059,76 +1022,89 @@ export default function StatisticsScreen() {
           </View>
           
           <View style={styles.detailRow}>
-            <ThemedText variant="body">FIFA Success Rate</ThemedText>
-            <ThemedText variant="body" color="primary">
-              {stats.fifaRate.toFixed(1)}% ({stats.totalFifaSuccess}/{stats.totalFifaAttempts})
-            </ThemedText>
-          </View>
-          
-          <View style={styles.detailRow}>
-            <ThemedText variant="body">Total Aura</ThemedText>
-            <ThemedText variant="body" color="primary">{stats.totalAura}</ThemedText>
-          </View>
-          
-          <View style={styles.detailRow}>
-            <ThemedText variant="body">Longest Hit Streak</ThemedText>
-            <ThemedText variant="body" color="primary">{stats.longestStreak}</ThemedText>
-          </View>
-          
-          <View style={styles.detailRow}>
             <ThemedText variant="body">Times On Fire</ThemedText>
             <ThemedText variant="body" color="primary">{stats.totalOnFireCount} 🔥</ThemedText>
           </View>
           
           <View style={styles.detailRow}>
-            <ThemedText variant="body">Total Play Time</ThemedText>
-            <ThemedText variant="body" color="primary">{formatDuration(stats.totalMatchDuration)}</ThemedText>
+            <ThemedText variant="body">FIFA Success Rate</ThemedText>
+            <ThemedText variant="body" color="primary">
+              {stats.fifaRate.toFixed(1)}% ({stats.totalFifaSuccess}/{stats.totalFifaAttempts})
+            </ThemedText>
+          </View>
+        </ThemedView>
+
+        {/* Catching Statistics */}
+        <ThemedView variant="card" style={styles.detailsCard}>
+          <ThemedText variant="subtitle" style={styles.sectionTitle}>
+            Catching Statistics
+          </ThemedText>
+          
+          <View style={styles.detailRow}>
+            <ThemedText variant="body">Total Catches</ThemedText>
+            <ThemedText variant="body" color="primary">{stats.totalCatches}</ThemedText>
           </View>
           
-          {/* New Granular Counters */}
           <View style={styles.detailRow}>
-            <ThemedText variant="body">Table Die</ThemedText>
-            <ThemedText variant="body" color="primary">{stats.totalTableDie}</ThemedText>
+            <ThemedText variant="body">Catch Attempts</ThemedText>
+            <ThemedText variant="body" color="primary">{stats.totalCatchAttempts}</ThemedText>
           </View>
+          
           <View style={styles.detailRow}>
-            <ThemedText variant="body">Line</ThemedText>
-            <ThemedText variant="body" color="primary">{stats.totalLine}</ThemedText>
+            <ThemedText variant="body">Catch Rate</ThemedText>
+            <ThemedText variant="body" color="primary">{stats.catchRate.toFixed(1)}%</ThemedText>
           </View>
-          <View style={styles.detailRow}>
-            <ThemedText variant="body">Knicker</ThemedText>
-            <ThemedText variant="body" color="primary">{stats.totalKnicker}</ThemedText>
-          </View>
-          <View style={styles.detailRow}>
-            <ThemedText variant="body">Dink</ThemedText>
-            <ThemedText variant="body" color="primary">{stats.totalDink}</ThemedText>
-          </View>
-          <View style={styles.detailRow}>
-            <ThemedText variant="body">Drop</ThemedText>
-            <ThemedText variant="body" color="primary">{stats.totalDrop}</ThemedText>
-          </View>
-          <View style={styles.detailRow}>
-            <ThemedText variant="body">Miss</ThemedText>
-            <ThemedText variant="body" color="primary">{stats.totalMiss}</ThemedText>
-          </View>
-          <View style={styles.detailRow}>
-            <ThemedText variant="body">Long Shot</ThemedText>
-            <ThemedText variant="body" color="primary">{stats.totalLong}</ThemedText>
-          </View>
-          <View style={styles.detailRow}>
-            <ThemedText variant="body">Catch + Aura</ThemedText>
-            <ThemedText variant="body" color="primary">{stats.totalCatchPlusAura}</ThemedText>
-          </View>
+          
           <View style={styles.detailRow}>
             <ThemedText variant="body">Body Catches</ThemedText>
             <ThemedText variant="body" color="primary">{stats.totalBody}</ThemedText>
           </View>
+          
           <View style={styles.detailRow}>
             <ThemedText variant="body">Two-Hand Catches</ThemedText>
             <ThemedText variant="body" color="primary">{stats.totalTwoHands}</ThemedText>
           </View>
+          
           <View style={styles.detailRow}>
-            <ThemedText variant="body">Missed Catches</ThemedText>
-            <ThemedText variant="body" color="primary">{stats.totalMissedCatches}</ThemedText>
+            <ThemedText variant="body">Drops</ThemedText>
+            <ThemedText variant="body" color="primary">{stats.totalDrop}</ThemedText>
+          </View>
+          
+          <View style={styles.detailRow}>
+            <ThemedText variant="body">Misses</ThemedText>
+            <ThemedText variant="body" color="primary">{stats.totalMiss}</ThemedText>
+          </View>
+        </ThemedView>
+
+        {/* Shot Types */}
+        <ThemedView variant="card" style={styles.detailsCard}>
+          <ThemedText variant="subtitle" style={styles.sectionTitle}>
+            Shot Types
+          </ThemedText>
+          
+          <View style={styles.detailRow}>
+            <ThemedText variant="body">Table Die</ThemedText>
+            <ThemedText variant="body" color="primary">{stats.totalTableDie}</ThemedText>
+          </View>
+          
+          <View style={styles.detailRow}>
+            <ThemedText variant="body">Line Shots</ThemedText>
+            <ThemedText variant="body" color="primary">{stats.totalLine}</ThemedText>
+          </View>
+          
+          <View style={styles.detailRow}>
+            <ThemedText variant="body">Knickers</ThemedText>
+            <ThemedText variant="body" color="primary">{stats.totalKnicker}</ThemedText>
+          </View>
+          
+          <View style={styles.detailRow}>
+            <ThemedText variant="body">Dinks</ThemedText>
+            <ThemedText variant="body" color="primary">{stats.totalDink}</ThemedText>
+          </View>
+          
+          <View style={styles.detailRow}>
+            <ThemedText variant="body">Long Shots</ThemedText>
+            <ThemedText variant="body" color="primary">{stats.totalLong}</ThemedText>
           </View>
         </ThemedView>
 
@@ -1287,10 +1263,10 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   periodTabActive: {
-    backgroundColor: '#3b82f6',
-    shadowColor: '#3b82f6',
+    backgroundColor: '#e8f4ff',
+    shadowColor: '#007AFF',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 4,
   },
