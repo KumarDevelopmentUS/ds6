@@ -3,5 +3,17 @@
     "source.fixAll": "explicit",
     "source.organizeImports": "explicit",
     "source.sortMembers": "explicit"
-  }
+  },
+  "sqltools.connections": [
+    {
+      "previewLimit": 50,
+      "server": "aws-0-us-east-1.pooler.supabase.com",
+      "port": 6543,
+      "driver": "PostgreSQL",
+      "name": "Supabase Database",
+      "database": "postgres",
+      "username": "postgres.pralctamjnxchqpmazpf",
+      "password": "raBpa8-zybtod-gykris"
+    }
+  ]
 }
