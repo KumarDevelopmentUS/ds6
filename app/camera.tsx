@@ -14,6 +14,8 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
 export default function CameraScreen() {
   const router = useRouter();
@@ -22,7 +24,12 @@ export default function CameraScreen() {
   const [facing, setFacing] = useState<CameraType>('back');
   const [isCapturing, setIsCapturing] = useState(false);
   const [isCameraReady, setIsCameraReady] = useState(false);
+  const [zoom, setZoom] = useState(1);
   const cameraRef = useRef<CameraView | null>(null);
+
+  // Zoom animation values
+  const scale = useSharedValue(1);
+  const savedScale = useSharedValue(1);
 
   // Extract form data from params
   const formData = {
@@ -106,6 +113,52 @@ export default function CameraScreen() {
     setIsCameraReady(true);
   };
 
+  // Pinch gesture for zoom
+  const pinchGesture = Gesture.Pinch()
+    .onUpdate((event) => {
+      const newScale = savedScale.value * event.scale;
+      const clampedScale = Math.max(1, Math.min(5, newScale)); // Limit zoom between 1x and 5x
+      scale.value = clampedScale;
+      setZoom(clampedScale);
+    })
+    .onEnd(() => {
+      savedScale.value = scale.value;
+    });
+
+  // Double tap gesture to switch camera
+  const doubleTapGesture = Gesture.Tap()
+    .numberOfTaps(2)
+    .onEnd(() => {
+      console.log('📷 Double tap detected - switching camera');
+      toggleCameraFacing();
+    });
+
+  // Animated style for zoom
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  // Zoom control functions
+  const zoomIn = () => {
+    const newZoom = Math.min(5, zoom + 0.5);
+    setZoom(newZoom);
+    scale.value = withSpring(newZoom);
+    savedScale.value = newZoom;
+  };
+
+  const zoomOut = () => {
+    const newZoom = Math.max(1, zoom - 0.5);
+    setZoom(newZoom);
+    scale.value = withSpring(newZoom);
+    savedScale.value = newZoom;
+  };
+
+  const resetZoom = () => {
+    setZoom(1);
+    scale.value = withSpring(1);
+    savedScale.value = 1;
+  };
+
   if (!permission) {
     // Permissions are still loading
     console.log('📷 Permissions loading...');
@@ -171,20 +224,40 @@ export default function CameraScreen() {
             }
           });
         }} style={styles.headerButton} color="white" text="" iconSize={30} />
-        <Text style={styles.headerTitle}>Take a Photo</Text>
+        <View style={styles.headerTitleContainer}>
+          <Text style={styles.headerTitle}>Take a Photo</Text>
+          <Text style={styles.headerSubtitle}>Double-tap to switch camera</Text>
+        </View>
         <TouchableOpacity onPress={toggleCameraFacing} style={styles.headerButton}>
           <Ionicons name="camera-reverse-outline" size={30} color="white" />
         </TouchableOpacity>
       </View>
 
       <View style={styles.cameraContainer}>
-        <CameraView
-          ref={cameraRef}
-          style={styles.camera}
-          facing={facing}
-          enableTorch={false}
-          onCameraReady={handleCameraReady}
-        />
+        <GestureDetector gesture={Gesture.Simultaneous(pinchGesture, doubleTapGesture)}>
+          <Animated.View style={[styles.camera, animatedStyle]}>
+            <CameraView
+              ref={cameraRef}
+              style={styles.cameraView}
+              facing={facing}
+              enableTorch={false}
+              onCameraReady={handleCameraReady}
+            />
+          </Animated.View>
+        </GestureDetector>
+        
+        {/* Zoom Controls */}
+        <View style={styles.zoomControls}>
+          <TouchableOpacity style={styles.zoomButton} onPress={zoomOut}>
+            <Ionicons name="remove" size={24} color="white" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.zoomButton} onPress={resetZoom}>
+            <Text style={styles.zoomText}>{zoom.toFixed(1)}x</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.zoomButton} onPress={zoomIn}>
+            <Ionicons name="add" size={24} color="white" />
+          </TouchableOpacity>
+        </View>
         
         {!isCameraReady && (
           <View style={styles.cameraLoadingOverlay}>
@@ -240,10 +313,18 @@ const styles = StyleSheet.create({
     width: 40,
     alignItems: 'center',
   },
+  headerTitleContainer: {
+    alignItems: 'center',
+  },
   headerTitle: {
     color: 'white',
     fontSize: 18,
     fontWeight: '600',
+  },
+  headerSubtitle: {
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: 12,
+    marginTop: 2,
   },
   cameraContainer: {
     flex: 1,
@@ -253,6 +334,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#1a1a1a',
   },
   camera: {
+    flex: 1,
+    overflow: 'hidden',
+  },
+  cameraView: {
     flex: 1,
   },
   controlsContainer: {
@@ -345,5 +430,28 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     marginTop: 10,
+  },
+  zoomControls: {
+    position: 'absolute',
+    right: 20,
+    top: '50%',
+    transform: [{ translateY: -60 }],
+    alignItems: 'center',
+    gap: 12,
+  },
+  zoomButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  zoomText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
