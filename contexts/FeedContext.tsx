@@ -46,7 +46,7 @@ export function FeedProvider({ children }: FeedProviderProps) {
 
 
   const value: FeedContextType = {
-    communities: communities || [],
+    communities: communities as UserCommunityMembership[] | undefined,
     isLoading,
     error,
     refetch,
