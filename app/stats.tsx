@@ -100,7 +100,7 @@ export default function StatisticsScreen() {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<OverallStats | null>(null);
   const [achievements, setAchievements] = useState<AchievementData[]>([]);
-  const [selectedPeriod, setSelectedPeriod] = useState<'all' | 'month' | 'week'>('all');
+
   const [recentForm, setRecentForm] = useState<('W' | 'L' | 'D')[]>([]);
 
   useEffect(() => {
@@ -109,7 +109,7 @@ export default function StatisticsScreen() {
     } else {
       setLoading(false);
     }
-  }, [session, selectedPeriod]);
+  }, [session]);
 
   const loadStatistics = async () => {
     if (!session?.user) return;
@@ -119,17 +119,6 @@ export default function StatisticsScreen() {
         .from('saved_matches')
         .select('*')
         .eq('userId', session.user.id);
-
-      // Apply time filter
-      if (selectedPeriod !== 'all') {
-        const date = new Date();
-        if (selectedPeriod === 'week') {
-          date.setDate(date.getDate() - 7);
-        } else if (selectedPeriod === 'month') {
-          date.setMonth(date.getMonth() - 1);
-        }
-        query = query.gte('createdAt', date.toISOString());
-      }
 
       const { data: allMatches, error } = await query.order('createdAt', { ascending: false });
 
@@ -847,28 +836,6 @@ export default function StatisticsScreen() {
         {/* Header */}
         <ThemedView style={styles.header}>
           <ThemedText variant="title">Player Statistics</ThemedText>
-          <View style={styles.periodSelector}>
-            {(['all', 'month', 'week'] as const).map((period) => (
-              <TouchableOpacity
-                key={period}
-                style={[
-                  styles.periodTab,
-                  selectedPeriod === period && styles.periodTabActive,
-                ]}
-                onPress={() => setSelectedPeriod(period)}
-              >
-                <ThemedText
-                  variant="body"
-                  style={{ 
-                    fontWeight: selectedPeriod === period ? 'bold' : '500',
-                    color: selectedPeriod === period ? '#007AFF' : undefined
-                  }}
-                >
-                  {period === 'all' ? 'All Time' : period === 'month' ? 'Month' : 'Week'}
-                </ThemedText>
-              </TouchableOpacity>
-            ))}
-          </View>
         </ThemedView>
 
         {/* Recent Form */}
@@ -1246,30 +1213,7 @@ const styles = StyleSheet.create({
   header: {
     marginBottom: 20,
   },
-  periodSelector: {
-    flexDirection: 'row',
-    marginTop: 12,
-    gap: 8,
-  },
-  periodTab: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 20,
-    backgroundColor: '#e5e7eb',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  periodTabActive: {
-    backgroundColor: '#e8f4ff',
-    shadowColor: '#007AFF',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
-  },
+
   formCard: {
     marginBottom: 16,
   },

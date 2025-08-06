@@ -1,24 +1,23 @@
 // app/history.tsx
+import { HapticBackButton } from '@/components/HapticBackButton';
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    RefreshControl,
+    ScrollView,
+    StyleSheet,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import { ThemedButton } from '../components/themed/ThemedButton';
 import { ThemedText } from '../components/themed/ThemedText';
 import { ThemedView } from '../components/themed/ThemedView';
 import { useTheme } from '../contexts/ThemeContext';
-import { useAuth } from '@/contexts/AuthContext';
-import { HapticBackButton } from '@/components/HapticBackButton';
 
 interface SavedMatch {
   id: string;
@@ -270,7 +269,12 @@ export default function GameHistoryScreen() {
             >
               <ThemedText
                 variant="body"
-                color={filter === filterType ? 'primary' : undefined}
+                style={{
+                  fontWeight: filter === filterType ? 'bold' : '600',
+                  color: filter === filterType ? '#FFFFFF' : '#1F2937',
+                  fontSize: 16,
+                  textAlign: 'center'
+                }}
               >
                 {filterType.charAt(0).toUpperCase() + filterType.slice(1)}
               </ThemedText>
@@ -453,18 +457,33 @@ const styles = StyleSheet.create({
   filterContainer: {
     flexDirection: 'row',
     marginBottom: 20,
-    gap: 8,
+    gap: 12,
+    justifyContent: 'center',
   },
   filterTab: {
     flex: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    backgroundColor: '#e5e7eb',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 25,
+    backgroundColor: '#F9FAFB',
+    borderWidth: 2,
+    borderColor: '#D1D5DB',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
+    minWidth: 80,
   },
   filterTabActive: {
     backgroundColor: '#3b82f6',
+    borderColor: '#3b82f6',
+    shadowColor: '#3b82f6',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 6,
   },
   emptyCard: {
     padding: 40,
