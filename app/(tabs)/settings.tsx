@@ -7,6 +7,7 @@ import { Alert, SafeAreaView, ScrollView, StyleSheet, Switch, TouchableOpacity, 
 import { ThemedButton } from '../../components/themed/ThemedButton';
 import { ThemedText } from '../../components/themed/ThemedText';
 import { ThemedView } from '../../components/themed/ThemedView';
+import { DebugPanel } from '../../components/DebugPanel';
 import { getSchoolByValue } from '../../constants/schools';
 import { useAuth } from '../../contexts/AuthContext';
 import { useFeed } from '../../contexts/FeedContext';
@@ -374,6 +375,23 @@ export default function AccountScreen() {
           </ThemedView>
         </ThemedView>
       ))}
+
+      {/* Debug Panel - Temporary for production debugging */}
+      {session?.user && (
+        <ThemedView variant="section">
+          <View style={styles.sectionHeader}>
+            <Ionicons
+              name="bug-outline"
+              size={24}
+              color={theme.colors.warning}
+            />
+            <ThemedText variant="subtitle" style={styles.sectionTitle}>
+              Debug Tools
+            </ThemedText>
+          </View>
+          <DebugPanel />
+        </ThemedView>
+      )}
 
       {/* Logout Button */}
       {session?.user && (
