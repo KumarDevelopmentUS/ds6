@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Alert, SafeAreaView, ScrollView, StyleSheet, Switch, TouchableOpacity, View } from 'react-native';
-import { DebugPanel } from '../../components/DebugPanel';
+
 import { ThemedButton } from '../../components/themed/ThemedButton';
 import { ThemedText } from '../../components/themed/ThemedText';
 import { ThemedView } from '../../components/themed/ThemedView';
@@ -376,22 +376,7 @@ export default function AccountScreen() {
         </ThemedView>
       ))}
 
-      {/* Debug Panel - Temporary for production debugging */}
-      {session?.user && (
-        <ThemedView variant="section">
-          <View style={styles.sectionHeader}>
-            <Ionicons
-              name="bug-outline"
-              size={24}
-              color={theme.colors.warning}
-            />
-            <ThemedText variant="subtitle" style={styles.sectionTitle}>
-              Debug Tools
-            </ThemedText>
-          </View>
-          <DebugPanel />
-        </ThemedView>
-      )}
+
 
       {/* Logout Button */}
       {session?.user && (

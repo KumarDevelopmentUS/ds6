@@ -75,16 +75,11 @@ export const useUserCommunities = () => {
     queryKey: ['userCommunities', user?.id],
     queryFn: async () => {
       if (!user) return [];
-      console.log('🔍 useUserCommunities: Fetching data for user:', user.id);
       const { data, error } = await supabase
         .from('user_communities')
         .select('*, communities(*)')
         .eq('user_id', user.id);
-      if (error) {
-        console.error('❌ useUserCommunities: Error fetching data:', error);
-        throw error;
-      }
-      console.log('✅ useUserCommunities: Data fetched successfully:', data?.length || 0, 'communities');
+      if (error) throw error;
       return data || []; 
     },
     enabled: !!user,
