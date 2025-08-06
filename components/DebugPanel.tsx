@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Alert, ScrollView, StyleSheet } from 'react-native';
-import { supabase } from '@/supabase';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/supabase';
+import React, { useState } from 'react';
+import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export const DebugPanel = () => {
   const [debugInfo, setDebugInfo] = useState<any>({});
@@ -141,6 +141,27 @@ User has ${info.step5?.count || 0} memberships
     }
   };
 
+  const refreshCache = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Force refresh the page to clear all React Query cache
+      if (typeof window !== 'undefined') {
+        Alert.alert('Refreshing', 'Refreshing the app to clear cache...');
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
+      } else {
+        Alert.alert('Refresh', 'Please manually refresh the app to clear cache');
+      }
+      
+    } catch (error) {
+      Alert.alert('Error', error instanceof Error ? error.message : 'Unknown error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <ScrollView style={styles.container}>
       <Text style={styles.title}>🔍 Debug Panel</Text>
@@ -161,6 +182,14 @@ User has ${info.step5?.count || 0} memberships
         disabled={isLoading}
       >
         <Text style={styles.buttonText}>🔧 Fix Communities</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity 
+        style={[styles.button, styles.refreshButton, isLoading && styles.buttonDisabled]} 
+        onPress={refreshCache}
+        disabled={isLoading}
+      >
+        <Text style={styles.buttonText}>🔄 Refresh Cache</Text>
       </TouchableOpacity>
 
       {Object.keys(debugInfo).length > 0 && (
@@ -195,6 +224,9 @@ const styles = StyleSheet.create({
   },
   fixButton: {
     backgroundColor: '#28a745',
+  },
+  refreshButton: {
+    backgroundColor: '#ffc107',
   },
   buttonDisabled: {
     opacity: 0.6,

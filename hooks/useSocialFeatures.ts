@@ -75,14 +75,23 @@ export const useUserCommunities = () => {
     queryKey: ['userCommunities', user?.id],
     queryFn: async () => {
       if (!user) return [];
+      console.log('🔍 useUserCommunities: Fetching data for user:', user.id);
       const { data, error } = await supabase
         .from('user_communities')
         .select('*, communities(*)')
         .eq('user_id', user.id);
-      if (error) throw error;
+      if (error) {
+        console.error('❌ useUserCommunities: Error fetching data:', error);
+        throw error;
+      }
+      console.log('✅ useUserCommunities: Data fetched successfully:', data?.length || 0, 'communities');
       return data || []; 
     },
     enabled: !!user,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    cacheTime: 10 * 60 * 1000, // 10 minutes
+    retry: 3,
+    retryDelay: 1000,
   });
 
   // --- THIS useEffect IS NOW MORE ROBUST ---

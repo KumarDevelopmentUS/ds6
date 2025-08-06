@@ -1,6 +1,7 @@
 // contexts/FeedContext.tsx
 import React, { createContext, useContext, ReactNode } from 'react';
 import { useUserCommunities } from '../hooks/useSocialFeatures';
+import { useAuth } from './AuthContext';
 
 // Define the shape of a community
 interface Community {
@@ -40,13 +41,15 @@ interface FeedProviderProps {
 export function FeedProvider({ children }: FeedProviderProps) {
   // Destructure the hook results
   const { data: communities, isLoading, error, refetch } = useUserCommunities();
+  const { session } = useAuth();
 
   // Log for debugging
   console.log('🏘️ FEED CONTEXT: Provider data:', {
     communities: communities?.length || 0,
     isLoading,
     error: error?.message,
-    rawCommunities: communities
+    rawCommunities: communities,
+    userId: session?.user?.id
   });
 
   const value: FeedContextType = {
