@@ -1,5 +1,5 @@
 // contexts/FeedContext.tsx
-import React, { createContext, useContext, ReactNode } from 'react';
+import React, { createContext, ReactNode, useContext, useEffect } from 'react';
 import { useUserCommunities } from '../hooks/useSocialFeatures';
 import { useAuth } from './AuthContext';
 
@@ -52,12 +52,30 @@ export function FeedProvider({ children }: FeedProviderProps) {
     userId: session?.user?.id
   });
 
+  // Monitor communities data changes
+  useEffect(() => {
+    console.log('🏘️ FEED CONTEXT: Communities data changed:', {
+      communitiesLength: communities?.length || 0,
+      isLoading,
+      hasError: !!error,
+      rawData: communities
+    });
+  }, [communities, isLoading, error]);
+
   const value: FeedContextType = {
     communities: communities || [],
     isLoading,
     error,
     refetch,
   };
+
+  // Additional debug logging to track data flow
+  console.log('🏘️ FEED CONTEXT: Final value being provided:', {
+    communitiesLength: value.communities?.length || 0,
+    isLoading: value.isLoading,
+    hasError: !!value.error,
+    rawCommunities: value.communities
+  });
 
   return (
     <FeedContext.Provider value={value}>
