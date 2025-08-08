@@ -281,6 +281,25 @@ export default function CreatePostScreen() {
     }
   };
 
+  const takeDualPhotoWithCamera = async () => {
+    setShowMediaOptions(false);
+    try {
+      const communityParam = selectedCommunity !== null && selectedCommunity !== undefined ? String(selectedCommunity) : undefined;
+      router.push({
+        pathname: '/dual-camera',
+        params: {
+          title: title,
+          content: content,
+          selectedCommunity: communityParam,
+          returnPath: '/create-post',
+        },
+      });
+    } catch (error: any) {
+      console.error('Dual camera navigation error:', error);
+      Alert.alert('Camera Error', 'Could not open dual camera. Please try again.');
+    }
+  };
+
   const handleSubmit = () => {
     if (!title.trim()) {
       Alert.alert('Error', 'Please enter a title');
@@ -517,6 +536,11 @@ export default function CreatePostScreen() {
             <TouchableOpacity onPress={takePhotoWithCamera} style={styles.modalOption}>
               <Ionicons name="camera-outline" size={24} color="#007AFF" />
               <Text style={styles.modalOptionText}>Take Photo</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity onPress={takeDualPhotoWithCamera} style={styles.modalOption}>
+              <Ionicons name="camera-reverse-outline" size={24} color="#007AFF" />
+              <Text style={styles.modalOptionText}>Dual Camera (Front + Back)</Text>
             </TouchableOpacity>
             
             <TouchableOpacity 
