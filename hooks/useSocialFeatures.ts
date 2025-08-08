@@ -168,7 +168,7 @@ export const usePosts = (communityId?: number) => {
       const postIds = postsWithCounts.map((p: any) => p.id);
       const { data: postDetails, error: detailsError } = await supabase
         .from('posts')
-        .select('id, image_url, community_id, communities(name)')
+        .select('id, uid, image_url, community_id, communities(name)')
         .in('id', postIds);
         
       if (detailsError) throw detailsError;
@@ -176,6 +176,7 @@ export const usePosts = (communityId?: number) => {
       // Create maps for quick lookup
       const detailsMap = postDetails.reduce((acc: any, post: any) => {
         acc[post.id] = {
+          uid: post.uid,
           image_url: post.image_url,
           community_name: post.communities?.name,
           community_id: post.community_id
@@ -186,6 +187,7 @@ export const usePosts = (communityId?: number) => {
       // Combine the data
       let combinedPosts = postsWithCounts.map((post: any) => ({
         ...post,
+        id: detailsMap[post.id]?.uid || String(post.id), // expose uuid to the app
         image_url: detailsMap[post.id]?.image_url || null,
         community_name: detailsMap[post.id]?.community_name || null,
         community_id: detailsMap[post.id]?.community_id || null,
@@ -203,37 +205,37 @@ export const usePosts = (communityId?: number) => {
     },
   });
 
-  const { data: userVotes } = useQuery({
+   const { data: userVotes } = useQuery({
     // Proactively added type annotation to prevent 'any' type error
-    queryKey: ['userVotes', user?.id, posts?.map((p: Post) => p.id)],
+     queryKey: ['userVotes', user?.id, posts?.map((p: Post) => p.id)],
     queryFn: async () => {
       if (!user || !posts || posts.length === 0) return {};
       
-      const { data, error } = await supabase
+       const { data, error } = await supabase
         .from('votes')
-        .select('post_id, vote_type')
+        .select('post_uid, vote_type')
         .eq('user_id', user.id)
-        .in('post_id', posts.map((p: Post) => p.id));
+        .in('post_uid', posts.map((p: Post) => p.id));
         
       if (error) throw error;
       
-      return data.reduce((acc, vote) => {
-        acc[vote.post_id] = vote.vote_type;
+       return data.reduce((acc, vote) => {
+        acc[vote.post_uid] = vote.vote_type;
         return acc;
-      }, {} as Record<number, -1 | 1>);
+       }, {} as Record<string, -1 | 1>);
     },
     enabled: !!user && !!posts && posts.length > 0,
   });
 
   const voteMutation = useMutation({
-    mutationFn: async ({ postId, voteType }: { postId: number; voteType: -1 | 1 }) => {
+    mutationFn: async ({ postId, voteType }: { postId: string; voteType: -1 | 1 }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
       const { data: existingVote } = await supabase
         .from('votes')
         .select('*')
-        .eq('post_id', postId)
+        .eq('post_uid', postId)
         .eq('user_id', user.id)
         .single();
 
@@ -244,7 +246,7 @@ export const usePosts = (communityId?: number) => {
           await supabase.from('votes').update({ vote_type: voteType }).eq('id', existingVote.id);
         }
       } else {
-        await supabase.from('votes').insert({ post_id: postId, user_id: user.id, vote_type: voteType });
+        await supabase.from('votes').insert({ post_uid: postId, user_id: user.id, vote_type: voteType });
       }
     },
     onSuccess: () => {
@@ -253,14 +255,14 @@ export const usePosts = (communityId?: number) => {
     },
   });
 
-  const handleVote = (postId: number, voteType: -1 | 1) => {
+  const handleVote = (postId: string, voteType: -1 | 1) => {
     voteMutation.mutate({ postId, voteType });
   };
 
   return { posts, isLoading, refetch, handleVote, userVotes };
 };
 
-export const usePost = (postId: number) => {
+export const usePost = (postId: string) => {
   const queryClient = useQueryClient();
   const { session } = useAuth();
   const user = session?.user;
@@ -268,40 +270,51 @@ export const usePost = (postId: number) => {
   const { data: post, isLoading, error } = useQuery({
     queryKey: ['post', postId],
     queryFn: async () => {
+      // Fetch by uuid and also fetch numeric id for counts lookup
       const { data, error } = await supabase
         .from('posts')
-        .select('*, communities(name)')
-        .eq('id', postId)
+        .select('id, uid, title, content, created_at, image_url, community_id, communities(name), author_name, author_avatar_icon, author_avatar_icon_color, author_avatar_background_color, user_id')
+        .eq('uid', postId)
         .single();
       if (error) throw error;
-      
+
+      const numericId = data.id;
       const { data: counts } = await supabase.rpc('get_posts_with_counts', {
         community_id_param: null
       });
-      
-      const postCounts = counts.find((p: Post) => p.id === postId);
+      const postCounts = counts.find((p: any) => p.id === numericId);
 
       return {
-        ...data,
+        id: data.uid,
+        title: data.title,
+        content: data.content,
+        created_at: data.created_at,
+        image_url: data.image_url,
+        community_id: data.community_id,
+        author_name: data.author_name,
+        author_avatar_icon: data.author_avatar_icon,
+        author_avatar_icon_color: data.author_avatar_icon_color,
+        author_avatar_background_color: data.author_avatar_background_color,
+        user_id: data.user_id,
         like_count: postCounts?.like_count || 0,
         comment_count: postCounts?.comment_count || 0,
-        community_name: data.communities?.name || null,
-      } as Post;
+        community_name: (data as any).communities?.name || null,
+      } as unknown as Post;
     },
-    enabled: !isNaN(postId),
+    enabled: typeof postId === 'string' && postId.length > 0,
   });
 
   const { data: userVote } = useQuery({
     queryKey: ['userVote', postId, user?.id],
     queryFn: async () => {
       if (!user) return null;
-      const { data, error } = await supabase.from('votes').select('vote_type').eq('post_id', postId).eq('user_id', user.id).single();
+      const { data, error } = await supabase.from('votes').select('vote_type').eq('post_uid', postId).eq('user_id', user.id).single();
       if (error && error.code !== 'PGRST116') throw error;
       // --- THIS IS THE FIX ---
       // If data?.vote_type is undefined (because data is null), return null instead.
       return data?.vote_type ?? null;
     },
-    enabled: !!user && !isNaN(postId),
+    enabled: !!user && typeof postId === 'string' && postId.length > 0,
   });
 
   const voteMutation = useMutation({
@@ -309,7 +322,7 @@ export const usePost = (postId: number) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      const { data: existingVote } = await supabase.from('votes').select('*').eq('post_id', postId).eq('user_id', user.id).single();
+      const { data: existingVote } = await supabase.from('votes').select('*').eq('post_uid', postId).eq('user_id', user.id).single();
 
       if (existingVote) {
         if (existingVote.vote_type === voteType) {
@@ -318,7 +331,7 @@ export const usePost = (postId: number) => {
           await supabase.from('votes').update({ vote_type: voteType }).eq('id', existingVote.id);
         }
       } else {
-        await supabase.from('votes').insert({ post_id: postId, user_id: user.id, vote_type: voteType });
+        await supabase.from('votes').insert({ post_uid: postId, user_id: user.id, vote_type: voteType });
       }
     },
     onSuccess: () => {
@@ -500,7 +513,7 @@ export const useCreatePost = () => {
 };
 
 
-export const useComments = (postId: number) => {
+export const useComments = (postId: string) => {
   const queryClient = useQueryClient();
   const { session } = useAuth();
   const user = session?.user;
@@ -512,7 +525,7 @@ export const useComments = (postId: number) => {
       const { data, error } = await supabase
         .from('comments')
         .select('*')
-        .eq('post_id', postId)
+        .eq('post_uid', postId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -538,7 +551,7 @@ export const useComments = (postId: number) => {
       });
       return rootComments;
     },
-    enabled: !isNaN(postId),
+    enabled: typeof postId === 'string' && postId.length > 0,
   });
 
   const addCommentMutation = useMutation({
@@ -547,7 +560,7 @@ export const useComments = (postId: number) => {
 
       const { error } = await supabase.from('comments').insert({
           content,
-          post_id: postId,
+          post_uid: postId,
           user_id: user.id,
           parent_comment_id: parentId,
           author_name: profile.nickname || profile.first_name || 'Anonymous',

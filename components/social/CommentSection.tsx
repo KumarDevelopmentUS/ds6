@@ -1,18 +1,18 @@
 // components/social/CommentSection.tsx
-import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  TextInput, 
-  TouchableOpacity, 
-  FlatList, 
-  StyleSheet,
-  KeyboardAvoidingView,
-  Platform
-} from 'react-native';
-import { UserAvatar } from './UserAvatar';
-import { Comment } from '../../types/social';
 import { Ionicons } from '@expo/vector-icons';
+import React, { useState } from 'react';
+import {
+    FlatList,
+    KeyboardAvoidingView,
+    Platform,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
+} from 'react-native';
+import { Comment } from '../../types/social';
+import { UserAvatar } from './UserAvatar';
 
 interface CommentSectionProps {
   comments: Comment[];

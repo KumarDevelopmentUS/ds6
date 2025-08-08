@@ -1,7 +1,7 @@
 // types/social.ts
 
 export interface Post {
-  id: number;
+  id: string; // UUID
   title: string;
   content: string;
   created_at: string;
@@ -22,7 +22,7 @@ export interface Comment {
   id: number;
   content: string;
   created_at: string;
-  post_id: number;
+  post_id: string; // UUID
   user_id: string;
   parent_comment_id?: number;
   author_name: string;
@@ -34,7 +34,7 @@ export interface Comment {
 
 export interface Vote {
   id: number;
-  post_id: number;
+  post_id: string; // UUID
   user_id: string;
   vote_type: -1 | 1;
 }

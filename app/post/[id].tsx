@@ -33,7 +33,7 @@ const blurhash = 'L6PZfSi_.AyE_3t7t7R**0o#DgR4';
 export default function PostDetailScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
-  const postId = Array.isArray(id) ? parseInt(id[0], 10) : parseInt(id || '', 10);
+  const postId = Array.isArray(id) ? id[0] : (id as string);
   
   const { post, isLoading: postLoading, handleVote, userVote, error: postError } = usePost(postId);
   const { comments, addComment } = useComments(postId);

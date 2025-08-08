@@ -206,10 +206,10 @@ const PostCardComponent: React.FC<PostCardProps> = ({
         ) : null}
 
         <View style={styles.footer}>
-          <VoteButtons
+           <VoteButtons
             likeCount={post.like_count}
             onVote={onVote}
-            userVote={userVote || null}
+             userVote={userVote || null}
           />
           <View style={styles.commentButton}>
             <Ionicons name="chatbubble-outline" size={18} color="#666" />
