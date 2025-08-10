@@ -58,6 +58,8 @@ interface OverallStats {
   totalBody: number; // Added for body catches
   totalTwoHands: number; // Added for two hands catches
   totalMissedCatches: number; // Sum of drop, miss, twoHands, body
+  totalGoodKick: number; // Added for good FIFA kicks
+  totalBadKick: number; // Added for bad FIFA kicks
 }
 
 // Define achievement tiers
@@ -213,6 +215,8 @@ export default function StatisticsScreen() {
       totalBody: 0,
       totalTwoHands: 0,
       totalMissedCatches: 0,
+      totalGoodKick: 0,
+      totalBadKick: 0,
     };
 
     const arenaCount: { [key: string]: number } = {};
@@ -277,6 +281,8 @@ export default function StatisticsScreen() {
           stats.totalDink += userPlayerStats.dink || 0;
           stats.totalLong += userPlayerStats.long || 0;
           stats.totalCatchPlusAura += (userPlayerStats.catches || 0) + (userPlayerStats.aura || 0);
+          stats.totalGoodKick += userPlayerStats.goodKick || 0;
+          stats.totalBadKick += userPlayerStats.badKick || 0;
         }
 
         // Track opponent and partner performance
@@ -917,15 +923,13 @@ export default function StatisticsScreen() {
             <View style={styles.playerStatsContainer}>
               <View style={styles.playerStatsList}>
                 <View style={styles.playerStatRow}>
-                  <ThemedText variant="body">Overall Rating:</ThemedText>
-                  <ThemedText variant="body" color="primary">
-                    {(stats.hitRate * 0.45 + stats.catchRate * 0.45 + stats.fifaRate * 0.15).toFixed(1)}%
-                  </ThemedText>
+                  <ThemedText variant="body">Total Matches:</ThemedText>
+                  <ThemedText variant="body" color="primary">{stats.totalMatches}</ThemedText>
                 </View>
                 
                 <View style={styles.playerStatRow}>
-                  <ThemedText variant="body">Total Matches:</ThemedText>
-                  <ThemedText variant="body" color="primary">{stats.totalMatches}</ThemedText>
+                  <ThemedText variant="body">Total Wins:</ThemedText>
+                  <ThemedText variant="body" color="primary">{stats.totalWins}</ThemedText>
                 </View>
                 
                 <View style={styles.playerStatRow}>
@@ -974,6 +978,16 @@ export default function StatisticsScreen() {
           </View>
           
           <View style={styles.detailRow}>
+            <ThemedText variant="body">Knicker</ThemedText>
+            <ThemedText variant="body" color="primary">{stats.totalKnicker}</ThemedText>
+          </View>
+          
+          <View style={styles.detailRow}>
+            <ThemedText variant="body">Dinks</ThemedText>
+            <ThemedText variant="body" color="primary">{stats.totalDink}</ThemedText>
+          </View>
+          
+          <View style={styles.detailRow}>
             <ThemedText variant="body">Goals</ThemedText>
             <ThemedText variant="body" color="primary">{stats.totalGoals}</ThemedText>
           </View>
@@ -984,20 +998,23 @@ export default function StatisticsScreen() {
           </View>
           
           <View style={styles.detailRow}>
-            <ThemedText variant="body">Special Throws</ThemedText>
-            <ThemedText variant="body" color="primary">{stats.totalSpecialThrows}</ThemedText>
-          </View>
-          
-          <View style={styles.detailRow}>
             <ThemedText variant="body">Times On Fire</ThemedText>
             <ThemedText variant="body" color="primary">{stats.totalOnFireCount} 🔥</ThemedText>
           </View>
           
           <View style={styles.detailRow}>
-            <ThemedText variant="body">FIFA Success Rate</ThemedText>
-            <ThemedText variant="body" color="primary">
-              {stats.fifaRate.toFixed(1)}% ({stats.totalFifaSuccess}/{stats.totalFifaAttempts})
-            </ThemedText>
+            <ThemedText variant="body">Table Die</ThemedText>
+            <ThemedText variant="body" color="primary">{stats.totalTableDie}</ThemedText>
+          </View>
+          
+          <View style={styles.detailRow}>
+            <ThemedText variant="body">Line</ThemedText>
+            <ThemedText variant="body" color="primary">{stats.totalLine}</ThemedText>
+          </View>
+          
+          <View style={styles.detailRow}>
+            <ThemedText variant="body">Long</ThemedText>
+            <ThemedText variant="body" color="primary">{stats.totalLong}</ThemedText>
           </View>
         </ThemedView>
 
@@ -1008,13 +1025,13 @@ export default function StatisticsScreen() {
           </ThemedText>
           
           <View style={styles.detailRow}>
-            <ThemedText variant="body">Total Catches</ThemedText>
-            <ThemedText variant="body" color="primary">{stats.totalCatches}</ThemedText>
+            <ThemedText variant="body">Total Catch Attempts</ThemedText>
+            <ThemedText variant="body" color="primary">{stats.totalCatchAttempts}</ThemedText>
           </View>
           
           <View style={styles.detailRow}>
-            <ThemedText variant="body">Catch Attempts</ThemedText>
-            <ThemedText variant="body" color="primary">{stats.totalCatchAttempts}</ThemedText>
+            <ThemedText variant="body">Successful Catches</ThemedText>
+            <ThemedText variant="body" color="primary">{stats.totalCatches}</ThemedText>
           </View>
           
           <View style={styles.detailRow}>
@@ -1043,35 +1060,25 @@ export default function StatisticsScreen() {
           </View>
         </ThemedView>
 
-        {/* Shot Types */}
+        {/* Extra */}
         <ThemedView variant="card" style={styles.detailsCard}>
           <ThemedText variant="subtitle" style={styles.sectionTitle}>
-            Shot Types
+            Extra
           </ThemedText>
           
           <View style={styles.detailRow}>
-            <ThemedText variant="body">Table Die</ThemedText>
-            <ThemedText variant="body" color="primary">{stats.totalTableDie}</ThemedText>
+            <ThemedText variant="body">FIFA Attempts</ThemedText>
+            <ThemedText variant="body" color="primary">{stats.totalFifaAttempts}</ThemedText>
           </View>
           
           <View style={styles.detailRow}>
-            <ThemedText variant="body">Line Shots</ThemedText>
-            <ThemedText variant="body" color="primary">{stats.totalLine}</ThemedText>
+            <ThemedText variant="body">Good FIFA Kicks</ThemedText>
+            <ThemedText variant="body" color="primary">{stats.totalGoodKick}</ThemedText>
           </View>
           
           <View style={styles.detailRow}>
-            <ThemedText variant="body">Knickers</ThemedText>
-            <ThemedText variant="body" color="primary">{stats.totalKnicker}</ThemedText>
-          </View>
-          
-          <View style={styles.detailRow}>
-            <ThemedText variant="body">Dinks</ThemedText>
-            <ThemedText variant="body" color="primary">{stats.totalDink}</ThemedText>
-          </View>
-          
-          <View style={styles.detailRow}>
-            <ThemedText variant="body">Long Shots</ThemedText>
-            <ThemedText variant="body" color="primary">{stats.totalLong}</ThemedText>
+            <ThemedText variant="body">Redemption Catches</ThemedText>
+            <ThemedText variant="body" color="primary">{stats.totalCatchPlusAura}</ThemedText>
           </View>
         </ThemedView>
 

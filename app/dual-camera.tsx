@@ -284,13 +284,13 @@ function computeFitStyle(aspect: number | null) {
     width = maxWidth;
     height = width / aspect;
   }
-  return { width, height, backgroundColor: '#000' } as const;
+  return { width, height, backgroundColor: 'transparent' } as const;
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: 'transparent',
   },
   permissionContainer: {
     flex: 1,
@@ -329,7 +329,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     overflow: 'hidden',
     marginHorizontal: 10,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: 'transparent',
   },
   camera: {
     flex: 1,
@@ -439,7 +439,7 @@ const styles = StyleSheet.create({
   composerSurface: {
     width: SURFACE_WIDTH,
     height: SURFACE_HEIGHT,
-    backgroundColor: '#000',
+    backgroundColor: 'transparent',
   },
   sideBySideRow: {
     width: SURFACE_WIDTH,
@@ -453,7 +453,7 @@ const styles = StyleSheet.create({
     height: SURFACE_HEIGHT,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#000',
+    backgroundColor: 'transparent',
   },
 });
 

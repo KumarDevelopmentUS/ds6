@@ -10,20 +10,20 @@ import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  KeyboardAvoidingView,
-  Linking,
-  Modal,
-  Platform,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    ActivityIndicator,
+    Alert,
+    Image,
+    KeyboardAvoidingView,
+    Linking,
+    Modal,
+    Platform,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
 
 export default function CreatePostScreen() {
@@ -388,7 +388,6 @@ export default function CreatePostScreen() {
                 <HapticBackButton 
                   style={styles.backButton}
                   onPress={handleBackToFeed}
-                  text="Go Back"
                   color="#007AFF"
                 />
               </View>
@@ -415,7 +414,6 @@ export default function CreatePostScreen() {
                   onPress={handleBackToFeed} 
                   style={styles.backButton}
                   color="#007AFF"
-                  text=""
                 />
               <Text style={styles.headerTitle}>Create Post</Text>
               <View style={styles.headerSpacer} />
@@ -792,13 +790,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   backButton: {
-    backgroundColor: '#f0f0f0',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  backButtonText: {
-    color: '#666',
-    fontSize: 16,
+    marginRight: 10,
   },
 });
