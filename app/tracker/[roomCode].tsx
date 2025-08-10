@@ -3,17 +3,18 @@
 
 import { HapticBackButton } from '@/components/HapticBackButton';
 import { supabase } from '@/supabase';
+import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  Alert,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    Alert,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import QRCodeSVG from 'react-native-qrcode-svg';
 
@@ -148,6 +149,10 @@ const DieStatsTracker: React.FC = () => {
   const [redemptionAction, setRedemptionAction] = useState<string>('');
   const [showFifa, setShowFifa] = useState(false);
   const [showRedemption, setShowRedemption] = useState(false);
+  const [showQRCode, setShowQRCode] = useState(true);
+  const [showSetup, setShowSetup] = useState(false);
+  const [showSettingsPanel, setShowSettingsPanel] = useState(false);
+  const [showHomeConfirmation, setShowHomeConfirmation] = useState(false);
 
   // Helper function to get initial empty player stats
   const getInitialPlayerStats = (): PlayerStats => ({
@@ -576,7 +581,7 @@ const DieStatsTracker: React.FC = () => {
     (updatedStats[throwingPlayer] as any)[throwResult] =
       ((updatedStats[throwingPlayer] as any)[throwResult] || 0) + 1;
 
-    const hitOutcomes = ['hit', 'knicker', 'goal', 'dink', 'sink'];
+    const hitOutcomes = ['tableDie', 'hit', 'knicker', 'goal', 'dink', 'sink'];
     const badThrowOutcomes = ['short', 'long', 'side', 'height'];
     const wasOnFire = updatedStats[throwingPlayer].currentlyOnFire;
 
@@ -616,6 +621,7 @@ const DieStatsTracker: React.FC = () => {
 
     // Calculate base points for the throw
     const scoreMap: { [key: string]: number } = {
+      tableDie: 1,
       hit: 1,
       knicker: 1,
       goal: 2,
@@ -961,6 +967,20 @@ const DieStatsTracker: React.FC = () => {
     );
   };
 
+  // Handles going to home screen with confirmation
+  const handleGoHome = () => {
+    setShowHomeConfirmation(true);
+  };
+
+  const confirmGoHome = () => {
+    setShowHomeConfirmation(false);
+    router.push('/');
+  };
+
+  const cancelGoHome = () => {
+    setShowHomeConfirmation(false);
+  };
+
   // Handles copying the join link
   const handleCopyJoinLink = async () => {
     try {
@@ -987,22 +1007,38 @@ const DieStatsTracker: React.FC = () => {
 
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      {/* Header Card */}
-      <View style={styles.headerCard}>
-        <Text style={styles.headerTitle}>{matchSetup.title}</Text>
-        <Text style={styles.headerSubtitle}>{matchSetup.arena}</Text>
-        <Text style={styles.roomCodeText}>Room: {roomCodeString}</Text>
+    <>
+      <ScrollView contentContainerStyle={styles.container}>
+              {/* Header Card */}
+        <View style={styles.headerCard}>
+          <View style={styles.headerContent}>
+            <View style={styles.headerTextContainer}>
+              <Text style={styles.headerTitle}>{matchSetup.title}</Text>
+              <Text style={styles.headerSubtitle}>{matchSetup.arena}</Text>
+              <Text style={styles.roomCodeText}>Room: {roomCodeString}</Text>
 
-        {matchStartTime && (
-          <Text style={styles.elapsedTimeText}>
-            Elapsed:{' '}
-            {`${Math.floor((Date.now() - matchStartTime.getTime()) / 1000 / 60)}:${String(
-              Math.floor(((Date.now() - matchStartTime.getTime()) / 1000) % 60)
-            ).padStart(2, '0')}`}
-          </Text>
-        )}
-      </View>
+              {matchStartTime && (
+                <Text style={styles.elapsedTimeText}>
+                  Elapsed:{' '}
+                  {`${Math.floor((Date.now() - matchStartTime.getTime()) / 1000 / 60)}:${String(
+                    Math.floor(((Date.now() - matchStartTime.getTime()) / 1000) % 60)
+                  ).padStart(2, '0')}`}
+                </Text>
+              )}
+            </View>
+            
+            <TouchableOpacity 
+              style={styles.settingsIcon}
+              onPress={() => setShowSettingsPanel(true)}
+            >
+              <View style={styles.settingsIconContainer}>
+                <View style={styles.settingsIconCircle} />
+                <View style={styles.settingsIconCircle} />
+                <View style={styles.settingsIconCircle} />
+              </View>
+            </TouchableOpacity>
+          </View>
+        </View>
 
       {/* Back Button at top of screen */}
       {isSetupVisible && (
@@ -1064,27 +1100,53 @@ const DieStatsTracker: React.FC = () => {
               }}
             />
           ))}
-          {/* Game Score Limit Input */}
-          <TextInput
-            style={styles.input}
-            placeholder="Game Score Limit"
-            keyboardType="numeric"
-            value={matchSetup.gameScoreLimit.toString()}
-            onChangeText={(text) =>
-              setMatchSetup((prev) => ({ ...prev, gameScoreLimit: parseInt(text) || 0 }))
-            }
-          />
+          {/* Game Score Limit Selection */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Score to Win:</Text>
+            <View style={styles.buttonRow}>
+              {[11, 7, 15, 21].map((score) => (
+                <TouchableOpacity
+                  key={score}
+                  style={[
+                    styles.dropdownButton,
+                    matchSetup.gameScoreLimit === score && styles.dropdownButtonSelected,
+                  ]}
+                  onPress={() => setMatchSetup(prev => ({ ...prev, gameScoreLimit: score }))}
+                >
+                  <Text style={[
+                    styles.dropdownButtonText,
+                    matchSetup.gameScoreLimit === score && styles.dropdownButtonTextSelected,
+                  ]}>
+                    {score}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
 
-          {/* Sink Points Input */}
-          <TextInput
-            style={styles.input}
-            placeholder="Sink Points"
-            keyboardType="numeric"
-            value={matchSetup.sinkPoints.toString()}
-            onChangeText={(text) =>
-              setMatchSetup((prev) => ({ ...prev, sinkPoints: parseInt(text) || 0 }))
-            }
-          />
+          {/* Sink Points Selection */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Sink Points:</Text>
+            <View style={styles.buttonRow}>
+              {[3, 5].map((points) => (
+                <TouchableOpacity
+                  key={points}
+                  style={[
+                    styles.dropdownButton,
+                    matchSetup.sinkPoints === points && styles.dropdownButtonSelected,
+                  ]}
+                  onPress={() => setMatchSetup(prev => ({ ...prev, sinkPoints: points }))}
+                >
+                  <Text style={[
+                    styles.dropdownButtonText,
+                    matchSetup.sinkPoints === points && styles.dropdownButtonTextSelected,
+                  ]}>
+                    {points}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
 
           {/* Win By Two Toggle (Simple example, can be improved) */}
           <View style={styles.toggleRow}>
@@ -1119,20 +1181,32 @@ const DieStatsTracker: React.FC = () => {
         <>
 
 
-          {/* QR Code and Join Link Section */}
+          {/* Player Join Section */}
           <View style={styles.card}>
-            <Text style={styles.sectionHeader}>Players can join using:</Text>
-            <View style={styles.qrCodeContainer}>
-              <QRCodeSVG value={getQRValue()} size={150} />
-            </View>
-            <Text style={styles.roomCodeText}>Room Code: {roomCodeString}</Text>
-            <TouchableOpacity style={styles.secondaryButton} onPress={handleCopyJoinLink}>
-              <Text style={styles.secondaryButtonText}>Copy Join Link</Text>
+            <TouchableOpacity 
+              style={styles.collapsibleHeader}
+              onPress={() => setShowQRCode(!showQRCode)}
+            >
+              <Text style={styles.sectionHeader}>Player Join</Text>
+              <Text style={styles.collapseIcon}>{showQRCode ? '▼' : '▶'}</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.secondaryButton} onPress={() => setShowJoinDialog(true)}>
-              <Text style={styles.secondaryButtonText}>Join as Player</Text>
-            </TouchableOpacity>
-            <Text style={styles.linkText}>{joinLink}</Text>
+            
+            {showQRCode && (
+              <>
+                <Text style={styles.joinInstructionText}>Players can join using:</Text>
+                <View style={styles.qrCodeContainer}>
+                  <QRCodeSVG value={getQRValue()} size={150} />
+                </View>
+                <Text style={styles.roomCodeText}>Room Code: {roomCodeString}</Text>
+                <TouchableOpacity style={styles.secondaryButton} onPress={handleCopyJoinLink}>
+                  <Text style={styles.secondaryButtonText}>Copy Join Link</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.secondaryButton} onPress={() => setShowJoinDialog(true)}>
+                  <Text style={styles.secondaryButtonText}>Join as Player</Text>
+                </TouchableOpacity>
+                <Text style={styles.linkText}>{joinLink}</Text>
+              </>
+            )}
           </View>
 
           {/* Scoreboard Section */}
@@ -1220,44 +1294,45 @@ const DieStatsTracker: React.FC = () => {
                 ))}
               </View>
 
-              {/* Throw Result Selection (Good Outcomes) */}
+              {/* Throw Result Selection (Combined) */}
               <Text style={styles.sectionHeader}>Throw Result:</Text>
-              <View style={styles.throwResultGroup}>
-                <Text style={styles.throwResultLabel}>Good:</Text>
-                <View style={styles.buttonRow}>
-                  {['tableDie', 'line', 'hit', 'knicker', 'goal', 'dink', 'sink'].map((result) => (
-                    <TouchableOpacity
-                      key={result}
-                      style={[
-                        styles.throwResultButton,
-                        throwResult === result && styles.goodResultSelected,
-                      ]}
-                      onPress={() => setThrowResult(result)}
-                    >
-                      <Text style={styles.throwResultButtonText}>
-                        {result === 'tableDie' ? 'Table Die' : result.charAt(0).toUpperCase() + result.slice(1)}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
-              {/* Throw Result Selection (Bad Outcomes) */}
-              <View style={styles.throwResultGroup}>
-                <Text style={styles.throwResultLabel}>Bad:</Text>
-                <View style={styles.buttonRow}>
-                  {['short', 'long', 'side', 'height'].map((result) => (
-                    <TouchableOpacity
-                      key={result}
-                      style={[
-                        styles.throwResultButton,
-                        throwResult === result && styles.badResultSelected,
-                      ]}
-                      onPress={() => setThrowResult(result)}
-                    >
-                      <Text style={styles.throwResultButtonText}>{result.charAt(0).toUpperCase() + result.slice(1)}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
+              <View style={styles.buttonRow}>
+                {['tableDie', 'line', 'hit', 'knicker', 'goal', 'dink', 'sink'].map((result) => (
+                  <TouchableOpacity
+                    key={result}
+                    style={[
+                      styles.throwResultButton,
+                      styles.goodResultOutline,
+                      throwResult === result && styles.goodResultSelected,
+                    ]}
+                    onPress={() => setThrowResult(result)}
+                  >
+                    <Text style={[
+                      styles.throwResultButtonText,
+                      throwResult === result && styles.selectedThrowText
+                    ]}>
+                      {result === 'tableDie' ? 'Table Die' : result.charAt(0).toUpperCase() + result.slice(1)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+                {['short', 'long', 'side', 'height'].map((result) => (
+                  <TouchableOpacity
+                    key={result}
+                    style={[
+                      styles.throwResultButton,
+                      styles.badResultOutline,
+                      throwResult === result && styles.badResultSelected,
+                    ]}
+                    onPress={() => setThrowResult(result)}
+                  >
+                    <Text style={[
+                      styles.throwResultButtonText,
+                      throwResult === result && styles.selectedThrowText
+                    ]}>
+                      {result.charAt(0).toUpperCase() + result.slice(1)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
               </View>
 
               {/* Defending Player Selection */}
@@ -1317,46 +1392,45 @@ const DieStatsTracker: React.FC = () => {
                 </TouchableOpacity>
               </View>
 
-              {/* Defense Result Selection (Good Outcomes) */}
+              {/* Defense Result Selection (Combined) */}
               <Text style={styles.sectionHeader}>Defense Result:</Text>
-              <View style={styles.throwResultGroup}>
-                <Text style={styles.throwResultLabel}>Good:</Text>
-                <View style={styles.buttonRow}>
-                  {['catch', 'catchPlusAura'].map((result) => (
-                    <TouchableOpacity
-                      key={result}
-                      style={[
-                        styles.throwResultButton,
-                        defendingResult === result && styles.goodResultSelected,
-                      ]}
-                      onPress={() => setDefendingResult(result)}
-                    >
-                      <Text style={styles.throwResultButtonText}>
-                        {result === 'catchPlusAura' ? 'Catch + Aura' : 'Catch'}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
-              {/* Defense Result Selection (Bad Outcomes) */}
-              <View style={styles.throwResultGroup}>
-                <Text style={styles.throwResultLabel}>Bad:</Text>
-                <View style={styles.buttonRow}>
-                  {['drop', 'miss', 'twoHands', 'body'].map((result) => (
-                    <TouchableOpacity
-                      key={result}
-                      style={[
-                        styles.throwResultButton,
-                        defendingResult === result && styles.badResultSelected,
-                      ]}
-                      onPress={() => setDefendingResult(result)}
-                    >
-                      <Text style={styles.throwResultButtonText}>
-                        {result === 'twoHands' ? '2 Hands' : result.charAt(0).toUpperCase() + result.slice(1)}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
+              <View style={styles.buttonRow}>
+                {['catch', 'catchPlusAura'].map((result) => (
+                  <TouchableOpacity
+                    key={result}
+                    style={[
+                      styles.throwResultButton,
+                      styles.goodResultOutline,
+                      defendingResult === result && styles.goodResultSelected,
+                    ]}
+                    onPress={() => setDefendingResult(result)}
+                  >
+                    <Text style={[
+                      styles.throwResultButtonText,
+                      defendingResult === result && styles.selectedThrowText
+                    ]}>
+                      {result === 'catchPlusAura' ? 'Catch + Aura' : 'Catch'}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+                {['drop', 'miss', 'twoHands', 'body'].map((result) => (
+                  <TouchableOpacity
+                    key={result}
+                    style={[
+                      styles.throwResultButton,
+                      styles.badResultOutline,
+                      defendingResult === result && styles.badResultSelected,
+                    ]}
+                    onPress={() => setDefendingResult(result)}
+                  >
+                    <Text style={[
+                      styles.throwResultButtonText,
+                      defendingResult === result && styles.selectedThrowText
+                    ]}>
+                      {result === 'twoHands' ? '2 Hands' : result.charAt(0).toUpperCase() + result.slice(1)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
               </View>
 
               {/* Special Actions Buttons */}
@@ -1378,7 +1452,7 @@ const DieStatsTracker: React.FC = () => {
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.redButton} onPress={handleSelfSink}>
-                  <Text style={styles.buttonText}>Self Sink</Text>
+                  <Text style={styles.redButtonText}>Self Sink</Text>
                 </TouchableOpacity>
               </View>
 
@@ -1498,21 +1572,19 @@ const DieStatsTracker: React.FC = () => {
               </TouchableOpacity>
               
               {/* Home Button */}
-              <TouchableOpacity 
-                style={styles.homeActionButton}
-                onPress={() => router.push('/')}
+              <TouchableOpacity
+                style={styles.iconButton}
+                onPress={handleGoHome}
               >
-                <Text style={styles.homeActionButtonText}>🏠 Go to Home</Text>
+                <Ionicons name="home-outline" size={24} color="#6b7280" />
               </TouchableOpacity>
               
-              {/* Toggle Setup Visibility Button */}
+              {/* Match Settings Button */}
               <TouchableOpacity
-                style={styles.actionButton}
-                onPress={() => setIsSetupVisible(!isSetupVisible)}
+                style={styles.iconButton}
+                onPress={() => setShowSettingsPanel(true)}
               >
-                <Text style={styles.actionButtonText}>
-                  {isSetupVisible ? 'Hide Setup' : 'Show Setup'}
-                </Text>
+                <Ionicons name="settings-outline" size={24} color="#3b82f6" />
               </TouchableOpacity>
             </View>
           </View>
@@ -1657,10 +1729,277 @@ const DieStatsTracker: React.FC = () => {
             </View>
           </View>
         </View>
+              )}
+      </ScrollView>
+
+      {/* Settings Bottom Panel */}
+      {showSettingsPanel && (
+        <View style={styles.bottomPanelOverlay}>
+          <TouchableOpacity 
+            style={styles.bottomPanelBackdrop}
+            onPress={() => setShowSettingsPanel(false)}
+          />
+          <View style={styles.bottomPanel}>
+            <View style={styles.panelHeader}>
+              <Text style={styles.panelTitle}>Match Settings</Text>
+              <TouchableOpacity onPress={() => setShowSettingsPanel(false)}>
+                <Text style={styles.panelCloseButton}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView style={styles.panelContent}>
+              {/* Match Title */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Match Title:</Text>
+                <TextInput
+                  style={styles.input}
+                  value={matchSetup.title}
+                  onChangeText={(text) =>
+                    setMatchSetup((prev) => ({ ...prev, title: sanitizeInput(text) }))
+                  }
+                  placeholder="Match Title"
+                />
+              </View>
+
+              {/* Arena */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Arena:</Text>
+                <TextInput
+                  style={styles.input}
+                  value={matchSetup.arena}
+                  onChangeText={(text) =>
+                    setMatchSetup((prev) => ({ ...prev, arena: sanitizeInput(text) }))
+                  }
+                  placeholder="Arena"
+                />
+              </View>
+
+              {/* Team Setup */}
+              <Text style={styles.sectionHeader}>Team Setup</Text>
+              
+              {/* Team 1 Group */}
+              <View style={styles.teamGroup}>
+                <View style={styles.teamHeader}>
+                  <Text style={styles.teamLabel}>Team 1</Text>
+                </View>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Team Name:</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={matchSetup.teamNames[0]}
+                    onChangeText={(text) => {
+                      const newNames = [...matchSetup.teamNames];
+                      newNames[0] = sanitizeInput(text);
+                      setMatchSetup((prev) => ({ ...prev, teamNames: newNames }));
+                    }}
+                    placeholder="Team 1"
+                  />
+                </View>
+                
+                {/* Team 1 Players */}
+                <View style={styles.playersContainer}>
+                  {[0, 1].map((index) => {
+                    const playerId = index + 1;
+                    const isJoinedUser = Object.values(userSlotMap).includes(currentUser?.id || null) && 
+                                         userSlotMap[playerId] === currentUser?.id;
+                    const isOtherJoinedUser = userSlotMap[playerId] && userSlotMap[playerId] !== currentUser?.id;
+                    const isDisabled = isJoinedUser || isOtherJoinedUser;
+                    
+                    return (
+                      <View key={index} style={styles.playerInputGroup}>
+                        <Text style={styles.label}>Player {index + 1}:</Text>
+                        <TextInput
+                          style={[
+                            styles.input,
+                            isDisabled && styles.disabledInput
+                          ]}
+                          value={matchSetup.playerNames[index]}
+                          onChangeText={(text) => {
+                            if (!isDisabled) {
+                              const newNames = [...matchSetup.playerNames];
+                              newNames[index] = sanitizeInput(text);
+                              setMatchSetup((prev) => ({ ...prev, playerNames: newNames }));
+                            }
+                          }}
+                          placeholder={`Player ${index + 1}`}
+                          editable={!isDisabled}
+                        />
+                        {isDisabled && (
+                          <Text style={styles.disabledText}>
+                            {isJoinedUser ? "Your name (joined via code)" : "Player joined via code"}
+                          </Text>
+                        )}
+                      </View>
+                    );
+                  })}
+                </View>
+              </View>
+
+              {/* Team 2 Group */}
+              <View style={styles.teamGroup}>
+                <View style={styles.teamHeader}>
+                  <Text style={styles.teamLabel}>Team 2</Text>
+                </View>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Team Name:</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={matchSetup.teamNames[1]}
+                    onChangeText={(text) => {
+                      const newNames = [...matchSetup.teamNames];
+                      newNames[1] = sanitizeInput(text);
+                      setMatchSetup((prev) => ({ ...prev, teamNames: newNames }));
+                    }}
+                    placeholder="Team 2"
+                  />
+                </View>
+                
+                {/* Team 2 Players */}
+                <View style={styles.playersContainer}>
+                  {[2, 3].map((index) => {
+                    const playerId = index + 1;
+                    const isJoinedUser = Object.values(userSlotMap).includes(currentUser?.id || null) && 
+                                         userSlotMap[playerId] === currentUser?.id;
+                    const isOtherJoinedUser = userSlotMap[playerId] && userSlotMap[playerId] !== currentUser?.id;
+                    const isDisabled = isJoinedUser || isOtherJoinedUser;
+                    
+                    return (
+                      <View key={index} style={styles.playerInputGroup}>
+                        <Text style={styles.label}>Player {index + 1}:</Text>
+                        <TextInput
+                          style={[
+                            styles.input,
+                            isDisabled && styles.disabledInput
+                          ]}
+                          value={matchSetup.playerNames[index]}
+                          onChangeText={(text) => {
+                            if (!isDisabled) {
+                              const newNames = [...matchSetup.playerNames];
+                              newNames[index] = sanitizeInput(text);
+                              setMatchSetup((prev) => ({ ...prev, playerNames: newNames }));
+                            }
+                          }}
+                          placeholder={`Player ${index + 1}`}
+                          editable={!isDisabled}
+                        />
+                        {isDisabled && (
+                          <Text style={styles.disabledText}>
+                            {isJoinedUser ? "Your name (joined via code)" : "Player joined via code"}
+                          </Text>
+                        )}
+                      </View>
+                    );
+                  })}
+                </View>
+              </View>
+
+              {/* Score Rules */}
+              <Text style={styles.sectionHeader}>Score Rules</Text>
+              
+              {/* Score to Win */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Score to Win:</Text>
+                <View style={styles.buttonRow}>
+                  {[11, 7, 15, 21].map((score) => (
+                    <TouchableOpacity
+                      key={score}
+                      style={[
+                        styles.dropdownButton,
+                        matchSetup.gameScoreLimit === score && styles.dropdownButtonSelected,
+                      ]}
+                      onPress={() => setMatchSetup(prev => ({ ...prev, gameScoreLimit: score }))}
+                    >
+                      <Text style={[
+                        styles.dropdownButtonText,
+                        matchSetup.gameScoreLimit === score && styles.dropdownButtonTextSelected,
+                      ]}>
+                        {score}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              {/* Sink Points */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Sink Points:</Text>
+                <View style={styles.buttonRow}>
+                  {[3, 5].map((points) => (
+                    <TouchableOpacity
+                      key={points}
+                      style={[
+                        styles.dropdownButton,
+                        matchSetup.sinkPoints === points && styles.dropdownButtonSelected,
+                      ]}
+                      onPress={() => setMatchSetup(prev => ({ ...prev, sinkPoints: points }))}
+                    >
+                      <Text style={[
+                        styles.dropdownButtonText,
+                        matchSetup.sinkPoints === points && styles.dropdownButtonTextSelected,
+                      ]}>
+                        {points}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              {/* Win By Two */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Win By Two:</Text>
+                <TouchableOpacity
+                  style={[
+                    styles.toggleButton,
+                    matchSetup.winByTwo ? styles.toggleButtonActive : styles.toggleButtonInactive,
+                  ]}
+                  onPress={() => setMatchSetup((prev) => ({ ...prev, winByTwo: !prev.winByTwo }))}
+                >
+                  <Text style={styles.toggleButtonText}>
+                    {matchSetup.winByTwo ? 'ON' : 'OFF'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
       )}
-    </ScrollView>
+
+      {/* Home Confirmation Modal */}
+      {showHomeConfirmation && (
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity 
+            style={styles.modalBackdrop}
+            onPress={cancelGoHome}
+          />
+          <View style={styles.confirmationModal}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Leave Match</Text>
+            </View>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalMessage}>
+                Are you sure you want to go to the home screen? Any unsaved progress will be lost.
+              </Text>
+            </View>
+            <View style={styles.modalActions}>
+              <TouchableOpacity 
+                style={styles.modalCancelButton}
+                onPress={cancelGoHome}
+              >
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.modalConfirmButton}
+                onPress={confirmGoHome}
+              >
+                <Text style={styles.modalConfirmText}>Go Home</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
+    </>
   );
-};
+  };
 
 // StyleSheet for component styling
 const styles = StyleSheet.create({
@@ -1737,7 +2076,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   buttonText: {
-    color: '#ffffff',
+    color: '#000000',
     fontWeight: 'bold',
     fontSize: 16,
   },
@@ -1749,6 +2088,252 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     marginBottom: 8,
     color: '#1f2937',
+  },
+  collapsibleHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  collapseIcon: {
+    fontSize: 16,
+    color: '#6b7280',
+    fontWeight: 'bold',
+  },
+  twoColumnRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  halfCard: {
+    flex: 1,
+  },
+  inputGroup: {
+    marginBottom: 12,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginBottom: 4,
+    color: '#374151',
+  },
+  dropdownButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    backgroundColor: '#ffffff',
+    marginRight: 8,
+  },
+  dropdownButtonSelected: {
+    backgroundColor: '#3b82f6',
+    borderColor: '#3b82f6',
+  },
+  dropdownButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#374151',
+  },
+  dropdownButtonTextSelected: {
+    color: '#ffffff',
+  },
+  joinInstructionText: {
+    fontSize: 14,
+    color: '#6b7280',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  headerTextContainer: {
+    flex: 1,
+  },
+  settingsIcon: {
+    padding: 8,
+    marginLeft: 12,
+  },
+  settingsIconContainer: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 20,
+    height: 20,
+  },
+  settingsIconCircle: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#6b7280',
+    marginVertical: 1,
+  },
+  bottomPanelOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  bottomPanelBackdrop: {
+    flex: 1,
+  },
+  bottomPanel: {
+    backgroundColor: '#ffffff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '80%',
+    paddingBottom: 20,
+  },
+  panelHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  panelTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1f2937',
+  },
+  panelCloseButton: {
+    fontSize: 20,
+    color: '#6b7280',
+    padding: 4,
+  },
+  panelContent: {
+    padding: 20,
+  },
+  disabledInput: {
+    backgroundColor: '#f3f4f6',
+    color: '#9ca3af',
+  },
+  disabledText: {
+    fontSize: 12,
+    color: '#6b7280',
+    fontStyle: 'italic',
+    marginTop: 4,
+  },
+  iconButton: {
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: '#f9fafb',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
+  },
+  teamGroup: {
+    backgroundColor: '#f8fafc',
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  teamHeader: {
+    marginBottom: 12,
+  },
+  teamLabel: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#000000',
+    textAlign: 'center',
+  },
+  playersContainer: {
+    marginTop: 8,
+  },
+  playerInputGroup: {
+    marginBottom: 12,
+  },
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  modalBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  confirmationModal: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    width: '80%',
+    maxWidth: 400,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  modalHeader: {
+    padding: 20,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1f2937',
+    textAlign: 'center',
+  },
+  modalContent: {
+    padding: 20,
+    paddingTop: 16,
+    paddingBottom: 16,
+  },
+  modalMessage: {
+    fontSize: 16,
+    color: '#4b5563',
+    lineHeight: 22,
+    textAlign: 'center',
+  },
+  modalActions: {
+    flexDirection: 'row',
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+  },
+  modalCancelButton: {
+    flex: 1,
+    paddingVertical: 16,
+    alignItems: 'center',
+    borderRightWidth: 1,
+    borderRightColor: '#e5e7eb',
+  },
+  modalConfirmButton: {
+    flex: 1,
+    paddingVertical: 16,
+    alignItems: 'center',
+    backgroundColor: '#ef4444',
+    borderBottomRightRadius: 12,
+  },
+  modalCancelText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#6b7280',
+  },
+  modalConfirmText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#ffffff',
   },
   qrCodeContainer: {
     alignItems: 'center',
@@ -1843,10 +2428,13 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 12,
     borderRadius: 4,
-    backgroundColor: '#e5e7eb',
+    backgroundColor: '#ffffff',
+    borderWidth: 2,
+    borderColor: '#6b7280',
   },
   playerButtonSelected: {
     backgroundColor: '#3b82f6',
+    borderColor: '#3b82f6',
   },
   selectedButtonText: {
     color: '#ffffff',
@@ -1868,12 +2456,29 @@ const styles = StyleSheet.create({
   throwResultButtonText: {
     fontSize: 12,
     color: '#374151',
+    fontWeight: '500',
+  },
+  goodResultOutline: {
+    borderWidth: 1,
+    borderColor: '#22c55e',
+    backgroundColor: '#f0fdf4',
+  },
+  badResultOutline: {
+    borderWidth: 1,
+    borderColor: '#ef4444',
+    backgroundColor: '#fef2f2',
   },
   goodResultSelected: {
     backgroundColor: '#22c55e',
+    borderColor: '#22c55e',
   },
   badResultSelected: {
     backgroundColor: '#ef4444',
+    borderColor: '#ef4444',
+  },
+  selectedThrowText: {
+    color: '#ffffff',
+    fontWeight: 'bold',
   },
   actionButtonRow: {
     flexDirection: 'row',
@@ -1897,6 +2502,11 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 12,
     borderRadius: 4,
+  },
+  redButtonText: {
+    color: '#ffffff',
+    fontWeight: 'bold',
+    fontSize: 14,
   },
   nestedCard: {
     backgroundColor: '#f5f3ff', // Light purple for nested sections (e.g., FIFA)
