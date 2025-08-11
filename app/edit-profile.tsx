@@ -10,6 +10,7 @@ import {
     Alert,
     Dimensions,
     FlatList,
+    Image,
     KeyboardAvoidingView,
     Modal,
     Platform,
@@ -26,6 +27,7 @@ import { ThemedView } from '../components/themed/ThemedView';
 import { AVATAR_COLORS, FUN_AVATAR_ICONS } from '../constants/avatarIcons';
 import { getSchoolByValue, SCHOOLS, searchSchools } from '../constants/schools';
 import { useTheme } from '../contexts/ThemeContext';
+import { deleteProfilePicture, pickImage, takePhoto, updateUserProfilePicture, uploadProfilePicture } from '../utils/imageUpload';
 
 const { width } = Dimensions.get('window');
 const ICON_SIZE = 60;
@@ -46,6 +48,7 @@ export default function EditProfileScreen() {
     avatar_icon: keyof typeof Ionicons.glyphMap | null;
     avatar_icon_color: string | null;
     avatar_background_color: string | null;
+    avatar_url: string | null;
   } | null>(null);
 
   const [showIconPicker, setShowIconPicker] = useState(false);
@@ -72,7 +75,7 @@ export default function EditProfileScreen() {
 
       const { data: userProfile, error: userProfileError } = await supabase
         .from('user_profiles')
-        .select('username, display_name')
+        .select('username, display_name, avatar_url')
         .eq('id', user.id)
         .single();
 
@@ -90,6 +93,7 @@ export default function EditProfileScreen() {
           avatar_icon: data.avatar_icon || 'person',
           avatar_icon_color: data.avatar_icon_color || '#FFFFFF',
           avatar_background_color: data.avatar_background_color || theme.colors.primary,
+          avatar_url: userProfile.avatar_url,
         });
       }
     } else {
@@ -97,6 +101,108 @@ export default function EditProfileScreen() {
       router.replace('/(auth)/login');
     }
     setLoading(false);
+  };
+
+  const handleProfilePictureUpload = async () => {
+    if (!profile) return;
+
+    Alert.alert(
+      'Select Photo',
+      'Choose how you want to add a profile picture',
+      [
+        { text: 'Take Photo', onPress: handleTakePhoto },
+        { text: 'Choose from Library', onPress: handlePickImage },
+        { text: 'Cancel', style: 'cancel' },
+      ]
+    );
+  };
+
+  const handleTakePhoto = async () => {
+    if (!profile) return;
+    setLoading(true);
+
+    try {
+      const result = await takePhoto();
+      if (result && !result.canceled && result.assets?.[0]) {
+        const uploadResult = await uploadProfilePicture(result.assets[0].uri, profile.id);
+        if (uploadResult.success && uploadResult.url) {
+          const updateSuccess = await updateUserProfilePicture(profile.id, uploadResult.url);
+          if (updateSuccess) {
+            setProfile(prev => prev ? { ...prev, avatar_url: uploadResult.url! } : null);
+            Alert.alert('Success', 'Profile picture updated successfully!');
+          } else {
+            Alert.alert('Error', 'Failed to update profile picture');
+          }
+        } else {
+          Alert.alert('Error', uploadResult.error || 'Failed to upload image');
+        }
+      }
+    } catch (error) {
+      console.error('Error taking photo:', error);
+      Alert.alert('Error', 'Failed to take photo');
+    }
+    setLoading(false);
+  };
+
+  const handlePickImage = async () => {
+    if (!profile) return;
+    setLoading(true);
+
+    try {
+      const result = await pickImage();
+      if (result && !result.canceled && result.assets?.[0]) {
+        const uploadResult = await uploadProfilePicture(result.assets[0].uri, profile.id);
+        if (uploadResult.success && uploadResult.url) {
+          const updateSuccess = await updateUserProfilePicture(profile.id, uploadResult.url);
+          if (updateSuccess) {
+            setProfile(prev => prev ? { ...prev, avatar_url: uploadResult.url! } : null);
+            Alert.alert('Success', 'Profile picture updated successfully!');
+          } else {
+            Alert.alert('Error', 'Failed to update profile picture');
+          }
+        } else {
+          Alert.alert('Error', uploadResult.error || 'Failed to upload image');
+        }
+      }
+    } catch (error) {
+      console.error('Error picking image:', error);
+      Alert.alert('Error', 'Failed to pick image');
+    }
+    setLoading(false);
+  };
+
+  const handleRemoveProfilePicture = async () => {
+    if (!profile || !profile.avatar_url) return;
+
+    Alert.alert(
+      'Remove Profile Picture',
+      'Are you sure you want to remove your profile picture?',
+      [
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: async () => {
+            setLoading(true);
+            try {
+              const deleteSuccess = await deleteProfilePicture(profile.avatar_url!);
+              const updateSuccess = await updateUserProfilePicture(profile.id, null);
+              
+              if (updateSuccess) {
+                setProfile(prev => prev ? { ...prev, avatar_url: null } : null);
+                Alert.alert('Success', 'Profile picture removed successfully!');
+              } else {
+                Alert.alert('Error', 'Failed to remove profile picture');
+              }
+            } catch (error) {
+              console.error('Error removing profile picture:', error);
+              Alert.alert('Error', 'Failed to remove profile picture');
+            }
+            setLoading(false);
+          },
+        },
+        { text: 'Cancel', style: 'cancel' },
+      ]
+    );
   };
 
   const handleUpdateProfile = async () => {
@@ -183,9 +289,53 @@ export default function EditProfileScreen() {
 
         <ThemedView variant="card" style={styles.avatarCustomizationCard}>
           <ThemedText variant="subtitle" style={styles.avatarSectionTitle}>Your Avatar</ThemedText>
-          <View style={[styles.avatarPreview, { backgroundColor: profile.avatar_background_color || theme.colors.primary }]}>
-            <Ionicons name={profile.avatar_icon || 'person'} size={60} color={profile.avatar_icon_color || '#FFFFFF'} />
+          
+          {/* Profile Picture Preview */}
+          <View style={styles.avatarPreview}>
+            {profile.avatar_url ? (
+              <Image 
+                source={{ uri: profile.avatar_url }}
+                style={styles.profileImage}
+                resizeMode="cover"
+              />
+            ) : (
+              <View style={[styles.iconAvatarContainer, { backgroundColor: profile.avatar_background_color || theme.colors.primary }]}>
+                <Ionicons name={profile.avatar_icon || 'person'} size={60} color={profile.avatar_icon_color || '#FFFFFF'} />
+              </View>
+            )}
           </View>
+
+          {/* Profile Picture Controls */}
+          <View style={styles.profilePictureControls}>
+            <TouchableOpacity 
+              style={[styles.profilePictureButton, { borderColor: theme.colors.border }]} 
+              onPress={handleProfilePictureUpload}
+            >
+              <Ionicons name="camera" size={20} color={theme.colors.primary} />
+              <ThemedText style={styles.profilePictureButtonText}>
+                {profile.avatar_url ? 'Change Photo' : 'Add Photo'}
+              </ThemedText>
+            </TouchableOpacity>
+            
+            {profile.avatar_url && (
+              <TouchableOpacity 
+                style={[styles.profilePictureButton, styles.removeButton, { borderColor: theme.colors.border }]} 
+                onPress={handleRemoveProfilePicture}
+              >
+                <Ionicons name="trash-outline" size={20} color="#ef4444" />
+                <ThemedText style={[styles.profilePictureButtonText, { color: '#ef4444' }]}>
+                  Remove
+                </ThemedText>
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {/* Divider */}
+          <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
+          
+          <ThemedText variant="body" style={styles.iconCustomizationTitle}>
+            Icon Avatar (fallback when no photo)
+          </ThemedText>
 
           <TouchableOpacity style={[styles.selectionRow, { borderColor: theme.colors.border }]} onPress={() => setShowIconPicker(true)}>
             <ThemedText>Change Icon</ThemedText>
@@ -329,7 +479,15 @@ const styles = StyleSheet.create({
   screenTitle: { textAlign: 'center', marginBottom: 30, marginTop: 80 },
   avatarCustomizationCard: { width: '100%', maxWidth: 400, padding: 20, borderRadius: 10, marginBottom: 32, alignItems: 'center' },
   avatarSectionTitle: { marginBottom: 20, fontWeight: '600' },
-  avatarPreview: { width: 100, height: 100, borderRadius: 50, justifyContent: 'center', alignItems: 'center', marginBottom: 20, borderWidth: 2, borderColor: '#e5e7eb' },
+  avatarPreview: { width: 100, height: 100, borderRadius: 50, justifyContent: 'center', alignItems: 'center', marginBottom: 20, borderWidth: 2, borderColor: '#e5e7eb', overflow: 'hidden' },
+  profileImage: { width: 100, height: 100, borderRadius: 50 },
+  iconAvatarContainer: { width: 100, height: 100, borderRadius: 50, justifyContent: 'center', alignItems: 'center' },
+  profilePictureControls: { flexDirection: 'row', gap: 12, marginBottom: 20, justifyContent: 'center', flexWrap: 'wrap' },
+  profilePictureButton: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8, borderWidth: 1, gap: 8 },
+  profilePictureButtonText: { fontSize: 14, fontWeight: '500' },
+  removeButton: { },
+  divider: { width: '100%', height: 1, marginBottom: 16 },
+  iconCustomizationTitle: { marginBottom: 16, color: '#6b7280', textAlign: 'center' },
   selectionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: '100%', paddingVertical: 15, borderBottomWidth: 1 },
   selectionValueContainer: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   colorSwatch: { width: 30, height: 30, borderRadius: 15, borderWidth: 1, borderColor: '#ccc' },

@@ -157,41 +157,90 @@ export const usePosts = (communityId?: number) => {
         userCommunityIds = userCommunities.map(uc => uc.community_id);
       }
       
-      // First, get posts with counts from the RPC function
-      const { data: postsWithCounts, error: rpcError } = await supabase.rpc('get_posts_with_counts', {
-        community_id_param: communityId || null
-      });
-      
-      if (rpcError) throw rpcError;
-      
-      // Then, get the image_url field and community info separately
-      const postIds = postsWithCounts.map((p: any) => p.id);
-      const { data: postDetails, error: detailsError } = await supabase
+      // Direct query instead of using the broken RPC function
+      let query = supabase
         .from('posts')
-        .select('id, uid, image_url, community_id, communities(name)')
-        .in('id', postIds);
-        
-      if (detailsError) throw detailsError;
+        .select(`
+          id,
+          uid,
+          title,
+          content,
+          created_at,
+          image_url,
+          user_id,
+          community_id,
+          author_name,
+          author_avatar_icon,
+          author_avatar_icon_color,
+          author_avatar_background_color,
+          communities(name)
+        `)
+        .order('created_at', { ascending: false });
+
+      if (communityId) {
+        query = query.eq('community_id', communityId);
+      }
+
+      const { data: posts, error: postsError } = await query;
       
-      // Create maps for quick lookup
-      const detailsMap = postDetails.reduce((acc: any, post: any) => {
-        acc[post.id] = {
-          uid: post.uid,
-          image_url: post.image_url,
-          community_name: post.communities?.name,
-          community_id: post.community_id
-        };
+      if (postsError) throw postsError;
+
+      // Get profile pictures for all post authors
+      const userIds = [...new Set(posts.map(p => p.user_id))];
+      const { data: userProfiles } = await supabase
+        .from('user_profiles')
+        .select('id, avatar_url, username')
+        .in('id', userIds);
+
+      // Create profile map for quick lookup
+      const profileMap = (userProfiles || []).reduce((acc: any, profile: any) => {
+        acc[profile.id] = profile;
         return acc;
       }, {});
-      
+
+      // Get vote counts for all posts
+      const postIds = posts.map(p => p.id);
+      const { data: voteCounts } = await supabase
+        .from('votes')
+        .select('post_id')
+        .eq('vote_type', 1)
+        .in('post_id', postIds);
+
+      // Get comment counts for all posts  
+      const { data: commentCounts } = await supabase
+        .from('comments')
+        .select('post_id')
+        .in('post_id', postIds);
+
+      // Create count maps
+      const voteCountMap = (voteCounts || []).reduce((acc: any, vote: any) => {
+        acc[vote.post_id] = (acc[vote.post_id] || 0) + 1;
+        return acc;
+      }, {});
+
+      const commentCountMap = (commentCounts || []).reduce((acc: any, comment: any) => {
+        acc[comment.post_id] = (acc[comment.post_id] || 0) + 1;
+        return acc;
+      }, {});
+
       // Combine the data
-      let combinedPosts = postsWithCounts.map((post: any) => ({
-        ...post,
-        id: detailsMap[post.id]?.uid || String(post.id), // expose uuid to the app
-        image_url: detailsMap[post.id]?.image_url || null,
-        community_name: detailsMap[post.id]?.community_name || null,
-        community_id: detailsMap[post.id]?.community_id || null,
-        author_username: post.username || null, // Map username for @ display
+      let combinedPosts = posts.map((post: any) => ({
+        id: post.uid || String(post.id), // Use UUID as the main ID
+        title: post.title,
+        content: post.content,
+        created_at: post.created_at,
+        image_url: post.image_url,
+        user_id: post.user_id,
+        community_id: post.community_id,
+        author_name: post.author_name,
+        author_avatar_icon: post.author_avatar_icon,
+        author_avatar_icon_color: post.author_avatar_icon_color,
+        author_avatar_background_color: post.author_avatar_background_color,
+        author_profile_picture_url: profileMap[post.user_id]?.avatar_url || null,
+        community_name: post.communities?.name || null,
+        like_count: voteCountMap[post.id] || 0,
+        comment_count: commentCountMap[post.id] || 0,
+        author_username: profileMap[post.user_id]?.username || null,
       }));
       
       // Filter posts when "All Communities" is selected to only show posts from user's communities
@@ -273,16 +322,35 @@ export const usePost = (postId: string) => {
       // Fetch by uuid and also fetch numeric id for counts lookup
       const { data, error } = await supabase
         .from('posts')
-        .select('id, uid, title, content, created_at, image_url, community_id, communities(name), author_name, author_avatar_icon, author_avatar_icon_color, author_avatar_background_color, user_id')
+        .select(`
+          id, uid, title, content, created_at, image_url, community_id, 
+          communities(name), author_name, author_avatar_icon, 
+          author_avatar_icon_color, author_avatar_background_color, user_id
+        `)
         .eq('uid', postId)
         .single();
       if (error) throw error;
 
       const numericId = data.id;
-      const { data: counts } = await supabase.rpc('get_posts_with_counts', {
-        community_id_param: null
-      });
-      const postCounts = counts.find((p: any) => p.id === numericId);
+      
+      // Get counts directly instead of using the broken RPC function
+      const { data: voteCounts } = await supabase
+        .from('votes')
+        .select('id')
+        .eq('post_id', numericId)
+        .eq('vote_type', 1);
+
+      const { data: commentCounts } = await supabase
+        .from('comments')
+        .select('id')
+        .eq('post_id', numericId);
+
+      // Get author profile picture
+      const { data: authorProfile } = await supabase
+        .from('user_profiles')
+        .select('avatar_url, username')
+        .eq('id', data.user_id)
+        .single();
 
       return {
         id: data.uid,
@@ -295,10 +363,12 @@ export const usePost = (postId: string) => {
         author_avatar_icon: data.author_avatar_icon,
         author_avatar_icon_color: data.author_avatar_icon_color,
         author_avatar_background_color: data.author_avatar_background_color,
+        author_profile_picture_url: authorProfile?.avatar_url || null,
         user_id: data.user_id,
-        like_count: postCounts?.like_count || 0,
-        comment_count: postCounts?.comment_count || 0,
+        like_count: voteCounts?.length || 0,
+        comment_count: commentCounts?.length || 0,
         community_name: (data as any).communities?.name || null,
+        author_username: authorProfile?.username || null,
       } as unknown as Post;
     },
     enabled: typeof postId === 'string' && postId.length > 0,

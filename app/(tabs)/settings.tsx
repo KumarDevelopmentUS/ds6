@@ -1,10 +1,12 @@
 // app/(tabs)/settings.tsx
 import { supabase } from '@/supabase';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Alert, SafeAreaView, ScrollView, StyleSheet, Switch, TouchableOpacity, View } from 'react-native';
 
+import { UserAvatar } from '../../components/social/UserAvatar';
 import { ThemedButton } from '../../components/themed/ThemedButton';
 import { ThemedText } from '../../components/themed/ThemedText';
 import { ThemedView } from '../../components/themed/ThemedView';
@@ -28,6 +30,7 @@ export default function AccountScreen() {
     avatar_icon: keyof typeof Ionicons.glyphMap;
     avatar_icon_color: string;
     avatar_background_color: string;
+    avatar_url: string | null;
   } | null>(null);
   const [loading, setLoading] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -35,6 +38,15 @@ export default function AccountScreen() {
   useEffect(() => {
     loadUserAndProfile();
   }, [session]);
+
+  // Refresh profile when screen gains focus
+  useFocusEffect(
+    React.useCallback(() => {
+      if (session?.user) {
+        loadUserAndProfile();
+      }
+    }, [session])
+  );
 
   const loadUserAndProfile = async () => {
     setLoading(true);
@@ -46,12 +58,24 @@ export default function AccountScreen() {
         .select('id, first_name, nickname, school, avatar_icon, avatar_icon_color, avatar_background_color')
         .eq('id', currentUser.id)
         .single();
+      
+      const { data: userProfile, error: userProfileError } = await supabase
+        .from('user_profiles')
+        .select('avatar_url')
+        .eq('id', currentUser.id)
+        .single();
 
-      if (error) {
-        console.error('Error loading profile:', error.message);
+      if (error || userProfileError) {
+        console.error('Error loading profile:', error?.message || userProfileError?.message);
         Alert.alert('Error', 'Failed to load profile data.');
       } else if (data) {
-        setProfile(data);
+        setProfile({
+          ...data,
+          avatar_icon: data.avatar_icon || 'person',
+          avatar_icon_color: data.avatar_icon_color || '#FFFFFF',
+          avatar_background_color: data.avatar_background_color || theme.colors.primary,
+          avatar_url: userProfile?.avatar_url || null,
+        });
       }
     } else {
       setProfile(null);
@@ -202,22 +226,13 @@ export default function AccountScreen() {
       {/* User Info */}
       {session?.user && profile ? (
         <ThemedView variant="card" style={styles.userCard}>
-          {profile.avatar_icon ? (
-            <View style={[
-              styles.avatar,
-              { backgroundColor: profile.avatar_background_color || theme.colors.primary }
-            ]}>
-              <Ionicons
-                name={profile.avatar_icon}
-                size={40}
-                color={profile.avatar_icon_color || '#FFFFFF'}
-              />
-            </View>
-          ) : (
-            <View style={[styles.avatar, { backgroundColor: theme.colors.primary }]}> 
-              <Ionicons name="person" size={40} color="#FFFFFF" />
-            </View>
-          )}
+          <UserAvatar
+            profilePictureUrl={profile.avatar_url}
+            icon={profile.avatar_icon}
+            iconColor={profile.avatar_icon_color}
+            backgroundColor={profile.avatar_background_color}
+            size={40}
+          />
           <ThemedText variant="subtitle" style={styles.userName}>
             {profile.first_name || profile.nickname || 'Player'}
           </ThemedText>

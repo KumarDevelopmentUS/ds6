@@ -14,6 +14,7 @@ export interface Post {
   author_avatar_icon: string;
   author_avatar_icon_color: string;
   author_avatar_background_color: string;
+  author_profile_picture_url?: string | null;
   username?: string;
   author_username?: string;
 }

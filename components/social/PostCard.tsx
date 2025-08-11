@@ -146,6 +146,7 @@ const PostCardComponent: React.FC<PostCardProps> = ({
       >
         <View style={styles.header}>
           <UserAvatar
+            profilePictureUrl={post.author_profile_picture_url}
             icon={post.author_avatar_icon}
             iconColor={post.author_avatar_icon_color}
             backgroundColor={post.author_avatar_background_color}
