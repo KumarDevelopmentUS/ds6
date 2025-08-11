@@ -8,13 +8,13 @@ import * as Clipboard from 'expo-clipboard';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-    Alert,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import QRCodeSVG from 'react-native-qrcode-svg';
 
@@ -1538,6 +1538,25 @@ const DieStatsTracker: React.FC = () => {
                 <Text style={styles.buttonText}>Submit Play</Text>
               </TouchableOpacity>
 
+              {/* Clear Selection Button */}
+              <TouchableOpacity 
+                style={styles.clearSelectionButton} 
+                onPress={() => {
+                  setThrowingPlayer(null);
+                  setThrowResult('');
+                  setDefendingPlayer(null);
+                  setDefendingResult('');
+                  setFifaKicker(null);
+                  setFifaAction('');
+                  setRedemptionAction('');
+                  setShowFifa(false);
+                  setShowRedemption(false);
+                  setErrorMessage('');
+                }}
+              >
+                <Text style={styles.clearSelectionButtonText}>Clear Selection</Text>
+              </TouchableOpacity>
+
               {errorMessage && <Text style={styles.errorMessage}>{errorMessage}</Text>}
             </View>
           )}
@@ -2658,6 +2677,20 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  clearSelectionButton: {
+    backgroundColor: '#6b7280', // Gray color for clear/reset actions
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  clearSelectionButtonText: {
+    color: '#ffffff',
+    fontWeight: 'bold',
+    fontSize: 14,
   },
 
 });
