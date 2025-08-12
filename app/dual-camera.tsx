@@ -233,7 +233,6 @@ export default function DualCameraScreen() {
         >
           <ViewShot
             ref={composeRef}
-            collapsable={false}
             style={styles.composerSurface}
             options={{ format: 'jpg', quality: 0.92, width: SURFACE_WIDTH, height: SURFACE_HEIGHT }}
           >

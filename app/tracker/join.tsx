@@ -10,14 +10,14 @@ import { supabase } from '@/supabase';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
+    ActivityIndicator,
+    Alert,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from 'react-native';
 
 interface LiveMatch {
@@ -290,7 +290,7 @@ export default function JoinMatchScreen() {
         <View style={styles.centerContainer}>
           <ThemedText variant="title" color="error">Match Not Found</ThemedText>
           <ThemedText variant="body" style={styles.errorText}>
-            The match with room code "{roomCode}" could not be found or has ended.
+            The match with room code &quot;{roomCode}&quot; could not be found or has ended.
           </ThemedText>
           <ThemedButton 
             title="Go Home" 

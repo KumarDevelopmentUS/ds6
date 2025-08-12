@@ -382,12 +382,10 @@ export default function MainMenuScreen() {
           }}
         />
         <MenuCard
-          title="Tournaments"
-          icon="trophy-outline"
-          color={theme.colors.error}
-          onPress={() =>
-            Alert.alert('Coming Soon', 'Tournaments will be available soon!')
-          }
+          title="Schlevins"
+          icon="dice"
+          color={theme.colors.info}
+          onPress={() => router.push('/schlevins')}
         />
       </View>
 

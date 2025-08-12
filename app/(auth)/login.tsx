@@ -1,4 +1,5 @@
 // app/(auth)/login.tsx
+import { HapticBackButton } from '@/components/HapticBackButton';
 import { ThemedButton } from '@/components/themed/ThemedButton';
 import { ThemedInput } from '@/components/themed/ThemedInput';
 import { ThemedText } from '@/components/themed/ThemedText';
@@ -8,15 +9,13 @@ import { supabase } from '@/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { HapticBackButton } from '@/components/HapticBackButton';
 import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  TouchableOpacity,
-  View,
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    View
 } from 'react-native';
 
 export default function LoginScreen() {
