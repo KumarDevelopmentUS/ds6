@@ -363,10 +363,10 @@ export default function EditProfileScreen() {
         </ThemedView>
 
         <ThemedView variant="card" style={styles.formCard}>
-          <ThemedText style={{ marginBottom: 4 }}>Username (cannot be changed)</ThemedText>
-          <View style={styles.disabledInput}>
+          <ThemedText style={[styles.disabledLabel, { color: theme.colors.textSecondary }]}>Username (cannot be changed)</ThemedText>
+          <View style={[styles.disabledInput, { backgroundColor: theme.colors.inputBackground }]}>
             <Ionicons name="at-outline" size={20} color={theme.colors.textSecondary} />
-            <ThemedText style={{ marginLeft: 10 }}>{profile.username}</ThemedText>
+            <ThemedText style={[styles.disabledText, { color: theme.colors.textSecondary }]}>{profile.username}</ThemedText>
           </View>
 
           <ThemedText style={{ marginTop: theme.spacing.md, marginBottom: 4 }}>Nickname</ThemedText>
@@ -374,6 +374,7 @@ export default function EditProfileScreen() {
             value={profile.nickname}
             onChangeText={(text) => setProfile({ ...profile, nickname: text })}
             icon={<Ionicons name="person-circle-outline" size={20} color={theme.colors.textSecondary} />}
+            style={styles.editableInput}
           />
           
           <ThemedText style={{ marginTop: theme.spacing.md, marginBottom: 4 }}>School</ThemedText>
@@ -492,7 +493,28 @@ const styles = StyleSheet.create({
   selectionValueContainer: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   colorSwatch: { width: 30, height: 30, borderRadius: 15, borderWidth: 1, borderColor: '#ccc' },
   formCard: { width: '100%', maxWidth: 400, padding: 20, borderRadius: 10 },
-  disabledInput: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#e9ecef', padding: 15, borderRadius: 8, gap: 10 },
+  disabledLabel: { marginBottom: 4, opacity: 0.85 },
+  disabledInput: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    padding: 15, 
+    borderRadius: 8, 
+    gap: 10, 
+    opacity: 0.8,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.1)',
+    backgroundColor: 'rgba(0, 0, 0, 0.03)',
+  },
+  disabledText: { marginLeft: 10, opacity: 0.9 },
+  editableInput: { 
+    borderWidth: 1, 
+    borderColor: 'rgba(0, 122, 255, 0.2)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
   schoolSelector: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#ccc', borderRadius: 8, padding: 15, backgroundColor: '#f8f9fa' },
   schoolText: { flex: 1, marginLeft: 10 },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.5)', justifyContent: 'center', padding: 20 },

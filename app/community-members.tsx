@@ -1,5 +1,6 @@
 // app/community-members.tsx
 import { HapticBackButton } from '@/components/HapticBackButton';
+import { CommunitySettingsPanel } from '@/components/CommunitySettingsPanel';
 import { getSchoolByValue } from '@/constants/schools';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/supabase';
@@ -55,6 +56,8 @@ export default function CommunityMembersScreen() {
   const [friends, setFriends] = useState<Set<string>>(new Set());
   const [pendingRequests, setPendingRequests] = useState<Set<string>>(new Set());
   const [userCommunities, setUserCommunities] = useState<Community[]>([]);
+  const [settingsVisible, setSettingsVisible] = useState(false);
+  const [userJoinDate, setUserJoinDate] = useState<string>('');
   const currentUserId = session?.user?.id;
 
   useEffect(() => {
@@ -76,7 +79,7 @@ export default function CommunityMembersScreen() {
     try {
       const { data, error } = await supabase
         .from('user_communities')
-        .select('communities(*)')
+        .select('communities(*), joined_at')
         .eq('user_id', currentUserId);
 
       if (error) throw error;
@@ -86,6 +89,14 @@ export default function CommunityMembersScreen() {
         .flat()
         .filter(Boolean) as Community[];
       setUserCommunities(communities);
+
+      // Get the join date for the current community if viewing a specific community
+      if (communityId !== 'all') {
+        const currentCommunity = data.find(uc => (uc.communities as any)?.id === parseInt(communityId as string));
+        if (currentCommunity?.joined_at) {
+          setUserJoinDate(currentCommunity.joined_at);
+        }
+      }
     } catch (error) {
       console.error('Error fetching user communities:', error);
     }
@@ -279,7 +290,14 @@ export default function CommunityMembersScreen() {
           text=""
         />
         <Text style={styles.headerTitle}>{displayCommunityName} Members</Text>
-        <View style={{ width: 40 }} />
+        {communityId !== 'all' && communityId && (
+          <TouchableOpacity
+            style={styles.settingsButton}
+            onPress={() => setSettingsVisible(true)}
+          >
+            <Ionicons name="settings-outline" size={24} color="#007AFF" />
+          </TouchableOpacity>
+        )}
       </View>
 
       {loading ? (
@@ -297,11 +315,27 @@ export default function CommunityMembersScreen() {
               <Text style={styles.emptyText}>No other members in this community yet</Text>
             </View>
           }
-        />
-      )}
-    </SafeAreaView>
-  );
-}
+                  />
+        )}
+
+        {/* Community Settings Panel */}
+        {communityId !== 'all' && communityId && (
+          <CommunitySettingsPanel
+            visible={settingsVisible}
+            onClose={() => setSettingsVisible(false)}
+            communityId={typeof communityId === 'string' ? communityId : communityId[0] || ''}
+            communityName={typeof communityName === 'string' ? communityName : communityName[0] || ''}
+            joinedAt={userJoinDate}
+            onLeaveCommunity={() => {
+              setSettingsVisible(false);
+              // Navigate back since user is no longer in the community
+              router.back();
+            }}
+          />
+        )}
+      </SafeAreaView>
+    );
+  }
 
 const styles = StyleSheet.create({
   container: {
@@ -325,6 +359,11 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: '#000',
+  },
+  settingsButton: {
+    padding: 4,
+    width: 40,
+    alignItems: 'center',
   },
   loadingContainer: {
     flex: 1,

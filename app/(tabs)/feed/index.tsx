@@ -1,4 +1,5 @@
 // app/(tabs)/feed/index.tsx
+import { CommunitySettingsPanel } from '@/components/CommunitySettingsPanel';
 import { PostCard } from '@/components/social/PostCard';
 import { getSchoolByValue } from '@/constants/schools';
 import { useAuth } from '@/contexts/AuthContext';
@@ -8,7 +9,7 @@ import { supabase } from '@/supabase';
 import { debugFeedProvider, debugUserCommunities, fixUserCommunityMembership } from '@/utils/profileSync';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
@@ -29,6 +30,8 @@ export default function FeedScreen() {
   const { communities, isLoading: isCommunitiesLoading, error: communitiesError, refetch } = useFeed();
   const [selectedCommunityId, setSelectedCommunityId] = useState<number | null>(null);
   const [dropdownVisible, setDropdownVisible] = useState(false);
+  const [settingsVisible, setSettingsVisible] = useState(false);
+  const [userJoinDate, setUserJoinDate] = useState<string>('');
 
   // Debug logging
   console.log('🏘️ FEED SCREEN: Current state:', {
@@ -251,21 +254,65 @@ export default function FeedScreen() {
   const selectCommunity = (communityId: number | null) => {
     setSelectedCommunityId(communityId);
     setDropdownVisible(false);
+    
+    // Fetch join date for the selected community
+    if (communityId && session?.user?.id) {
+      fetchUserJoinDate(communityId);
+    } else {
+      setUserJoinDate('');
+    }
   };
+
+  const fetchUserJoinDate = async (communityId: number) => {
+    if (!session?.user?.id) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('user_communities')
+        .select('joined_at')
+        .eq('user_id', session.user.id)
+        .eq('community_id', communityId)
+        .single();
+
+      if (error) throw error;
+      setUserJoinDate(data?.joined_at || '');
+    } catch (error) {
+      console.error('Error fetching join date:', error);
+      setUserJoinDate('');
+    }
+  };
+
+  // Fetch join date when component mounts and a community is already selected
+  useEffect(() => {
+    if (selectedCommunityId && session?.user?.id) {
+      fetchUserJoinDate(selectedCommunityId);
+    }
+  }, [selectedCommunityId, session?.user?.id]);
 
   return (
     <SafeAreaView style={styles.container}>
       {/* Header with Dropdown */}
       <View style={styles.header}>
         <TouchableOpacity
-          style={styles.headerButton}
+          style={[
+            styles.headerButton,
+            !selectedCommunityId && styles.headerButtonDisabled
+          ]}
           onPress={() => {
-            // TODO: Navigate to community settings
-            Alert.alert('Coming Soon', 'Community settings will be available soon!');
+            if (selectedCommunityId) {
+              setSettingsVisible(true);
+            } else {
+              Alert.alert('No Community Selected', 'Please select a community to view its settings.');
+            }
           }}
           activeOpacity={0.7}
+          disabled={!selectedCommunityId}
         >
-          <Ionicons name="settings-outline" size={24} color="#007AFF" />
+          <Ionicons 
+            name="settings-outline" 
+            size={24} 
+            color={selectedCommunityId ? "#007AFF" : "#CCCCCC"} 
+          />
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -382,6 +429,23 @@ export default function FeedScreen() {
       >
         <Ionicons name="add" size={30} color="white" />
       </TouchableOpacity>
+
+      {/* Community Settings Panel */}
+      {selectedCommunityId && (
+        <CommunitySettingsPanel
+          visible={settingsVisible}
+          onClose={() => setSettingsVisible(false)}
+          communityId={selectedCommunityId}
+          communityName={selectedCommunity?.name || ''}
+          joinedAt={userJoinDate}
+          onLeaveCommunity={() => {
+            setSettingsVisible(false);
+            setSelectedCommunityId(null);
+            // Refresh communities after leaving
+            refetch();
+          }}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -414,6 +478,9 @@ const styles = StyleSheet.create({
   },
   headerButton: {
     padding: 4,
+  },
+  headerButtonDisabled: {
+    opacity: 0.5,
   },
   dropdownButtonText: {
     fontSize: 18,
