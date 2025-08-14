@@ -1,7 +1,5 @@
 // app/friends.tsx
 import { HapticBackButton } from '@/components/HapticBackButton';
-import { getSchoolByValue } from '@/constants/schools';
-import { useTheme } from '@/contexts/ThemeContext';
 import { supabase } from '@/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -14,12 +12,15 @@ import {
     SectionList,
     StyleSheet,
     TouchableOpacity,
-    View,
+    View
 } from 'react-native';
 import { ThemedButton } from '../components/themed/ThemedButton';
 import { ThemedInput } from '../components/themed/ThemedInput';
 import { ThemedText } from '../components/themed/ThemedText';
 import { ThemedView } from '../components/themed/ThemedView';
+import { getSchoolByValue } from '../constants/schools';
+import { useTheme } from '../contexts/ThemeContext';
+import { useUserStats } from '../hooks/useSocialFeatures';
 
 type UserProfile = {
   id: string;
@@ -260,16 +261,20 @@ export default function FriendsScreen() {
 
   const renderUserProfile = ({ item, from }: { item: UserProfile | FriendRequest, from: 'requests' | 'friends' | 'expand' }) => {
     const isFriend = friends.some(f => f.id === item.id);
-    const isRequested = pendingSentIds.has(item.id);
-
+    const userStats = useUserStats(item.id);
+    
     const renderActionButton = () => {
-      if (isFriend) return <ThemedButton title="Friends" size="small" disabled={true} />;
-      if (isRequested) return <ThemedButton title="Requested" size="small" disabled={true} />;
-      return <ThemedButton title="Add" size="small" onPress={() => handleAddFriend(item.id)} />;
+      if (isFriend) {
+        return <ThemedButton title="Friends" size="small" disabled={true} />;
+      } else if (pendingSentIds.has(item.id)) {
+        return <ThemedButton title="Requested" size="small" disabled={true} />;
+      } else {
+        return <ThemedButton title="Add Friend" size="small" onPress={() => handleAddFriend(item.id)} />;
+      }
     };
 
     return (
-      <TouchableOpacity disabled={from !== 'friends'} onPress={() => handleViewProfile(item)}>
+      <TouchableOpacity disabled={from !== 'friends'} onPress={() => router.push(`/user-profile/${item.id}`)}>
         <ThemedView variant="card" style={styles.userCard}>
           <View style={[styles.avatar, { backgroundColor: item.avatar_background_color }]}>
             <Ionicons name={item.avatar_icon} size={30} color={item.avatar_icon_color} />
@@ -278,6 +283,31 @@ export default function FriendsScreen() {
             <ThemedText variant="body" style={styles.username}>{item.nickname}</ThemedText>
             <ThemedText variant="caption">{`@${item.username}`}</ThemedText>
             <ThemedText variant="caption" numberOfLines={1}>{item.school}</ThemedText>
+            
+            {/* Quick Stats Preview */}
+            <View style={styles.quickStats}>
+              <View style={styles.quickStatItem}>
+                <Ionicons name="trophy" size={14} color={theme.colors.warning} />
+                <ThemedText variant="caption" style={styles.quickStatText}>
+                  {userStats.isLoading ? '...' : userStats.data?.totalMatches || 0}
+                </ThemedText>
+                <ThemedText variant="caption" style={styles.quickStatLabel}>Matches</ThemedText>
+              </View>
+              <View style={styles.quickStatItem}>
+                <Ionicons name="star" size={14} color={theme.colors.warning} />
+                <ThemedText variant="caption" style={styles.quickStatText}>
+                  {userStats.isLoading ? '...' : userStats.data?.averageRanking || 0}
+                </ThemedText>
+                <ThemedText variant="caption" style={styles.quickStatLabel}>Ranking</ThemedText>
+              </View>
+              <View style={styles.quickStatItem}>
+                <Ionicons name="checkmark-circle" size={14} color={theme.colors.success} />
+                <ThemedText variant="caption" style={styles.quickStatText}>
+                  {userStats.isLoading ? '...' : userStats.data?.totalWins || 0}
+                </ThemedText>
+                <ThemedText variant="caption" style={styles.quickStatLabel}>Wins</ThemedText>
+              </View>
+            </View>
           </View>
           { from === 'expand' && renderActionButton() }
           { 'request_direction' in item && item.request_direction === 'incoming' && (
@@ -436,5 +466,9 @@ const styles = StyleSheet.create({
   profileAvatar: { width: 100, height: 100, borderRadius: 50, justifyContent: 'center', alignItems: 'center', marginBottom: 15 },
   statsCard: { marginHorizontal: 20, padding: 20, borderRadius: 8 },
   statsTitle: { textAlign: 'center', marginBottom: 20 },
-  statRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#e0e0e0' }
+  statRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#e0e0e0' },
+  quickStats: { flexDirection: 'row', justifyContent: 'space-around', marginTop: 10, paddingHorizontal: 10 },
+  quickStatItem: { alignItems: 'center' },
+  quickStatText: { marginTop: 5 },
+  quickStatLabel: { marginTop: 2 }
 });

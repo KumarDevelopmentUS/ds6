@@ -683,3 +683,26 @@ export const useRealtimeUpdates = (communityId?: number) => {
     };
   }, [communityId, queryClient]);
 };
+
+export const useUserStats = (userId: string) => {
+  return useQuery({
+    queryKey: ['userStats', userId],
+    queryFn: async () => {
+      if (!userId) return null;
+
+      try {
+        // Import the hybrid function
+        const { getUserStatsHybrid } = await import('../utils/profileSync');
+        return await getUserStatsHybrid(userId);
+      } catch (error) {
+        console.error('Error fetching user stats:', error);
+        return {
+          totalMatches: 0,
+          totalWins: 0,
+          averageRanking: 0,
+        };
+      }
+    },
+    enabled: !!userId,
+  });
+};

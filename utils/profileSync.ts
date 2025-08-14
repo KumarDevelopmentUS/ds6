@@ -7,6 +7,348 @@ export interface ProfileData {
   school?: string;
 }
 
+export interface UserStats {
+  totalMatches: number;
+  totalWins: number;
+  winRate: number;
+  totalThrows: number;
+  totalHits: number;
+  hitRate: number;
+  totalCatches: number;
+  totalCatchAttempts: number;
+  catchRate: number;
+  totalFifaSuccess: number;
+  totalFifaAttempts: number;
+  fifaRate: number;
+  averageRanking: number;
+}
+
+/**
+ * Calculate comprehensive user stats from saved_matches
+ */
+export const calculateUserStats = async (userId: string): Promise<UserStats> => {
+  try {
+    // Get all matches where user was a player
+    const { data: allMatches, error } = await supabase
+      .from('saved_matches')
+      .select('*');
+
+    if (error) throw error;
+
+    // Filter matches where user was a player
+    const matches = (allMatches || []).filter(match => {
+      if (!match.userSlotMap) return false;
+      
+      const userSlot = Object.entries(match.userSlotMap).find(
+        ([_, id]) => id === userId
+      );
+      
+      return userSlot !== undefined;
+    });
+
+    if (matches.length === 0) {
+      return {
+        totalMatches: 0,
+        totalWins: 0,
+        winRate: 0,
+        totalThrows: 0,
+        totalHits: 0,
+        hitRate: 0,
+        totalCatches: 0,
+        totalCatchAttempts: 0,
+        catchRate: 0,
+        totalFifaSuccess: 0,
+        totalFifaAttempts: 0,
+        fifaRate: 0,
+        averageRanking: 0,
+      };
+    }
+
+    // Calculate stats
+    let totalMatches = 0;
+    let totalWins = 0;
+    let totalThrows = 0;
+    let totalHits = 0;
+    let totalCatches = 0;
+    let totalCatchAttempts = 0;
+    let totalFifaSuccess = 0;
+    let totalFifaAttempts = 0;
+
+    matches.forEach(match => {
+      const userSlot = Object.entries(match.userSlotMap || {}).find(
+        ([_, id]) => id === userId
+      )?.[0];
+
+      if (userSlot) {
+        totalMatches++;
+        const playerSlot = parseInt(userSlot);
+        const userTeam = playerSlot <= 2 ? 1 : 2;
+
+        // Check if user's team won
+        if (match.winnerTeam === userTeam) {
+          totalWins++;
+        }
+
+        // Get user's player stats
+        const userPlayerStats = match.playerStats[playerSlot];
+        if (userPlayerStats) {
+          totalThrows += userPlayerStats.throws || 0;
+          totalHits += userPlayerStats.hits || 0;
+          totalCatches += userPlayerStats.catches || 0;
+          totalFifaSuccess += userPlayerStats.fifaSuccess || 0;
+          totalFifaAttempts += userPlayerStats.fifaAttempts || 0;
+
+          // Calculate catch attempts
+          const catchAttempts = (userPlayerStats.catches || 0) + 
+                                (userPlayerStats.drop || 0) + 
+                                (userPlayerStats.miss || 0) + 
+                                (userPlayerStats.twoHands || 0) + 
+                                (userPlayerStats.body || 0);
+          totalCatchAttempts += catchAttempts;
+        }
+      }
+    });
+
+    // Calculate rates
+    const hitRate = totalThrows > 0 ? (totalHits / totalThrows) * 100 : 0;
+    const catchRate = totalCatchAttempts > 0 ? (totalCatches / totalCatchAttempts) * 100 : 0;
+    const fifaRate = totalFifaAttempts > 0 ? (totalFifaSuccess / totalFifaAttempts) * 100 : 0;
+
+    // Calculate average ranking (same formula as stats page)
+    const hitRateDecimal = hitRate / 100;
+    const catchRateDecimal = catchRate / 100;
+    const fifaRateDecimal = fifaRate / 100;
+    const averageRate = (hitRateDecimal + catchRateDecimal) / 2;
+    const averageRanking = Math.round(((0.85 * averageRate) + (0.10 * fifaRateDecimal)) / 0.95 * 100);
+
+    const winRate = totalMatches > 0 ? (totalWins / totalMatches) * 100 : 0;
+
+    return {
+      totalMatches,
+      totalWins,
+      winRate,
+      totalThrows,
+      totalHits,
+      hitRate,
+      totalCatches,
+      totalCatchAttempts,
+      catchRate,
+      totalFifaSuccess,
+      totalFifaAttempts,
+      fifaRate,
+      averageRanking,
+    };
+  } catch (error) {
+    console.error('Error calculating user stats:', error);
+    throw error;
+  }
+};
+
+/**
+ * Update a single user's stats in the user_profiles table
+ */
+export const updateUserStats = async (userId: string, stats: UserStats): Promise<void> => {
+  try {
+    const { error } = await supabase
+      .from('user_profiles')
+      .update({
+        total_matches_played: stats.totalMatches,
+        total_wins: stats.totalWins,
+        total_throws: stats.totalThrows,
+        total_hits: stats.totalHits,
+        average_rating: stats.averageRanking,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', userId);
+
+    if (error) throw error;
+    console.log(`Updated stats for user ${userId}:`, stats);
+  } catch (error) {
+    console.error(`Error updating stats for user ${userId}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Update all existing user profiles with their historical stats
+ */
+export const updateAllUserProfilesWithStats = async (): Promise<void> => {
+  try {
+    console.log('Starting bulk update of all user profiles with historical stats...');
+    
+    // Get all users from user_profiles table
+    const { data: users, error: usersError } = await supabase
+      .from('user_profiles')
+      .select('id, username');
+
+    if (usersError) throw usersError;
+
+    console.log(`Found ${users.length} users to update`);
+
+    let successCount = 0;
+    let errorCount = 0;
+
+    // Process users in batches to avoid overwhelming the database
+    const batchSize = 10;
+    for (let i = 0; i < users.length; i += batchSize) {
+      const batch = users.slice(i, i + batchSize);
+      
+      console.log(`Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(users.length / batchSize)}`);
+      
+      // Process batch concurrently
+      const batchPromises = batch.map(async (user) => {
+        try {
+          const stats = await calculateUserStats(user.id);
+          await updateUserStats(user.id, stats);
+          return { success: true, userId: user.id, username: user.username };
+        } catch (error) {
+          console.error(`Failed to update user ${user.username} (${user.id}):`, error);
+          return { success: false, userId: user.id, username: user.username, error };
+        }
+      });
+
+      const batchResults = await Promise.allSettled(batchPromises);
+      
+      batchResults.forEach((result) => {
+        if (result.status === 'fulfilled') {
+          if (result.value.success) {
+            successCount++;
+          } else {
+            errorCount++;
+          }
+        } else {
+          errorCount++;
+        }
+      });
+
+      // Small delay between batches to be nice to the database
+      if (i + batchSize < users.length) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    }
+
+    console.log(`Bulk update completed!`);
+    console.log(`✅ Successfully updated: ${successCount} users`);
+    console.log(`❌ Failed to update: ${errorCount} users`);
+    
+    if (errorCount > 0) {
+      console.warn(`${errorCount} users failed to update. Check the logs above for details.`);
+    }
+  } catch (error) {
+    console.error('Error during bulk update:', error);
+    throw error;
+  }
+};
+
+/**
+ * Update stats for a specific user (useful after match completion)
+ */
+export const updateUserStatsAfterMatch = async (userId: string): Promise<void> => {
+  try {
+    const stats = await calculateUserStats(userId);
+    await updateUserStats(userId, stats);
+  } catch (error) {
+    console.error('Error updating user stats after match:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get user stats from user_profiles table (fast access)
+ */
+export const getUserStatsFromProfile = async (userId: string): Promise<Partial<UserStats> | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .select('total_matches_played, total_wins, total_throws, total_hits, average_rating')
+      .eq('id', userId)
+      .single();
+
+    if (error) throw error;
+
+    const totalMatches = data.total_matches_played || 0;
+    const totalWins = data.total_wins || 0;
+    const totalThrows = data.total_throws || 0;
+    const totalHits = data.total_hits || 0;
+    
+    // Calculate derived stats from stored data
+    const winRate = totalMatches > 0 ? (totalWins / totalMatches) * 100 : 0;
+    const hitRate = totalThrows > 0 ? (totalHits / totalThrows) * 100 : 0;
+
+    return {
+      totalMatches,
+      totalWins,
+      winRate,
+      totalThrows,
+      totalHits,
+      hitRate,
+      // These aren't stored in user_profiles yet, will be calculated if needed
+      totalCatches: 0,
+      totalCatchAttempts: 0,
+      catchRate: 0,
+      totalFifaSuccess: 0,
+      totalFifaAttempts: 0,
+      fifaRate: 0,
+      averageRanking: data.average_rating || 0,
+    };
+  } catch (error) {
+    console.error('Error getting user stats from profile:', error);
+    return null;
+  }
+};
+
+/**
+ * Hybrid approach: Try to get stats from profile first, fallback to calculation
+ */
+export const getUserStatsHybrid = async (userId: string): Promise<UserStats> => {
+  try {
+    // First try to get stats from user_profiles table (fast)
+    const profileStats = await getUserStatsFromProfile(userId);
+    
+    if (profileStats && profileStats.totalMatches && profileStats.totalMatches > 0) {
+      // We have stored stats with the core data, use them for performance
+      console.log(`✅ Using stored stats for user ${userId}: ${profileStats.totalMatches} matches`);
+      
+      // If we need more detailed stats (catch/fifa), calculate those separately
+      // For now, return the stored stats with some calculated fields
+      return {
+        totalMatches: profileStats.totalMatches,
+        totalWins: profileStats.totalWins!,
+        winRate: profileStats.winRate!,
+        totalThrows: profileStats.totalThrows!,
+        totalHits: profileStats.totalHits!,
+        hitRate: profileStats.hitRate!,
+        // These will need to be calculated from matches for detailed view
+        totalCatches: 0,
+        totalCatchAttempts: 0,
+        catchRate: 0,
+        totalFifaSuccess: 0,
+        totalFifaAttempts: 0,
+        fifaRate: 0,
+        averageRanking: profileStats.averageRanking!,
+      } as UserStats;
+    } else {
+      // No stored stats, calculate them (slower but complete)
+      console.log(`❌ No stored stats found for user ${userId}, calculating from matches...`);
+      const calculatedStats = await calculateUserStats(userId);
+      
+      // Store the calculated stats for future use
+      try {
+        await updateUserStats(userId, calculatedStats);
+        console.log(`✅ Stored calculated stats for user ${userId}`);
+      } catch (storeError) {
+        console.warn(`⚠️ Failed to store calculated stats for user ${userId}:`, storeError);
+      }
+      
+      return calculatedStats;
+    }
+  } catch (error) {
+    console.error('Error in hybrid stats approach:', error);
+    // Fallback to calculation
+    return await calculateUserStats(userId);
+  }
+};
+
 // Debug function to check user's current community memberships
 export async function debugUserCommunities() {
   console.log('🔍 COMMUNITY DEBUG: Checking user community memberships...');

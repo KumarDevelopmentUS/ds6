@@ -1,6 +1,6 @@
 // app/community-members.tsx
-import { HapticBackButton } from '@/components/HapticBackButton';
 import { CommunitySettingsPanel } from '@/components/CommunitySettingsPanel';
+import { HapticBackButton } from '@/components/HapticBackButton';
 import { getSchoolByValue } from '@/constants/schools';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/supabase';
@@ -17,6 +17,7 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
+import { useUserStats } from '../hooks/useSocialFeatures';
 
 type UserProfile = {
   id: string;
@@ -244,39 +245,67 @@ export default function CommunityMembersScreen() {
   const renderMember = ({ item }: { item: UserProfile }) => {
     const isFriend = friends.has(item.id);
     const isPending = pendingRequests.has(item.id);
+    const userStats = useUserStats(item.id);
 
     return (
-      <View style={styles.memberCard}>
-        <View style={styles.memberInfo}>
-          <View style={[styles.avatar, { backgroundColor: item.avatar_background_color }]}>
-            <Ionicons name={item.avatar_icon} size={24} color={item.avatar_icon_color} />
+      <TouchableOpacity onPress={() => router.push(`/user-profile/${item.id}`)}>
+        <View style={styles.memberCard}>
+          <View style={styles.memberInfo}>
+            <View style={[styles.avatar, { backgroundColor: item.avatar_background_color }]}>
+              <Ionicons name={item.avatar_icon} size={24} color={item.avatar_icon_color} />
+            </View>
+            <View style={styles.textInfo}>
+              <Text style={styles.nickname}>{item.nickname}</Text>
+              <Text style={styles.username}>@{item.username}</Text>
+              {item.school && item.school !== 'N/A' && (
+                <Text style={styles.school}>{item.school}</Text>
+              )}
+              
+              {/* Quick Stats Preview */}
+              <View style={styles.quickStats}>
+                <View style={styles.quickStatItem}>
+                  <Ionicons name="trophy" size={14} color="#fbbf24" />
+                  <Text style={styles.quickStatText}>
+                    {userStats.isLoading ? '...' : userStats.data?.totalMatches || 0}
+                  </Text>
+                  <Text style={styles.quickStatLabel}>Matches</Text>
+                </View>
+                <View style={styles.quickStatItem}>
+                  <Ionicons name="star" size={14} color="#fbbf24" />
+                  <Text style={styles.quickStatText}>
+                    {userStats.isLoading ? '...' : userStats.data?.averageRanking || 0}
+                  </Text>
+                  <Text style={styles.quickStatLabel}>Ranking</Text>
+                </View>
+                <View style={styles.quickStatItem}>
+                  <Ionicons name="checkmark-circle" size={14} color="#22c55e" />
+                  <Text style={styles.quickStatText}>
+                    {userStats.isLoading ? '...' : userStats.data?.totalWins || 0}
+                  </Text>
+                  <Text style={styles.quickStatLabel}>Wins</Text>
+                </View>
+              </View>
+            </View>
           </View>
-          <View style={styles.textInfo}>
-            <Text style={styles.nickname}>{item.nickname}</Text>
-            <Text style={styles.username}>@{item.username}</Text>
-            {item.school && item.school !== 'N/A' && (
-              <Text style={styles.school}>{item.school}</Text>
-            )}
-          </View>
-        </View>
 
-        {isFriend ? (
-          <View style={[styles.statusButton, styles.friendButton]}>
-            <Text style={styles.friendButtonText}>Friends</Text>
-          </View>
-        ) : isPending ? (
-          <View style={[styles.statusButton, styles.pendingButton]}>
-            <Text style={styles.pendingButtonText}>Requested</Text>
-          </View>
-        ) : (
-          <TouchableOpacity
-            style={[styles.statusButton, styles.addButton]}
-            onPress={() => handleAddFriend(item.id)}
-          >
-            <Text style={styles.addButtonText}>Add</Text>
-          </TouchableOpacity>
-        )}
-      </View>
+          {isFriend ? (
+            <View style={[styles.statusButton, styles.friendButton]}>
+              <Text style={styles.friendButtonText}>Friends</Text>
+            </View>
+          ) : isPending ? (
+            <View style={[styles.statusButton, styles.pendingButton]}>
+              <Text style={styles.pendingButtonText}>Requested</Text>
+            </View>
+          ) : (
+            <TouchableOpacity
+              style={[styles.statusButton, styles.addButton]}
+              onPress={() => handleAddFriend(item.id)}
+            >
+              <Text style={styles.addButtonText}>Add</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </TouchableOpacity>
     );
   };
 
@@ -460,5 +489,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
     textAlign: 'center',
+  },
+  quickStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 8,
+  },
+  quickStatItem: {
+    alignItems: 'center',
+  },
+  quickStatText: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 4,
+  },
+  quickStatLabel: {
+    fontSize: 10,
+    color: '#888',
+    marginTop: 2,
   },
 });

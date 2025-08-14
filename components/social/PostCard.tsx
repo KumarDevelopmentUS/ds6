@@ -21,6 +21,7 @@ import Animated, {
     withTiming,
 } from 'react-native-reanimated';
 // Note: You will need to update your actual Post type definition where it lives.
+import { useRouter } from 'expo-router';
 import { Post as BasePost } from '../../types/social';
 import { UserAvatar } from './UserAvatar';
 import { VoteButtons } from './VoteButtons';
@@ -48,6 +49,7 @@ const PostCardComponent: React.FC<PostCardProps> = ({
   userVote,
 }) => {
   const [imageModalVisible, setImageModalVisible] = useState(false);
+  const router = useRouter();
 
   const scale = useSharedValue(1);
   const translateX = useSharedValue(0);
@@ -151,15 +153,18 @@ const PostCardComponent: React.FC<PostCardProps> = ({
             iconColor={post.author_avatar_icon_color}
             backgroundColor={post.author_avatar_background_color}
             size={36}
+            onPress={() => router.push(`/user-profile/${post.user_id}`)}
           />
           <View style={styles.headerText}>
             <View style={styles.topRow}>
               <View>
-                <Text style={styles.authorName}>{post.author_name}</Text>
-                {/* Display @username below the author name, as requested */}
-                {post.author_username ? (
-                <Text style={styles.username}>@{post.author_username}</Text>
-                ) : null}
+                <TouchableOpacity onPress={() => router.push(`/user-profile/${post.user_id}`)}>
+                  <Text style={styles.authorName}>{post.author_name}</Text>
+                  {/* Display @username below the author name, as requested */}
+                  {post.author_username ? (
+                    <Text style={styles.username}>@{post.author_username}</Text>
+                  ) : null}
+                </TouchableOpacity>
                 <Text style={styles.timestamp}>{new Date(post.created_at).toLocaleDateString()}</Text>
               </View>
               {displayName ? (

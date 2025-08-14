@@ -928,6 +928,31 @@ const DieStatsTracker: React.FC = () => {
   
       if (error) throw error;
   
+      // Update user stats in user_profiles table for all players
+      try {
+        const { updateUserStatsAfterMatch } = await import('../../utils/profileSync');
+        
+        // Update stats for all players who participated
+        const playerIds = Object.values(userSlotMap).filter(id => id !== null);
+        const updatePromises = playerIds.map(async (playerId) => {
+          if (playerId) {
+            try {
+              await updateUserStatsAfterMatch(playerId);
+              console.log(`Updated stats for player ${playerId}`);
+            } catch (updateError) {
+              console.warn(`Failed to update stats for player ${playerId}:`, updateError);
+            }
+          }
+        });
+        
+        // Wait for all stats updates to complete
+        await Promise.allSettled(updatePromises);
+        console.log('Completed stats updates for all players');
+      } catch (statsError) {
+        console.warn('Failed to update user stats after match:', statsError);
+        // Don't fail the match save if stats update fails
+      }
+  
       Alert.alert('Success', 'Match statistics saved successfully!');
   
       if (liveSessionId) {

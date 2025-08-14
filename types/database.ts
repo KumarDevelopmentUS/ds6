@@ -25,6 +25,7 @@ export type Database = {
           id: number
           parent_comment_id: number | null
           post_id: number | null
+          post_uid: string
           user_id: string | null
         }
         Insert: {
@@ -37,6 +38,7 @@ export type Database = {
           id?: number
           parent_comment_id?: number | null
           post_id?: number | null
+          post_uid: string
           user_id?: string | null
         }
         Update: {
@@ -49,6 +51,7 @@ export type Database = {
           id?: number
           parent_comment_id?: number | null
           post_id?: number | null
+          post_uid?: string
           user_id?: string | null
         }
         Relationships: [
@@ -60,11 +63,11 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "comments_post_id_fkey"
-            columns: ["post_id"]
+            foreignKeyName: "comments_post_uid_fkey"
+            columns: ["post_uid"]
             isOneToOne: false
             referencedRelation: "posts"
-            referencedColumns: ["id"]
+            referencedColumns: ["uid"]
           },
         ]
       }
@@ -173,6 +176,7 @@ export type Database = {
           id: number
           image_url: string | null
           title: string
+          uid: string
           user_id: string | null
         }
         Insert: {
@@ -186,6 +190,7 @@ export type Database = {
           id?: number
           image_url?: string | null
           title: string
+          uid?: string
           user_id?: string | null
         }
         Update: {
@@ -199,6 +204,7 @@ export type Database = {
           id?: number
           image_url?: string | null
           title?: string
+          uid?: string
           user_id?: string | null
         }
         Relationships: [
@@ -377,6 +383,7 @@ export type Database = {
           created_at: string | null
           id: number
           post_id: number | null
+          post_uid: string
           user_id: string
           vote_type: number | null
         }
@@ -384,6 +391,7 @@ export type Database = {
           created_at?: string | null
           id?: number
           post_id?: number | null
+          post_uid: string
           user_id: string
           vote_type?: number | null
         }
@@ -391,16 +399,17 @@ export type Database = {
           created_at?: string | null
           id?: number
           post_id?: number | null
+          post_uid?: string
           user_id?: string
           vote_type?: number | null
         }
         Relationships: [
           {
-            foreignKeyName: "votes_post_id_fkey"
-            columns: ["post_id"]
+            foreignKeyName: "votes_post_uid_fkey"
+            columns: ["post_uid"]
             isOneToOne: false
             referencedRelation: "posts"
-            referencedColumns: ["id"]
+            referencedColumns: ["uid"]
           },
         ]
       }
