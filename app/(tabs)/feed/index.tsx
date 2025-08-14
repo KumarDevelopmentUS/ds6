@@ -59,6 +59,13 @@ export default function FeedScreen() {
   // Enable real-time updates for the selected community
   useRealtimeUpdates(selectedCommunityId || undefined);
 
+  // Fetch join date when component mounts and a community is already selected
+  useEffect(() => {
+    if (selectedCommunityId && session?.user?.id) {
+      fetchUserJoinDate(selectedCommunityId);
+    }
+  }, [selectedCommunityId, session?.user?.id]);
+
   // Define the type for a post item
   type Post = typeof posts extends (infer U)[] ? U : any;
 
@@ -281,13 +288,6 @@ export default function FeedScreen() {
       setUserJoinDate('');
     }
   };
-
-  // Fetch join date when component mounts and a community is already selected
-  useEffect(() => {
-    if (selectedCommunityId && session?.user?.id) {
-      fetchUserJoinDate(selectedCommunityId);
-    }
-  }, [selectedCommunityId, session?.user?.id]);
 
   return (
     <SafeAreaView style={styles.container}>

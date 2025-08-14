@@ -20,7 +20,6 @@ import { ThemedText } from '../components/themed/ThemedText';
 import { ThemedView } from '../components/themed/ThemedView';
 import { getSchoolByValue } from '../constants/schools';
 import { useTheme } from '../contexts/ThemeContext';
-import { useUserStats } from '../hooks/useSocialFeatures';
 
 type UserProfile = {
   id: string;
@@ -261,7 +260,6 @@ export default function FriendsScreen() {
 
   const renderUserProfile = ({ item, from }: { item: UserProfile | FriendRequest, from: 'requests' | 'friends' | 'expand' }) => {
     const isFriend = friends.some(f => f.id === item.id);
-    const userStats = useUserStats(item.id);
     
     const renderActionButton = () => {
       if (isFriend) {
@@ -284,30 +282,31 @@ export default function FriendsScreen() {
             <ThemedText variant="caption">{`@${item.username}`}</ThemedText>
             <ThemedText variant="caption" numberOfLines={1}>{item.school}</ThemedText>
             
-            {/* Quick Stats Preview */}
-            <View style={styles.quickStats}>
+            {/* TODO: Re-enable quick stats preview - need to implement proper hooks pattern
+                Options:
+                1. Move useUserStats to component level and pass data down
+                2. Use context/state management for user stats
+                3. Pre-fetch stats when component mounts
+                
+                Current issue: useUserStats hook cannot be called inside renderUserProfile function
+                due to React Rules of Hooks violation */}
+            {/* <View style={styles.quickStats}>
               <View style={styles.quickStatItem}>
                 <Ionicons name="trophy" size={14} color={theme.colors.warning} />
-                <ThemedText variant="caption" style={styles.quickStatText}>
-                  {userStats.isLoading ? '...' : userStats.data?.totalMatches || 0}
-                </ThemedText>
+                <ThemedText variant="caption" style={styles.quickStatText}>...</ThemedText>
                 <ThemedText variant="caption" style={styles.quickStatLabel}>Matches</ThemedText>
               </View>
               <View style={styles.quickStatItem}>
                 <Ionicons name="star" size={14} color={theme.colors.warning} />
-                <ThemedText variant="caption" style={styles.quickStatText}>
-                  {userStats.isLoading ? '...' : userStats.data?.averageRanking || 0}
-                </ThemedText>
+                <ThemedText variant="caption" style={styles.quickStatText}>...</ThemedText>
                 <ThemedText variant="caption" style={styles.quickStatLabel}>Ranking</ThemedText>
               </View>
               <View style={styles.quickStatItem}>
                 <Ionicons name="checkmark-circle" size={14} color={theme.colors.success} />
-                <ThemedText variant="caption" style={styles.quickStatText}>
-                  {userStats.isLoading ? '...' : userStats.data?.totalWins || 0}
-                </ThemedText>
+                <ThemedText variant="caption" style={styles.quickStatText}>...</ThemedText>
                 <ThemedText variant="caption" style={styles.quickStatLabel}>Wins</ThemedText>
               </View>
-            </View>
+            </View> */}
           </View>
           { from === 'expand' && renderActionButton() }
           { 'request_direction' in item && item.request_direction === 'incoming' && (

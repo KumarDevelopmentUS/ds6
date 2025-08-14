@@ -203,7 +203,7 @@ export function CommunitySettingsPanel({
             <View style={styles.webConfirmDialog}>
               <Text style={styles.webConfirmTitle}>Leave Community</Text>
               <Text style={styles.webConfirmMessage}>
-                Are you sure you want to leave "{displayCommunityName}"? You can rejoin later if you change your mind.
+                Are you sure you want to leave &ldquo;{displayCommunityName}&rdquo;? You can rejoin later if you change your mind.
               </Text>
               <View style={styles.webConfirmButtons}>
                 <TouchableOpacity

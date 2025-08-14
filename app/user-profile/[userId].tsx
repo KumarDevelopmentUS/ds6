@@ -412,7 +412,7 @@ export default function UserProfileScreen() {
                 <Ionicons name="stats-chart-outline" size={48} color={theme.colors.textSecondary} />
                 <ThemedText variant="subtitle" style={styles.emptyStatsTitle}>No Statistics Available</ThemedText>
                 <ThemedText variant="body" style={styles.emptyStatsText}>
-                  This user hasn't played any matches yet.
+                  This user hasn&apos;t played any matches yet.
                 </ThemedText>
               </ThemedView>
             )}

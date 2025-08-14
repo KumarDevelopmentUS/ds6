@@ -8,16 +8,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    FlatList,
-    SafeAreaView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
-import { useUserStats } from '../hooks/useSocialFeatures';
 
 type UserProfile = {
   id: string;
@@ -245,7 +244,6 @@ export default function CommunityMembersScreen() {
   const renderMember = ({ item }: { item: UserProfile }) => {
     const isFriend = friends.has(item.id);
     const isPending = pendingRequests.has(item.id);
-    const userStats = useUserStats(item.id);
 
     return (
       <TouchableOpacity onPress={() => router.push(`/user-profile/${item.id}`)}>
@@ -261,30 +259,31 @@ export default function CommunityMembersScreen() {
                 <Text style={styles.school}>{item.school}</Text>
               )}
               
-              {/* Quick Stats Preview */}
-              <View style={styles.quickStats}>
+              {/* TODO: Re-enable quick stats preview - need to implement proper hooks pattern
+                  Options:
+                  1. Move useUserStats to component level and pass data down
+                  2. Use context/state management for user stats
+                  3. Pre-fetch stats when component mounts
+                  
+                  Current issue: useUserStats hook cannot be called inside renderMember function
+                  due to React Rules of Hooks violation */}
+              {/* <View style={styles.quickStats}>
                 <View style={styles.quickStatItem}>
                   <Ionicons name="trophy" size={14} color="#fbbf24" />
-                  <Text style={styles.quickStatText}>
-                    {userStats.isLoading ? '...' : userStats.data?.totalMatches || 0}
-                  </Text>
+                  <Text style={styles.quickStatText}>...</Text>
                   <Text style={styles.quickStatLabel}>Matches</Text>
                 </View>
                 <View style={styles.quickStatItem}>
                   <Ionicons name="star" size={14} color="#fbbf24" />
-                  <Text style={styles.quickStatText}>
-                    {userStats.isLoading ? '...' : userStats.data?.averageRanking || 0}
-                  </Text>
+                  <Text style={styles.quickStatText}>...</Text>
                   <Text style={styles.quickStatLabel}>Ranking</Text>
                 </View>
                 <View style={styles.quickStatItem}>
                   <Ionicons name="checkmark-circle" size={14} color="#22c55e" />
-                  <Text style={styles.quickStatText}>
-                    {userStats.isLoading ? '...' : userStats.data?.totalWins || 0}
-                  </Text>
+                  <Text style={styles.quickStatText}>...</Text>
                   <Text style={styles.quickStatLabel}>Wins</Text>
                 </View>
-              </View>
+              </View> */}
             </View>
           </View>
 
