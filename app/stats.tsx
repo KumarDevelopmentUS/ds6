@@ -45,6 +45,7 @@ interface OverallStats {
   favoriteArena: string;
   nemesisPlayer: string;
   bestPartner: string;
+  averageRanking: number; // New field for the combined ranking score
 
   // New granular counters
   totalTableDie: number;
@@ -203,6 +204,7 @@ export default function StatisticsScreen() {
       favoriteArena: '',
       nemesisPlayer: '',
       bestPartner: '',
+      averageRanking: 0, // Initialize new field
       // Initialize new granular counters
       totalTableDie: 0,
       totalLine: 0,
@@ -329,6 +331,13 @@ export default function StatisticsScreen() {
     stats.avgScore = stats.totalMatches > 0 ? stats.totalScore / stats.totalMatches : 0;
     stats.fifaRate = stats.totalFifaAttempts > 0 ? (stats.totalFifaSuccess / stats.totalFifaAttempts) * 100 : 0;
     stats.avgMatchDuration = stats.totalMatches > 0 ? stats.totalMatchDuration / stats.totalMatches : 0;
+
+    // Calculate average ranking (85% for average of hit/catch rates, 10% for FIFA rate)
+    const hitRateDecimal = stats.hitRate / 100;
+    const catchRateDecimal = stats.catchRate / 100;
+    const fifaRateDecimal = stats.fifaRate / 100;
+    const averageRate = (hitRateDecimal + catchRateDecimal) / 2;
+    stats.averageRanking = Math.round(((0.85 * averageRate) + (0.10 * fifaRateDecimal)) / 0.95 * 100);
 
     // Find favorite arena
     let maxArenaCount = 0;
@@ -869,6 +878,17 @@ export default function StatisticsScreen() {
         {/* Main Stats Grid */}
         <View style={styles.statsGrid}>
           <ThemedView variant="card" style={styles.statCard}>
+            <Ionicons name="star" size={24} color={theme.colors.warning} />
+            <ThemedText variant="title" color="warning">
+              {stats.averageRanking}
+            </ThemedText>
+            <ThemedText variant="caption">Average Ranking</ThemedText>
+            <ThemedText variant="caption" style={styles.statDetail}>
+              Overall Performance
+            </ThemedText>
+          </ThemedView>
+
+          <ThemedView variant="card" style={styles.statCard}>
             <Ionicons name="trophy" size={24} color={theme.colors.warning} />
             <ThemedText variant="title" color="warning">
               {stats.winRate.toFixed(1)}%
@@ -922,6 +942,11 @@ export default function StatisticsScreen() {
             
             <View style={styles.playerStatsContainer}>
               <View style={styles.playerStatsList}>
+                <View style={styles.playerStatRow}>
+                  <ThemedText variant="body">Average Ranking:</ThemedText>
+                  <ThemedText variant="body" color="primary">{stats.averageRanking}</ThemedText>
+                </View>
+                
                 <View style={styles.playerStatRow}>
                   <ThemedText variant="body">Total Matches:</ThemedText>
                   <ThemedText variant="body" color="primary">{stats.totalMatches}</ThemedText>
