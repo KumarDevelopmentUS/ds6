@@ -165,11 +165,12 @@ const PostCardComponent: React.FC<PostCardProps> = ({
                     <Text style={styles.username}>@{post.author_username}</Text>
                   ) : null}
                 </TouchableOpacity>
-                <Text style={styles.timestamp}>{new Date(post.created_at).toLocaleDateString()}</Text>
+                
               </View>
               {displayName ? (
                 <View style={styles.communityBadge}>
                   <Text style={styles.communityName}>{displayName}</Text>
+                  <Text style={styles.postDate}>{new Date(post.created_at).toLocaleDateString()}</Text>
                 </View>
               ) : null}
             </View>
@@ -279,6 +280,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#007AFF',
     fontWeight: '500',
+  },
+  postDate: {
+    fontSize: 11,
+    color: '#666',
+    marginTop: 2,
+    textAlign: 'center',
   },
   timestamp: {
     fontSize: 12,
