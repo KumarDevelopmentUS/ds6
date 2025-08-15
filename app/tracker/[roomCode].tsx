@@ -1078,119 +1078,168 @@ const DieStatsTracker: React.FC = () => {
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Match Setup</Text>
 
-          <TextInput
-            style={styles.input}
-            placeholder="Match Title"
-            value={matchSetup.title}
-            onChangeText={(text) =>
-              setMatchSetup((prev) => ({ ...prev, title: sanitizeInput(text) }))
-            }
-          />
-
-          <TextInput
-            style={styles.input}
-            placeholder="Arena"
-            value={matchSetup.arena}
-            onChangeText={(text) =>
-              setMatchSetup((prev) => ({ ...prev, arena: sanitizeInput(text) }))
-            }
-          />
-
-          {/* Player Names Inputs */}
-          {matchSetup.playerNames.map((name, index) => (
+          {/* Basic Match Info Section */}
+          <View style={styles.setupSection}>
+            <Text style={styles.sectionHeader}>Basic Information</Text>
             <TextInput
-              key={index}
               style={styles.input}
-              placeholder={`Player ${index + 1}`}
-              value={name}
-              onChangeText={(text) => {
-                const newNames = [...matchSetup.playerNames];
-                newNames[index] = sanitizeInput(text);
-                setMatchSetup((prev) => ({ ...prev, playerNames: newNames }));
-              }}
+              placeholder="Match Title"
+              value={matchSetup.title}
+              onChangeText={(text) =>
+                setMatchSetup((prev) => ({ ...prev, title: sanitizeInput(text) }))
+              }
             />
-          ))}
-
-          {/* Team Names Inputs */}
-          {matchSetup.teamNames.map((name, index) => (
             <TextInput
-              key={index}
               style={styles.input}
-              placeholder={`Team ${index + 1}`}
-              value={name}
-              onChangeText={(text) => {
-                const newNames = [...matchSetup.teamNames];
-                newNames[index] = sanitizeInput(text);
-                setMatchSetup((prev) => ({ ...prev, teamNames: newNames }));
-              }}
+              placeholder="Arena"
+              value={matchSetup.arena}
+              onChangeText={(text) =>
+                setMatchSetup((prev) => ({ ...prev, arena: sanitizeInput(text) }))
+              }
             />
-          ))}
-          {/* Game Score Limit Selection */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Score to Win:</Text>
-            <View style={styles.buttonRow}>
-              {[11, 7, 15, 21].map((score) => (
-                <TouchableOpacity
-                  key={score}
-                  style={[
-                    styles.dropdownButton,
-                    matchSetup.gameScoreLimit === score && styles.dropdownButtonSelected,
-                  ]}
-                  onPress={() => setMatchSetup(prev => ({ ...prev, gameScoreLimit: score }))}
-                >
-                  <Text style={[
-                    styles.dropdownButtonText,
-                    matchSetup.gameScoreLimit === score && styles.dropdownButtonTextSelected,
-                  ]}>
-                    {score}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+          </View>
+
+          {/* Teams & Players Section */}
+          <View style={styles.setupSection}>
+            <Text style={styles.sectionHeader}>Teams & Players</Text>
+            <View style={styles.twoColumnRow}>
+              <View style={styles.halfCard}>
+                <TextInput
+                  style={styles.teamNameInput}
+                  placeholder="Team 1 Name"
+                  value={matchSetup.teamNames[0]}
+                  onChangeText={(text) => {
+                    const newNames = [...matchSetup.teamNames];
+                    newNames[0] = sanitizeInput(text);
+                    setMatchSetup((prev) => ({ ...prev, teamNames: newNames }));
+                  }}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Player 1"
+                  value={matchSetup.playerNames[0]}
+                  onChangeText={(text) => {
+                    const newNames = [...matchSetup.playerNames];
+                    newNames[0] = sanitizeInput(text);
+                    setMatchSetup((prev) => ({ ...prev, playerNames: newNames }));
+                  }}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Player 2"
+                  value={matchSetup.playerNames[1]}
+                  onChangeText={(text) => {
+                    const newNames = [...matchSetup.playerNames];
+                    newNames[1] = sanitizeInput(text);
+                    setMatchSetup((prev) => ({ ...prev, playerNames: newNames }));
+                  }}
+                />
+              </View>
+              <View style={styles.halfCard}>
+                <TextInput
+                  style={styles.teamNameInput}
+                  placeholder="Team 2 Name"
+                  value={matchSetup.teamNames[1]}
+                  onChangeText={(text) => {
+                    const newNames = [...matchSetup.teamNames];
+                    newNames[1] = sanitizeInput(text);
+                    setMatchSetup((prev) => ({ ...prev, teamNames: newNames }));
+                  }}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Player 3"
+                  value={matchSetup.playerNames[2]}
+                  onChangeText={(text) => {
+                    const newNames = [...matchSetup.playerNames];
+                    newNames[2] = sanitizeInput(text);
+                    setMatchSetup((prev) => ({ ...prev, playerNames: newNames }));
+                  }}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Player 4"
+                  value={matchSetup.playerNames[3]}
+                  onChangeText={(text) => {
+                    const newNames = [...matchSetup.playerNames];
+                    newNames[3] = sanitizeInput(text);
+                    setMatchSetup((prev) => ({ ...prev, playerNames: newNames }));
+                  }}
+                />
+              </View>
             </View>
           </View>
 
-          {/* Sink Points Selection */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Sink Points:</Text>
-            <View style={styles.buttonRow}>
-              {[3, 5].map((points) => (
-                <TouchableOpacity
-                  key={points}
-                  style={[
-                    styles.dropdownButton,
-                    matchSetup.sinkPoints === points && styles.dropdownButtonSelected,
-                  ]}
-                  onPress={() => setMatchSetup(prev => ({ ...prev, sinkPoints: points }))}
-                >
-                  <Text style={[
-                    styles.dropdownButtonText,
-                    matchSetup.sinkPoints === points && styles.dropdownButtonTextSelected,
-                  ]}>
-                    {points}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+          {/* Game Rules Section */}
+          <View style={[styles.setupSection, { borderBottomWidth: 0 }]}>
+            <Text style={styles.sectionHeader}>Game Rules</Text>
+            
+            {/* Score Limit Selection */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Score to Win:</Text>
+              <View style={styles.buttonRow}>
+                {[7, 11, 15, 21].map((score) => (
+                  <TouchableOpacity
+                    key={score}
+                    style={[
+                      styles.dropdownButton,
+                      matchSetup.gameScoreLimit === score && styles.dropdownButtonSelected,
+                    ]}
+                    onPress={() => setMatchSetup(prev => ({ ...prev, gameScoreLimit: score }))}
+                  >
+                    <Text style={[
+                      styles.dropdownButtonText,
+                      matchSetup.gameScoreLimit === score && styles.dropdownButtonTextSelected,
+                    ]}>
+                      {score}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            {/* Sink Points Selection */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Sink Points:</Text>
+              <View style={styles.buttonRow}>
+                {[3, 5].map((points) => (
+                  <TouchableOpacity
+                    key={points}
+                    style={[
+                      styles.dropdownButton,
+                      matchSetup.sinkPoints === points && styles.dropdownButtonSelected,
+                    ]}
+                    onPress={() => setMatchSetup(prev => ({ ...prev, sinkPoints: points }))}
+                  >
+                    <Text style={[
+                      styles.dropdownButtonText,
+                      matchSetup.sinkPoints === points && styles.dropdownButtonTextSelected,
+                    ]}>
+                      {points}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            {/* Win By Two Toggle */}
+            <View style={styles.toggleRow}>
+              <Text style={styles.label}>Win By Two:</Text>
+              <TouchableOpacity
+                style={[
+                  styles.toggleButton,
+                  matchSetup.winByTwo ? styles.toggleButtonActive : styles.toggleButtonInactive,
+                ]}
+                onPress={() => setMatchSetup((prev) => ({ ...prev, winByTwo: !prev.winByTwo }))}
+              >
+                <Text style={styles.toggleButtonText}>
+                  {matchSetup.winByTwo ? 'ON' : 'OFF'}
+                </Text>
+              </TouchableOpacity>
             </View>
           </View>
 
-          {/* Win By Two Toggle (Simple example, can be improved) */}
-          <View style={styles.toggleRow}>
-            <Text style={styles.sectionHeader}>Win By Two:</Text>
-            <TouchableOpacity
-              style={[
-                styles.toggleButton,
-                matchSetup.winByTwo ? styles.toggleButtonActive : styles.toggleButtonInactive,
-              ]}
-              onPress={() => setMatchSetup((prev) => ({ ...prev, winByTwo: !prev.winByTwo }))}
-            >
-              <Text style={styles.toggleButtonText}>
-                {matchSetup.winByTwo ? 'ON' : 'OFF'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-
-          {/* Start Match / Quick Start Button */}
+          {/* Start Match Button */}
           <TouchableOpacity
             style={[styles.primaryButton, isLoading && styles.disabledButton]}
             onPress={() => handleStartMatch()}
@@ -2110,6 +2159,17 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     color: '#1f2937',
   },
+  teamNameInput: {
+    width: '100%',
+    padding: 12,
+    borderWidth: 2,
+    borderColor: '#3b82f6',
+    borderRadius: 4,
+    marginBottom: 16,
+    color: '#1f2937',
+    backgroundColor: '#f0f9ff',
+    fontWeight: '600',
+  },
   primaryButton: {
     backgroundColor: '#3b82f6',
     paddingVertical: 12,
@@ -2159,6 +2219,12 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     marginBottom: 4,
     color: '#374151',
+  },
+  setupSection: {
+    marginBottom: 24,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
   },
   dropdownButton: {
     paddingVertical: 8,

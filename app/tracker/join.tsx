@@ -53,6 +53,7 @@ export default function JoinMatchScreen() {
   const [showLogin, setShowLogin] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState<number | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
   
   // Auth state for login
   const [email, setEmail] = useState('');
@@ -108,6 +109,61 @@ export default function JoinMatchScreen() {
       setIsLoading(false);
     }
   }, [roomCode]);
+
+  // Real-time subscription for live match updates
+  useEffect(() => {
+    if (!liveMatch?.id) return;
+
+    console.log('Setting up real-time subscription for join screen');
+
+    const subscription = supabase
+      .channel(`join_screen:${liveMatch.id}`)
+      .on('postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'live_matches',
+          filter: `id=eq.${liveMatch.id}`
+        },
+        (payload) => {
+          console.log('Join screen received live update:', payload);
+          const updatedMatch = payload.new as LiveMatch;
+
+          // Update local state with live data
+          setLiveMatch(prev => prev ? {
+            ...prev,
+            status: updatedMatch.status,
+            participants: updatedMatch.participants || [],
+            userSlotMap: updatedMatch.userSlotMap || {},
+            matchSetup: {
+              ...prev.matchSetup,
+              playerNames: updatedMatch.matchSetup?.playerNames || prev.matchSetup.playerNames
+            },
+            livePlayerStats: updatedMatch.livePlayerStats || {},
+            matchStartTime: updatedMatch.matchStartTime,
+          } : null);
+
+          // Clear any error messages when data updates successfully
+          if (errorMessage) {
+            setErrorMessage('');
+          }
+        }
+      )
+      .subscribe((status, err) => {
+        if (err) {
+          console.error('Join screen subscription error:', err);
+          setIsRealtimeConnected(false);
+        } else {
+          console.log('Join screen subscription status:', status);
+          setIsRealtimeConnected(status === 'SUBSCRIBED');
+        }
+      });
+
+    return () => {
+      console.log('Join screen: Unsubscribing from live match updates');
+      subscription.unsubscribe();
+    };
+  }, [liveMatch?.id, errorMessage]);
 
   useEffect(() => {
     loadLiveMatch();
@@ -184,7 +240,7 @@ export default function JoinMatchScreen() {
     setIsJoining(true);
     try {
       // Get user profile for nickname
-      const { data: profileData, error: profileError } = await supabase
+      const { data: profileData } = await supabase
         .from('profiles')
         .select('nickname')
         .eq('id', session.user.id)
@@ -225,6 +281,21 @@ export default function JoinMatchScreen() {
 
       if (updateError) throw updateError;
 
+      // Update local state immediately to reflect the change
+      setLiveMatch(prev => prev ? {
+        ...prev,
+        userSlotMap: updatedUserSlotMap,
+        participants: updatedParticipants,
+        matchSetup: {
+          ...prev.matchSetup,
+          playerNames: updatedPlayerNames
+        },
+        livePlayerStats: updatedPlayerStats
+      } : null);
+
+      // Reset selected player state
+      setSelectedPlayer(null);
+
       Alert.alert('Success', `You have successfully joined as ${nickname}!`, [
         {
           text: 'Go to Match',
@@ -240,34 +311,7 @@ export default function JoinMatchScreen() {
     }
   };
 
-  // Handle joining as spectator
-  const handleJoinAsSpectator = async () => {
-    if (!session?.user || !liveMatch) {
-      setErrorMessage('Must be logged in to join as spectator');
-      return;
-    }
 
-    setIsJoining(true);
-    try {
-      const updatedParticipants = liveMatch.participants.includes(session.user.id)
-        ? liveMatch.participants
-        : [...liveMatch.participants, session.user.id];
-
-      const { error } = await supabase
-        .from('live_matches')
-        .update({ participants: updatedParticipants })
-        .eq('id', liveMatch.id);
-
-      if (error) throw error;
-
-      router.push(`/tracker/${roomCode}`);
-    } catch (error: any) {
-      console.error('Error joining as spectator:', error);
-      setErrorMessage('Failed to join as spectator: ' + error.message);
-    } finally {
-      setIsJoining(false);
-    }
-  };
 
   if (isLoading) {
     return (
@@ -312,13 +356,40 @@ export default function JoinMatchScreen() {
       <ScrollView style={styles.content}>
         {/* Match Info */}
         <ThemedView variant="card" style={styles.matchCard}>
-          <ThemedText variant="title">Join Match</ThemedText>
-          <ThemedText variant="subtitle">{liveMatch.matchSetup.title}</ThemedText>
-          <ThemedText variant="body">{liveMatch.matchSetup.arena}</ThemedText>
-          <ThemedText variant="caption">Room Code: {roomCode}</ThemedText>
-          <ThemedText variant="caption">
-            Status: {liveMatch.status === 'waiting' ? 'Waiting to Start' : 'In Progress'}
-          </ThemedText>
+          <View style={styles.matchHeader}>
+            <View style={styles.matchTitleRow}>
+              <ThemedText variant="title">Join Match</ThemedText>
+              <View style={styles.realtimeIndicator}>
+                <View style={[
+                  styles.realtimeDot, 
+                  { backgroundColor: isRealtimeConnected ? theme.colors.primary : '#ccc' }
+                ]} />
+                <ThemedText variant="caption" style={[
+                  styles.realtimeText,
+                  { opacity: isRealtimeConnected ? 0.8 : 0.4 }
+                ]}>
+                  {isRealtimeConnected ? 'Live' : 'Connecting...'}
+                </ThemedText>
+              </View>
+            </View>
+            <ThemedText variant="subtitle">{liveMatch.matchSetup.title}</ThemedText>
+            <ThemedText variant="body">{liveMatch.matchSetup.arena}</ThemedText>
+            <ThemedText variant="caption">Room Code: {roomCode}</ThemedText>
+            <View style={styles.statusRow}>
+              <ThemedText variant="caption">
+                Status: {liveMatch.status === 'waiting' ? 'Waiting to Start' : 'In Progress'}
+              </ThemedText>
+              {liveMatch.status === 'active' && (
+                <View style={styles.activeIndicator}>
+                  <View style={[styles.activeDot, { backgroundColor: theme.colors.primary }]} />
+                  <ThemedText variant="caption" style={styles.activeText}>Match Started</ThemedText>
+                </View>
+              )}
+            </View>
+            <ThemedText variant="caption">
+              Players Joined: {liveMatch.participants.length}
+            </ThemedText>
+          </View>
         </ThemedView>
 
         {/* Login Section */}
@@ -398,6 +469,8 @@ export default function JoinMatchScreen() {
                 const isSlotTaken = !!(liveMatch.userSlotMap[playerId.toString()] && 
                                    liveMatch.userSlotMap[playerId.toString()] !== session.user?.id);
                 const isMySlot = liveMatch.userSlotMap[playerId.toString()] === session.user?.id;
+                const slotUserId = liveMatch.userSlotMap[playerId.toString()];
+                const isAvailable = !isSlotTaken && !isMySlot;
 
                 return (
                   <TouchableOpacity
@@ -406,6 +479,8 @@ export default function JoinMatchScreen() {
                       styles.playerSlot,
                       isSlotTaken && styles.playerSlotTaken,
                       isMySlot && styles.playerSlotMine,
+                      isAvailable && styles.playerSlotAvailable,
+                      isJoining && selectedPlayer === playerId && styles.playerSlotJoining,
                     ]}
                     onPress={() => {
                       setSelectedPlayer(playerId);
@@ -413,27 +488,52 @@ export default function JoinMatchScreen() {
                     }}
                     disabled={isJoining || isSlotTaken}
                   >
-                    <Text style={[
-                      styles.playerSlotText,
-                      isSlotTaken && styles.playerSlotTextTaken
-                    ]}>
-                      {liveMatch.matchSetup.playerNames[playerId - 1]}
-                    </Text>
-                    <Text style={styles.playerSlotNumber}>Player {playerId}</Text>
-                    {isSlotTaken && <Text style={styles.takenText}>Taken</Text>}
-                    {isMySlot && <Text style={styles.mySlotText}>You</Text>}
+                    <View style={styles.playerSlotContent}>
+                      <Text style={[
+                        styles.playerSlotText,
+                        isSlotTaken && styles.playerSlotTextTaken,
+                        isAvailable && styles.playerSlotTextAvailable
+                      ]}>
+                        {liveMatch.matchSetup.playerNames[playerId - 1]}
+                      </Text>
+                      <Text style={styles.playerSlotNumber}>Player {playerId}</Text>
+                      
+                      {isSlotTaken && (
+                        <View style={styles.slotStatusContainer}>
+                          <Text style={styles.takenText}>Taken</Text>
+                          {slotUserId && (
+                            <Text style={styles.userIdText}>
+                              {slotUserId === session.user?.id ? 'You' : 'Other Player'}
+                            </Text>
+                          )}
+                        </View>
+                      )}
+                      
+                      {isMySlot && (
+                        <View style={styles.slotStatusContainer}>
+                          <Text style={styles.mySlotText}>You</Text>
+                        </View>
+                      )}
+                      
+                      {isAvailable && (
+                        <View style={styles.slotStatusContainer}>
+                          <Text style={styles.availableText}>Available</Text>
+                        </View>
+                      )}
+                      
+                      {isJoining && selectedPlayer === playerId && (
+                        <View style={styles.slotStatusContainer}>
+                          <ActivityIndicator size="small" color="white" />
+                          <Text style={styles.joiningText}>Joining...</Text>
+                        </View>
+                      )}
+                    </View>
                   </TouchableOpacity>
                 );
               })}
             </View>
 
-            <ThemedButton
-              title="Join as Spectator"
-              onPress={handleJoinAsSpectator}
-              variant="outline"
-              loading={isJoining}
-              style={styles.spectatorButton}
-            />
+
           </ThemedView>
         )}
 
@@ -448,7 +548,15 @@ export default function JoinMatchScreen() {
         {/* Error Message */}
         {errorMessage && (
           <ThemedView variant="card" style={styles.errorCard}>
-            <ThemedText variant="body" color="error">{errorMessage}</ThemedText>
+            <View style={styles.errorContent}>
+              <ThemedText variant="body" color="error">{errorMessage}</ThemedText>
+              <ThemedButton
+                title="Retry"
+                onPress={loadLiveMatch}
+                variant="outline"
+                style={styles.retryButton}
+              />
+            </View>
           </ThemedView>
         )}
 
@@ -544,6 +652,47 @@ const styles = StyleSheet.create({
   matchCard: {
     marginBottom: 20,
   },
+  matchHeader: {
+    gap: 8,
+  },
+  matchTitleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  statusRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  activeIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  activeDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  activeText: {
+    fontSize: 11,
+    opacity: 0.8,
+  },
+  realtimeIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  realtimeDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    opacity: 0.8,
+  },
+  realtimeText: {
+    opacity: 0.8,
+  },
   authCard: {
     marginBottom: 20,
   },
@@ -576,6 +725,17 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 8,
     alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 80,
+  },
+  playerSlotAvailable: {
+    backgroundColor: '#007AFF',
+    borderWidth: 2,
+    borderColor: '#0056CC',
+  },
+  playerSlotJoining: {
+    backgroundColor: '#FF9500',
+    opacity: 0.8,
   },
   playerSlotTaken: {
     backgroundColor: '#ccc',
@@ -583,18 +743,30 @@ const styles = StyleSheet.create({
   playerSlotMine: {
     backgroundColor: '#28a745',
   },
+  playerSlotContent: {
+    alignItems: 'center',
+    gap: 4,
+  },
   playerSlotText: {
     color: 'white',
     fontWeight: 'bold',
     fontSize: 16,
+    textAlign: 'center',
   },
   playerSlotTextTaken: {
     color: '#666',
   },
+  playerSlotTextAvailable: {
+    color: 'white',
+  },
   playerSlotNumber: {
     color: 'white',
     fontSize: 12,
-    marginTop: 5,
+    marginTop: 2,
+  },
+  slotStatusContainer: {
+    alignItems: 'center',
+    marginTop: 4,
   },
   takenText: {
     color: '#666',
@@ -606,14 +778,34 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: 'bold',
   },
-  spectatorButton: {
-    marginTop: 10,
+  availableText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  joiningText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '500',
+    marginTop: 4,
+  },
+  userIdText: {
+    color: '#666',
+    fontSize: 10,
+    marginTop: 2,
   },
   rulesCard: {
     marginBottom: 20,
   },
   errorCard: {
     marginBottom: 20,
+  },
+  errorContent: {
+    gap: 12,
+    alignItems: 'center',
+  },
+  retryButton: {
+    alignSelf: 'stretch',
   },
   navButtons: {
     flexDirection: 'row',
