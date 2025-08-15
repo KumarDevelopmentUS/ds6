@@ -119,14 +119,9 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const loadThemePreference = async () => {
     try {
-      const savedTheme = await AsyncStorage.getItem('colorScheme');
-      if (savedTheme === 'light' || savedTheme === 'dark') {
-        setColorScheme(savedTheme);
-      } else {
-        // If no saved preference, default to light mode
-        setColorScheme('light');
-        saveThemePreference('light');
-      }
+      // Force light mode - ignore any saved dark mode preferences
+      setColorScheme('light');
+      saveThemePreference('light');
     } catch (error) {
       console.error('Error loading theme preference:', error);
       // On error, default to light mode
@@ -143,12 +138,17 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const toggleColorScheme = () => {
-    const newScheme = colorScheme === 'light' ? 'dark' : 'light';
-    setColorScheme(newScheme);
-    saveThemePreference(newScheme);
+    // Dark mode is disabled - always stay in light mode
+    // This function is kept for compatibility but doesn't change the theme
+    console.log('Dark mode is disabled - staying in light mode');
   };
 
   const handleSetColorScheme = (scheme: ColorScheme) => {
+    // Force light mode regardless of what's requested
+    if (scheme !== 'light') {
+      console.log('Dark mode is disabled - forcing light mode');
+      scheme = 'light';
+    }
     setColorScheme(scheme);
     saveThemePreference(scheme);
   };

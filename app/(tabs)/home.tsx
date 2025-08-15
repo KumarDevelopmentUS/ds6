@@ -480,13 +480,13 @@ export default function MainMenuScreen() {
                 Join Room
               </ThemedText>
               <ThemedText variant="body" style={styles.modalDescription}>
-                Enter room code (6 capital letters):
+                Enter room code:
               </ThemedText>
               <TextInput
                 style={styles.modalInput}
                 value={roomCodeInput}
                 onChangeText={handleRoomCodeInput}
-                placeholder="ABCDEF"
+                placeholder="XXXXXX"
                 maxLength={6}
                 autoCapitalize="characters"
                 autoFocus={true}

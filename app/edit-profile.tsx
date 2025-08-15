@@ -6,19 +6,19 @@ import { useQueryClient } from '@tanstack/react-query'; // 1. Import useQueryCli
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    Dimensions,
-    FlatList,
-    Image,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    TextInput,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+  FlatList,
+  Image,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { ThemedButton } from '../components/themed/ThemedButton';
 import { ThemedInput } from '../components/themed/ThemedInput';
@@ -27,7 +27,8 @@ import { ThemedView } from '../components/themed/ThemedView';
 import { AVATAR_COLORS, FUN_AVATAR_ICONS } from '../constants/avatarIcons';
 import { getSchoolByValue, SCHOOLS, searchSchools } from '../constants/schools';
 import { useTheme } from '../contexts/ThemeContext';
-import { deleteProfilePicture, pickImage, takePhoto, updateUserProfilePicture, uploadProfilePicture } from '../utils/imageUpload';
+import { pickImage, takePhoto, updateUserProfilePicture, uploadProfilePicture } from '../utils/imageUpload';
+import { isPasswordVerified, markPasswordVerified, verifyProfilePicturePassword } from '../utils/profilePicturePassword';
 
 const { width } = Dimensions.get('window');
 const ICON_SIZE = 60;
@@ -45,6 +46,7 @@ export default function EditProfileScreen() {
     nickname: string;
     school: string;
     schoolName: string;
+    email: string | null;
     avatar_icon: keyof typeof Ionicons.glyphMap | null;
     avatar_icon_color: string | null;
     avatar_background_color: string | null;
@@ -55,6 +57,10 @@ export default function EditProfileScreen() {
   const [showIconColorPicker, setShowIconColorPicker] = useState(false);
   const [showBgColorPicker, setShowBgColorPicker] = useState(false);
   const [showSchoolPicker, setShowSchoolPicker] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordInput, setPasswordInput] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [pendingAction, setPendingAction] = useState<'upload' | null>(null);
   const [schoolSearch, setSchoolSearch] = useState('');
   const [filteredSchools, setFilteredSchools] = useState(SCHOOLS);
 
@@ -90,6 +96,7 @@ export default function EditProfileScreen() {
           username: userProfile.username,
           nickname: data.nickname || userProfile.display_name,
           schoolName: schoolObject ? schoolObject.name : '',
+          email: user.email || null,
           avatar_icon: data.avatar_icon || 'person',
           avatar_icon_color: data.avatar_icon_color || '#FFFFFF',
           avatar_background_color: data.avatar_background_color || theme.colors.primary,
@@ -106,6 +113,30 @@ export default function EditProfileScreen() {
   const handleProfilePictureUpload = async () => {
     if (!profile) return;
 
+    // Show web-only message if on web platform
+    if (Platform.OS === 'web') {
+      Alert.alert(
+        'Mobile Only Feature',
+        'Profile picture upload is only available on mobile devices. Please use the mobile app to upload or change your profile picture.',
+        [{ text: 'OK', style: 'default' }]
+      );
+      return;
+    }
+
+    // Check if password is already verified in this session
+    const isVerified = await isPasswordVerified();
+    
+    if (isVerified) {
+      // Password already verified, show photo options
+      showPhotoOptions();
+    } else {
+      // Show password modal for upload action
+      setPendingAction('upload');
+      setShowPasswordModal(true);
+    }
+  };
+
+  const showPhotoOptions = () => {
     Alert.alert(
       'Select Photo',
       'Choose how you want to add a profile picture',
@@ -115,6 +146,40 @@ export default function EditProfileScreen() {
         { text: 'Cancel', style: 'cancel' },
       ]
     );
+  };
+
+  const handlePasswordSubmit = async () => {
+    if (!passwordInput.trim()) {
+      setPasswordError('Please enter a password');
+      return;
+    }
+
+    const isValid = await verifyProfilePicturePassword(passwordInput.trim());
+    
+    if (isValid) {
+      // Password correct - mark as verified and perform pending action
+      await markPasswordVerified();
+      setShowPasswordModal(false);
+      setPasswordInput('');
+      setPasswordError('');
+      
+      if (pendingAction === 'upload') {
+        showPhotoOptions();
+      }
+      
+      setPendingAction(null);
+    } else {
+      // Password incorrect
+      setPasswordError('Incorrect password');
+      setPasswordInput('');
+    }
+  };
+
+  const handlePasswordCancel = () => {
+    setShowPasswordModal(false);
+    setPasswordInput('');
+    setPasswordError('');
+    setPendingAction(null);
   };
 
   const handleTakePhoto = async () => {
@@ -171,39 +236,7 @@ export default function EditProfileScreen() {
     setLoading(false);
   };
 
-  const handleRemoveProfilePicture = async () => {
-    if (!profile || !profile.avatar_url) return;
 
-    Alert.alert(
-      'Remove Profile Picture',
-      'Are you sure you want to remove your profile picture?',
-      [
-        {
-          text: 'Remove',
-          style: 'destructive',
-          onPress: async () => {
-            setLoading(true);
-            try {
-              const deleteSuccess = await deleteProfilePicture(profile.avatar_url!);
-              const updateSuccess = await updateUserProfilePicture(profile.id, null);
-              
-              if (updateSuccess) {
-                setProfile(prev => prev ? { ...prev, avatar_url: null } : null);
-                Alert.alert('Success', 'Profile picture removed successfully!');
-              } else {
-                Alert.alert('Error', 'Failed to remove profile picture');
-              }
-            } catch (error) {
-              console.error('Error removing profile picture:', error);
-              Alert.alert('Error', 'Failed to remove profile picture');
-            }
-            setLoading(false);
-          },
-        },
-        { text: 'Cancel', style: 'cancel' },
-      ]
-    );
-  };
 
   const handleUpdateProfile = async () => {
     if (!profile) return;
@@ -305,36 +338,10 @@ export default function EditProfileScreen() {
             )}
           </View>
 
-          {/* Profile Picture Controls */}
-          <View style={styles.profilePictureControls}>
-            <TouchableOpacity 
-              style={[styles.profilePictureButton, { borderColor: theme.colors.border }]} 
-              onPress={handleProfilePictureUpload}
-            >
-              <Ionicons name="camera" size={20} color={theme.colors.primary} />
-              <ThemedText style={styles.profilePictureButtonText}>
-                {profile.avatar_url ? 'Change Photo' : 'Add Photo'}
-              </ThemedText>
-            </TouchableOpacity>
-            
-            {profile.avatar_url && (
-              <TouchableOpacity 
-                style={[styles.profilePictureButton, styles.removeButton, { borderColor: theme.colors.border }]} 
-                onPress={handleRemoveProfilePicture}
-              >
-                <Ionicons name="trash-outline" size={20} color="#ef4444" />
-                <ThemedText style={[styles.profilePictureButtonText, { color: '#ef4444' }]}>
-                  Remove
-                </ThemedText>
-              </TouchableOpacity>
-            )}
-          </View>
 
-          {/* Divider */}
-          <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
           
           <ThemedText variant="body" style={styles.iconCustomizationTitle}>
-            Icon Avatar (fallback when no photo)
+            Icon Avatar
           </ThemedText>
 
           <TouchableOpacity style={[styles.selectionRow, { borderColor: theme.colors.border }]} onPress={() => setShowIconPicker(true)}>
@@ -360,6 +367,24 @@ export default function EditProfileScreen() {
               <Ionicons name="chevron-forward" size={20} color={theme.colors.textSecondary} />
             </View>
           </TouchableOpacity>
+
+          <TouchableOpacity style={[styles.selectionRow, { borderColor: theme.colors.border }]} onPress={handleProfilePictureUpload}>
+            <ThemedText>Profile Picture</ThemedText>
+            <View style={styles.selectionValueContainer}>
+              <Ionicons name="camera" size={24} color={theme.colors.textSecondary} />
+              <Ionicons name="chevron-forward" size={20} color={theme.colors.textSecondary} />
+            </View>
+          </TouchableOpacity>
+          
+          {/* Web-only message for profile picture feature */}
+          {Platform.OS === 'web' && (
+            <View style={styles.webOnlyMessage}>
+              <Ionicons name="phone-portrait" size={16} color={theme.colors.textSecondary} />
+              <ThemedText style={styles.webOnlyText}>
+                Profile picture upload is not available on web
+              </ThemedText>
+            </View>
+          )}
         </ThemedView>
 
         <ThemedView variant="card" style={styles.formCard}>
@@ -367,6 +392,12 @@ export default function EditProfileScreen() {
           <View style={[styles.disabledInput, { backgroundColor: theme.colors.inputBackground }]}>
             <Ionicons name="at-outline" size={20} color={theme.colors.textSecondary} />
             <ThemedText style={[styles.disabledText, { color: theme.colors.textSecondary }]}>{profile.username}</ThemedText>
+          </View>
+
+          <ThemedText style={[{ marginTop: theme.spacing.md, marginBottom: 4 }, styles.disabledLabel, { color: theme.colors.textSecondary }]}>Email (cannot be changed)</ThemedText>
+          <View style={[styles.disabledInput, { backgroundColor: theme.colors.inputBackground }]}>
+            <Ionicons name="mail-outline" size={20} color={theme.colors.textSecondary} />
+            <ThemedText style={[styles.disabledText, { color: theme.colors.textSecondary }]}>{profile.email || 'No email'}</ThemedText>
           </View>
 
           <ThemedText style={{ marginTop: theme.spacing.md, marginBottom: 4 }}>Nickname</ThemedText>
@@ -466,6 +497,51 @@ export default function EditProfileScreen() {
             </View>
           </KeyboardAvoidingView>
         </Modal>
+
+        {/* Password Modal for Profile Picture Upload */}
+        <Modal visible={showPasswordModal} animationType="fade" transparent={true} onRequestClose={handlePasswordCancel}>
+          <View style={styles.modalOverlay}>
+            <ThemedView variant="card" style={styles.modalContent}>
+              <ThemedText variant="subtitle" style={styles.modalTitle}>
+                Profile Picture Password
+              </ThemedText>
+              <ThemedText variant="body" style={styles.modalDescription}>
+                Enter password:
+              </ThemedText>
+              <TextInput
+                style={[styles.modalInput, passwordError && { borderColor: '#ef4444' }]}
+                placeholder="Enter password..."
+                placeholderTextColor={theme.colors.textSecondary}
+                value={passwordInput}
+                onChangeText={setPasswordInput}
+                secureTextEntry={true}
+                autoFocus={true}
+                autoComplete="off"
+                autoCorrect={false}
+                onSubmitEditing={handlePasswordSubmit}
+              />
+              {passwordError ? (
+                <ThemedText style={{ color: '#ef4444', marginTop: 8, textAlign: 'center', marginBottom: 20 }}>
+                  {passwordError}
+                </ThemedText>
+              ) : null}
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.modalButtonSecondary]}
+                  onPress={handlePasswordCancel}
+                >
+                  <ThemedText variant="body">Cancel</ThemedText>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.modalButtonPrimary]}
+                  onPress={handlePasswordSubmit}
+                >
+                  <ThemedText variant="body" style={{ color: '#fff' }}>Submit</ThemedText>
+                </TouchableOpacity>
+              </View>
+            </ThemedView>
+          </View>
+        </Modal>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -483,11 +559,7 @@ const styles = StyleSheet.create({
   avatarPreview: { width: 100, height: 100, borderRadius: 50, justifyContent: 'center', alignItems: 'center', marginBottom: 20, borderWidth: 2, borderColor: '#e5e7eb', overflow: 'hidden' },
   profileImage: { width: 100, height: 100, borderRadius: 50 },
   iconAvatarContainer: { width: 100, height: 100, borderRadius: 50, justifyContent: 'center', alignItems: 'center' },
-  profilePictureControls: { flexDirection: 'row', gap: 12, marginBottom: 20, justifyContent: 'center', flexWrap: 'wrap' },
-  profilePictureButton: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8, borderWidth: 1, gap: 8 },
-  profilePictureButtonText: { fontSize: 14, fontWeight: '500' },
-  removeButton: { },
-  divider: { width: '100%', height: 1, marginBottom: 16 },
+
   iconCustomizationTitle: { marginBottom: 16, color: '#6b7280', textAlign: 'center' },
   selectionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: '100%', paddingVertical: 15, borderBottomWidth: 1 },
   selectionValueContainer: { flexDirection: 'row', alignItems: 'center', gap: 12 },
@@ -526,4 +598,56 @@ const styles = StyleSheet.create({
   searchInput: { flex: 1, fontSize: 16 },
   schoolItem: { paddingVertical: 16, borderBottomWidth: 1 },
   emptyContainer: { paddingVertical: 40, alignItems: 'center' },
+  modalTitle: {
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  modalDescription: {
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  modalButton: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  modalButtonSecondary: {
+    backgroundColor: '#f5f5f5',
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  modalButtonPrimary: {
+    backgroundColor: '#007AFF',
+  },
+  webOnlyMessage: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginTop: 8,
+    gap: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.03)',
+    borderColor: 'rgba(0, 0, 0, 0.1)',
+  },
+  webOnlyText: {
+    fontSize: 14,
+    fontWeight: '500',
+    flex: 1,
+    color: 'rgba(0, 0, 0, 0.6)',
+  },
 });

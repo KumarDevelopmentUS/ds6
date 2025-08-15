@@ -335,11 +335,25 @@ export default function FeedScreen() {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.headerButton}
-          onPress={handleViewMembers}
+          style={[
+            styles.headerButton,
+            !selectedCommunityId && styles.headerButtonDisabled
+          ]}
+          onPress={() => {
+            if (selectedCommunityId) {
+              handleViewMembers();
+            } else {
+              Alert.alert('No Community Selected', 'Please select a community to view its members.');
+            }
+          }}
           activeOpacity={0.7}
+          disabled={!selectedCommunityId}
         >
-          <Ionicons name="people" size={24} color="#007AFF" />
+          <Ionicons 
+            name="people" 
+            size={24} 
+            color={selectedCommunityId ? "#007AFF" : "#CCCCCC"} 
+          />
         </TouchableOpacity>
       </View>
 

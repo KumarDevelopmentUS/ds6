@@ -18,7 +18,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 
 export default function AccountScreen() {
   const router = useRouter();
-  const { theme, colorScheme, toggleColorScheme } = useTheme();
+  const { theme } = useTheme();
   const { vibrationEnabled, setVibrationEnabled } = useHaptics();
   const { communities: userCommunities, isLoading: communitiesLoading } = useFeed();
   const { session } = useAuth();
@@ -175,9 +175,16 @@ export default function AccountScreen() {
       items: [
         {
           label: 'Dark Mode',
-          value: colorScheme === 'dark',
-          onToggle: toggleColorScheme,
+          value: false, // Always false (light mode)
+          onToggle: () => {
+            Alert.alert(
+              'Coming Soon! 🌙',
+              'Dark mode will be available in a future update. For now, the app stays in light mode for the best experience.',
+              [{ text: 'OK', style: 'default' }]
+            );
+          },
           type: 'switch' as const,
+          disabled: true, // Disable the switch
         },
       ],
     },
@@ -185,12 +192,6 @@ export default function AccountScreen() {
       title: 'App Preferences', // Renamed from 'Game Settings'
       icon: 'game-controller-outline',
       items: [
-        {
-          label: 'Sound Effects',
-          value: true,
-          onToggle: () => {},
-          type: 'switch' as const,
-        },
         {
           label: 'Vibration',
           value: vibrationEnabled,
@@ -242,7 +243,6 @@ export default function AccountScreen() {
               @{session.user.user_metadata.username}
             </ThemedText>
           )}
-          <ThemedText variant="caption">{session.user.email}</ThemedText>
         </ThemedView>
       ) : (
         <ThemedText style={styles.guestText}>Loading user profile...</ThemedText>
@@ -361,11 +361,12 @@ export default function AccountScreen() {
                     <Switch
                       value={item.value}
                       onValueChange={item.onToggle}
+                      disabled={item.disabled}
                       trackColor={{
-                        false: theme.colors.border,
-                        true: theme.colors.primary
+                        false: item.disabled ? theme.colors.textSecondary : theme.colors.border,
+                        true: item.disabled ? theme.colors.textSecondary : theme.colors.primary
                       }}
-                      thumbColor={theme.dark ? '#f4f3f4' : '#f4f3f4'}
+                      thumbColor={item.disabled ? theme.colors.textSecondary : (theme.dark ? '#f4f3f4' : '#f4f3f4')}
                     />
                   ) : (
                     <Ionicons
