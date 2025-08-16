@@ -61,9 +61,9 @@ export default function MatchSummary({ matchData, showFullDetails = false }: Mat
   const calculateTeamScore = (teamNumber: number): number => {
     const playerIndices = teamNumber === 1 ? [1, 2] : [3, 4];
     const teamScore = playerIndices.reduce((sum, playerId) => {
-      return sum + (matchData.playerStats[playerId]?.score || 0);
+      return sum + (matchData.playerStats?.[playerId]?.score || 0);
     }, 0);
-    return teamScore - (matchData.teamPenalties[teamNumber as 1 | 2] || 0);
+    return teamScore - (matchData.teamPenalties?.[teamNumber as 1 | 2] || 0);
   };
 
   const team1Score = calculateTeamScore(1);
@@ -73,15 +73,21 @@ export default function MatchSummary({ matchData, showFullDetails = false }: Mat
 
   // Handle player navigation
   const handlePlayerPress = (playerId: number) => {
-    const userId = matchData.userSlotMap[playerId.toString()];
+    const userId = matchData.userSlotMap?.[playerId.toString()];
     if (userId) {
-      router.push(`/user-profile/${userId}`);
+      try {
+        // Use replace instead of push to avoid navigation stack issues
+        router.replace(`/user-profile/${userId}`);
+      } catch (error) {
+        // Fallback to push if replace fails
+        router.push(`/user-profile/${userId}`);
+      }
     }
   };
 
   // Check if player has a user account
   const isRegisteredPlayer = (playerId: number): boolean => {
-    return !!matchData.userSlotMap[playerId.toString()];
+    return !!matchData.userSlotMap?.[playerId.toString()];
   };
 
   // Condensed view for feed
@@ -92,14 +98,14 @@ export default function MatchSummary({ matchData, showFullDetails = false }: Mat
         <View style={styles.condensedHeader}>
           <Ionicons name="trophy-outline" size={14} color="#666" />
           <ThemedText variant="caption" style={styles.condensedTitle}>
-            {matchData.matchSetup.title}
+            {matchData.matchSetup?.title || 'No Title'}
           </ThemedText>
         </View>
 
         {/* Just the scores */}
         <View style={styles.condensedScoreContainer}>
           <ThemedText variant="body" style={styles.condensedTeamName}>
-            {matchData.matchSetup.teamNames[0]}
+            {matchData.matchSetup.teamNames?.[0] || 'Team 1'}
           </ThemedText>
           <ThemedText 
             variant="body" 
@@ -123,7 +129,7 @@ export default function MatchSummary({ matchData, showFullDetails = false }: Mat
             {team2Score}
           </ThemedText>
           <ThemedText variant="body" style={styles.condensedTeamName}>
-            {matchData.matchSetup.teamNames[1]}
+            {matchData.matchSetup.teamNames?.[1] || 'Team 2'}
           </ThemedText>
         </View>
       </ThemedView>
@@ -138,11 +144,11 @@ export default function MatchSummary({ matchData, showFullDetails = false }: Mat
         <View style={styles.titleRow}>
           <Ionicons name="trophy-outline" size={16} color="#666" />
           <ThemedText variant="caption" style={styles.matchTitle}>
-            {matchData.matchSetup.title} • {matchData.matchSetup.arena}
+            {`${matchData.matchSetup.title || 'No Title'}${matchData.matchSetup.arena ? ` • ${matchData.matchSetup.arena}` : ''}`}
           </ThemedText>
         </View>
         <ThemedText variant="caption" style={styles.matchDate}>
-          {matchDate} • {matchDurationMinutes}m
+          {`${matchDate}${matchDurationMinutes ? ` • ${matchDurationMinutes}m` : ''}`}
         </ThemedText>
       </View>
 
@@ -150,7 +156,7 @@ export default function MatchSummary({ matchData, showFullDetails = false }: Mat
       <View style={styles.scoreContainer}>
         <View style={styles.teamScore}>
           <ThemedText variant="body" style={styles.teamName}>
-            {matchData.matchSetup.teamNames[0]}
+            {matchData.matchSetup.teamNames?.[0] || 'Team 1'}
           </ThemedText>
           <ThemedText 
             variant="title" 
@@ -167,7 +173,7 @@ export default function MatchSummary({ matchData, showFullDetails = false }: Mat
         
         <View style={styles.teamScore}>
           <ThemedText variant="body" style={styles.teamName}>
-            {matchData.matchSetup.teamNames[1]}
+            {matchData.matchSetup.teamNames?.[1] || 'Team 2'}
           </ThemedText>
           <ThemedText 
             variant="title" 
@@ -189,7 +195,7 @@ export default function MatchSummary({ matchData, showFullDetails = false }: Mat
         
         <View style={styles.playersGrid}>
           {[1, 2, 3, 4].map((playerId) => {
-            const player = matchData.playerStats[playerId];
+            const player = matchData.playerStats?.[playerId];
             if (!player) return null;
 
             const isRegistered = isRegisteredPlayer(playerId);
@@ -204,8 +210,10 @@ export default function MatchSummary({ matchData, showFullDetails = false }: Mat
                   teamNumber === matchData.winnerTeam && styles.winnerPlayerCard
                 ]}
                 onPress={() => handlePlayerPress(playerId)}
+                onPressIn={() => {}} // Ensure press is registered
                 disabled={!isRegistered}
                 activeOpacity={isRegistered ? 0.7 : 1}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} // Increase touch area
               >
                 <View style={styles.playerHeader}>
                   <View style={styles.playerNameRow}>
@@ -257,7 +265,7 @@ export default function MatchSummary({ matchData, showFullDetails = false }: Mat
         <View style={styles.winnerContainer}>
           <Ionicons name="trophy" size={16} color="#FFD700" />
           <ThemedText variant="caption" style={styles.winnerText}>
-            {matchData.matchSetup.teamNames[matchData.winnerTeam - 1]} Wins!
+            {matchData.matchSetup.teamNames?.[matchData.winnerTeam - 1] || 'Unknown Team'} Wins!
           </ThemedText>
         </View>
       )}

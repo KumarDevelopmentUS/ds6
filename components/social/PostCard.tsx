@@ -90,7 +90,7 @@ const PostCardComponent: React.FC<PostCardProps> = ({
   }));
 
   const handleOpenInBrowser = () => {
-    if (post.image_url) {
+    if (post.image_url && typeof post.image_url === 'string') {
       Linking.openURL(post.image_url);
     }
   };
@@ -114,7 +114,7 @@ const PostCardComponent: React.FC<PostCardProps> = ({
         >
           {Platform.OS === 'web' ? (
             <img
-              src={post?.image_url}
+              src={post?.image_url || ''}
               style={{
                 maxWidth: '90%',
                 maxHeight: '90%',
@@ -126,14 +126,14 @@ const PostCardComponent: React.FC<PostCardProps> = ({
             composedGesture ? (
           <GestureDetector gesture={composedGesture}>
             <AnimatedImage
-              source={{ uri: post?.image_url }}
+              source={{ uri: post?.image_url || '' }}
               style={[styles.modalImage, animatedStyle]}
               contentFit="contain"
             />
           </GestureDetector>
             ) : (
               <AnimatedImage
-                source={{ uri: post?.image_url }}
+                source={{ uri: post?.image_url || '' }}
                 style={[styles.modalImage, animatedStyle]}
                 contentFit="contain"
               />
@@ -186,40 +186,54 @@ const PostCardComponent: React.FC<PostCardProps> = ({
           </Text>
         ) : null}
 
-        {post.image_url ? (
-          isIOSSimulator ? (
-            <TouchableOpacity
-              style={styles.simulatorImageContainer}
-              onPress={handleOpenInBrowser}
-            >
-              <Ionicons name="image" size={50} color="#007AFF" />
-              <Text style={styles.simulatorImageText}>Image Available</Text>
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity
-              onPress={() => setImageModalVisible(true)}
-              activeOpacity={0.9}
-            >
-              <View style={styles.imageContainer}>
-                <Image
-                  source={{ uri: post.image_url }}
-                  style={styles.image}
-                  placeholder={{ blurhash }}
-                  contentFit="contain"
-                  transition={500}
-                />
-              </View>
-            </TouchableOpacity>
-          )
-        ) : null}
+        {(() => {
+          try {
+            if (post.image_url && 
+                typeof post.image_url === 'string' && 
+                post.image_url.trim() !== '' && 
+                post.image_url.startsWith('http')) {
+              return isIOSSimulator ? (
+                <TouchableOpacity
+                  style={styles.simulatorImageContainer}
+                  onPress={handleOpenInBrowser}
+                >
+                  <Ionicons name="image" size={50} color="#007AFF" />
+                  <Text style={styles.simulatorImageText}>Image Available</Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  onPress={() => setImageModalVisible(true)}
+                  activeOpacity={0.9}
+                >
+                  <View style={styles.imageContainer}>
+                    <Image
+                      source={{ uri: post.image_url.trim() }}
+                      style={styles.image}
+                      placeholder={{ blurhash }}
+                      contentFit="contain"
+                      transition={500}
+                      onError={(error) => console.log('Image load error:', error)}
+                    />
+                  </View>
+                </TouchableOpacity>
+              );
+            }
+            return null;
+          } catch (error) {
+            console.log('Error rendering image:', error, 'image_url:', post.image_url);
+            return null;
+          }
+        })()}
 
         {/* Display linked match summary if present */}
-        {post.linked_match_data ? (
-          <MatchSummary 
-            matchData={post.linked_match_data} 
-            showFullDetails={false}
-          />
-        ) : null}
+        {post.linked_match_data && (
+          <View style={{ marginVertical: 8 }}>
+            <MatchSummary 
+              matchData={post.linked_match_data} 
+              showFullDetails={false}
+            />
+          </View>
+        )}
 
         <View style={styles.footer}>
            <VoteButtons

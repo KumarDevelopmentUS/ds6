@@ -200,27 +200,27 @@ export const usePosts = (communityId?: number) => {
       }, {});
 
       // Get vote counts for all posts
-      const postIds = posts.map(p => p.id);
+      const postUids = posts.map(p => p.uid || String(p.id));
       const { data: voteCounts } = await supabase
         .from('votes')
-        .select('post_id')
+        .select('post_uid')
         .eq('vote_type', 1)
-        .in('post_id', postIds);
+        .in('post_uid', postUids);
 
       // Get comment counts for all posts  
       const { data: commentCounts } = await supabase
         .from('comments')
-        .select('post_id')
-        .in('post_id', postIds);
+        .select('post_uid')
+        .in('post_uid', postUids);
 
       // Create count maps
       const voteCountMap = (voteCounts || []).reduce((acc: any, vote: any) => {
-        acc[vote.post_id] = (acc[vote.post_id] || 0) + 1;
+        acc[vote.post_uid] = (acc[vote.post_uid] || 0) + 1;
         return acc;
       }, {});
 
       const commentCountMap = (commentCounts || []).reduce((acc: any, comment: any) => {
-        acc[comment.post_id] = (acc[comment.post_id] || 0) + 1;
+        acc[comment.post_uid] = (acc[comment.post_uid] || 0) + 1;
         return acc;
       }, {});
 
@@ -231,7 +231,7 @@ export const usePosts = (communityId?: number) => {
       
       let matchDataMap: { [key: string]: any } = {};
       if (linkedMatchIds.length > 0) {
-        const { data: matchData } = await supabase
+        const { data: matchData, error: matchError } = await supabase
           .from('saved_matches')
           .select(`
             id,
@@ -268,8 +268,8 @@ export const usePosts = (communityId?: number) => {
         author_avatar_background_color: post.author_avatar_background_color,
         author_profile_picture_url: profileMap[post.user_id]?.avatar_url || null,
         community_name: post.communities?.name || null,
-        like_count: voteCountMap[post.id] || 0,
-        comment_count: commentCountMap[post.id] || 0,
+        like_count: voteCountMap[post.uid || String(post.id)] || 0,
+        comment_count: commentCountMap[post.uid || String(post.id)] || 0,
         author_username: profileMap[post.user_id]?.username || null,
         linked_match_id: post.linked_match_id,
         linked_match_data: post.linked_match_id ? matchDataMap[post.linked_match_id] : null,
@@ -288,7 +288,7 @@ export const usePosts = (communityId?: number) => {
 
    const { data: userVotes } = useQuery({
     // Proactively added type annotation to prevent 'any' type error
-     queryKey: ['userVotes', user?.id, posts?.map((p: Post) => p.id)],
+     queryKey: ['userVotes', user?.id, posts?.map((p: Post) => p.uid || String(p.id))],
     queryFn: async () => {
       if (!user || !posts || posts.length === 0) return {};
       
@@ -296,7 +296,7 @@ export const usePosts = (communityId?: number) => {
         .from('votes')
         .select('post_uid, vote_type')
         .eq('user_id', user.id)
-        .in('post_uid', posts.map((p: Post) => p.id));
+        .in('post_uid', posts.map((p: Post) => p.uid || String(p.id)));
         
       if (error) throw error;
       
@@ -369,13 +369,13 @@ export const usePost = (postId: string) => {
       const { data: voteCounts } = await supabase
         .from('votes')
         .select('id')
-        .eq('post_id', numericId)
+        .eq('post_uid', postId)
         .eq('vote_type', 1);
 
       const { data: commentCounts } = await supabase
         .from('comments')
         .select('id')
-        .eq('post_id', numericId);
+        .eq('post_uid', postId);
 
       // Get author profile picture
       const { data: authorProfile } = await supabase
@@ -435,7 +435,7 @@ export const usePost = (postId: string) => {
     queryKey: ['userVote', postId, user?.id],
     queryFn: async () => {
       if (!user) return null;
-      const { data, error } = await supabase.from('votes').select('vote_type').eq('post_uid', postId).eq('user_id', user.id).single();
+      const { data, error } = await supabase.from('votes').select('vote_type').eq('post_uid', postId).eq('user_id', user.id).maybeSingle();
       if (error && error.code !== 'PGRST116') throw error;
       // --- THIS IS THE FIX ---
       // If data?.vote_type is undefined (because data is null), return null instead.

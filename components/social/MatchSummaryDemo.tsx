@@ -192,7 +192,7 @@ export default function MatchSummaryDemo() {
           • Registered players (Alice, Bob, Diana) are clickable and lead to profiles
         </ThemedText>
         <ThemedText variant="body" style={styles.infoText}>
-          • Guest players (Charlie) are not clickable and show "Guest" label
+          • Guest players (Charlie) are not clickable and show &quot;Guest&quot; label
         </ThemedText>
         <ThemedText variant="body" style={styles.infoText}>
           • Winner team and players are highlighted in green

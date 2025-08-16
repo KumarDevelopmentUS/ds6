@@ -1,7 +1,8 @@
 // types/social.ts
 
 export interface Post {
-  id: string; // UUID
+  id: number; // Numeric ID from database
+  uid: string; // UUID from database
   title: string;
   content: string;
   created_at: string;
@@ -25,7 +26,7 @@ export interface Comment {
   id: number;
   content: string;
   created_at: string;
-  post_id: string; // UUID
+  post_uid: string; // UUID reference to posts.uid
   user_id: string;
   parent_comment_id?: number;
   author_name: string;
@@ -37,7 +38,7 @@ export interface Comment {
 
 export interface Vote {
   id: number;
-  post_id: string; // UUID
+  post_uid: string; // UUID reference to posts.uid
   user_id: string;
   vote_type: -1 | 1;
 }

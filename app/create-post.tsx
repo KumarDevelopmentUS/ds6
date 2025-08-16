@@ -618,7 +618,7 @@ export default function CreatePostScreen() {
             
             <TouchableOpacity onPress={takeDualPhotoWithCamera} style={styles.modalOption}>
               <Ionicons name="camera-reverse-outline" size={24} color="#007AFF" />
-              <Text style={styles.modalOptionText}>Dual Camera (Front + Back)</Text>
+              <Text style={styles.modalOptionText}>Dual Camera</Text>
             </TouchableOpacity>
             
             <TouchableOpacity 
