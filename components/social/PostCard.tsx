@@ -23,6 +23,7 @@ import Animated, {
 // Note: You will need to update your actual Post type definition where it lives.
 import { useRouter } from 'expo-router';
 import { Post as BasePost } from '../../types/social';
+import MatchSummary from './MatchSummary';
 import { UserAvatar } from './UserAvatar';
 import { VoteButtons } from './VoteButtons';
 
@@ -183,6 +184,14 @@ const PostCardComponent: React.FC<PostCardProps> = ({
           <Text style={styles.content} numberOfLines={3}>
             {post.content}
           </Text>
+        ) : null}
+
+        {/* Display linked match summary if present */}
+        {post.linked_match_data ? (
+          <MatchSummary 
+            matchData={post.linked_match_data} 
+            showFullDetails={false}
+          />
         ) : null}
 
         {post.image_url ? (

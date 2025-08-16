@@ -173,6 +173,7 @@ export const usePosts = (communityId?: number) => {
           author_avatar_icon,
           author_avatar_icon_color,
           author_avatar_background_color,
+          linked_match_id,
           communities(name)
         `)
         .order('created_at', { ascending: false });
@@ -223,6 +224,35 @@ export const usePosts = (communityId?: number) => {
         return acc;
       }, {});
 
+      // Get match data for posts with linked matches
+      const linkedMatchIds = posts
+        .filter((p: any) => p.linked_match_id)
+        .map((p: any) => p.linked_match_id);
+      
+      let matchDataMap: { [key: string]: any } = {};
+      if (linkedMatchIds.length > 0) {
+        const { data: matchData } = await supabase
+          .from('saved_matches')
+          .select(`
+            id,
+            "matchSetup",
+            "playerStats",
+            "teamPenalties",
+            "userSlotMap",
+            "winnerTeam",
+            "matchDuration",
+            "matchStartTime"
+          `)
+          .in('id', linkedMatchIds);
+        
+        if (matchData) {
+          matchDataMap = matchData.reduce((acc: any, match: any) => {
+            acc[match.id] = match;
+            return acc;
+          }, {});
+        }
+      }
+
       // Combine the data
       let combinedPosts = posts.map((post: any) => ({
         id: post.uid || String(post.id), // Use UUID as the main ID
@@ -241,6 +271,8 @@ export const usePosts = (communityId?: number) => {
         like_count: voteCountMap[post.id] || 0,
         comment_count: commentCountMap[post.id] || 0,
         author_username: profileMap[post.user_id]?.username || null,
+        linked_match_id: post.linked_match_id,
+        linked_match_data: post.linked_match_id ? matchDataMap[post.linked_match_id] : null,
       }));
       
       // Filter posts when "All Communities" is selected to only show posts from user's communities
@@ -431,13 +463,15 @@ export const useCreatePost = () => {
       content, 
       imageUri, 
       communityId,
-      communityType
+      communityType,
+      linkedMatchId
     }: {
       title: string;
       content: string;
       imageUri: string | null;
       communityId: number;
       communityType: 'general' | 'school';
+      linkedMatchId?: string | null;
     }) => {
        if (typeof communityId !== 'number' || isNaN(communityId)) {
         throw new Error('A valid community ID is required to create a post.');
@@ -552,6 +586,7 @@ export const useCreatePost = () => {
           author_avatar_icon: profile.avatar_icon,
           author_avatar_icon_color: profile.avatar_icon_color,
           author_avatar_background_color: profile.avatar_background_color,
+          linked_match_id: linkedMatchId,
         })
         .select()
         .single();

@@ -1,9 +1,12 @@
 // app/create-post.tsx
 import { HapticBackButton } from '@/components/HapticBackButton';
+import MatchSummary from '@/components/social/MatchSummary';
 import { getSchoolByValue } from '@/constants/schools';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFeed } from '@/contexts/FeedContext';
 import { useCreatePost } from '@/hooks/useSocialFeatures';
+import { supabase } from '@/supabase';
+import { MatchSummaryData } from '@/types/social';
 import { fixUserCommunityMembership } from '@/utils/profileSync';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -56,6 +59,9 @@ export default function CreatePostScreen() {
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [imageAspectRatio, setImageAspectRatio] = useState<number | undefined>(undefined);
   const [selectedCommunity, setSelectedCommunity] = useState<number | null>(getInitialCommunity());
+  const [selectedMatch, setSelectedMatch] = useState<MatchSummaryData | null>(null);
+  const [userMatches, setUserMatches] = useState<MatchSummaryData[]>([]);
+  const [showMatchSelector, setShowMatchSelector] = useState(false);
   const [showMediaOptions, setShowMediaOptions] = useState(false);
   const [showCommunityFix, setShowCommunityFix] = useState(false);
   const [isRestoringFromCamera, setIsRestoringFromCamera] = useState(!!params.photoUri);
@@ -168,6 +174,7 @@ export default function CreatePostScreen() {
     setImageUri(null);
     setImageAspectRatio(undefined);
     setSelectedCommunityWithLog(null);
+    setSelectedMatch(null);
   };
 
   // Auto-select first community if none selected (but not when restoring from camera)
@@ -189,6 +196,11 @@ export default function CreatePostScreen() {
       setShowCommunityFix(true);
     }
   }, [userCommunityMemberships, areCommunitiesLoading, isRestoringFromCamera, hasInitializedCommunity]); // Added hasInitializedCommunity to deps
+
+  // Load user matches when component mounts
+  useEffect(() => {
+    loadUserMatches();
+  }, [session?.user]);
 
   // Community membership fix function
   const fixCommunityMembership = async () => {
@@ -300,6 +312,44 @@ export default function CreatePostScreen() {
     }
   };
 
+  // Load user's recent matches for linking (same logic as history page)
+  const loadUserMatches = async () => {
+    if (!session?.user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('saved_matches')
+        .select(`
+          id,
+          "matchSetup",
+          "playerStats", 
+          "teamPenalties",
+          "userSlotMap",
+          "winnerTeam",
+          "matchDuration",
+          "matchStartTime",
+          "createdAt"
+        `)
+        .eq('userId', session.user.id)
+        .order('createdAt', { ascending: false })
+        .limit(10); // Get last 10 matches
+
+      if (error) throw error;
+
+      // Filter matches to only include those where user was a player (same as history page)
+      const playerMatches = (data || []).filter(match => {
+        const userSlot = Object.entries(match.userSlotMap || {}).find(
+          ([_, userId]) => userId === session.user.id
+        );
+        return userSlot !== undefined;
+      });
+
+      setUserMatches(playerMatches);
+    } catch (error) {
+      console.error('Error loading user matches:', error);
+    }
+  };
+
   const handleSubmit = () => {
     if (!title.trim()) {
       Alert.alert('Error', 'Please enter a title');
@@ -326,6 +376,7 @@ export default function CreatePostScreen() {
       imageUri,
       communityId: selectedCommunity,
       communityType: selectedCommunityData.communities.type as 'general' | 'school',
+      linkedMatchId: selectedMatch?.id || null,
     });
 
     resetForm();
@@ -496,6 +547,35 @@ export default function CreatePostScreen() {
                 </View>
               )}
 
+              {/* Match Selection Section */}
+              <TouchableOpacity 
+                onPress={() => setShowMatchSelector(true)} 
+                style={styles.imageButton}
+                accessibilityLabel="Link a match to your post"
+              >
+                <Ionicons name="trophy-outline" size={24} color="#007AFF" />
+                <Text style={styles.imageButtonText}>
+                  {selectedMatch ? 'Change Match' : 'Link Match'}
+                </Text>
+              </TouchableOpacity>
+
+              {selectedMatch && (
+                <View style={styles.matchPreviewContainer}>
+                  <MatchSummary 
+                    matchData={selectedMatch} 
+                    showFullDetails={false}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setSelectedMatch(null)}
+                    style={styles.removeMatchButton}
+                    accessibilityLabel="Remove linked match"
+                  >
+                    <Ionicons name="close-circle" size={24} color="#FF3B30" />
+                    <Text style={styles.removeMatchText}>Remove Match</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+
               <TouchableOpacity
                 onPress={handleSubmit}
                 disabled={isCreating || !title.trim() || !selectedCommunity}
@@ -547,6 +627,68 @@ export default function CreatePostScreen() {
             >
               <Text style={[styles.modalOptionText, styles.modalCancelText]}>Cancel</Text>
             </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Match Selector Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={showMatchSelector}
+        onRequestClose={() => setShowMatchSelector(false)}
+      >
+        <TouchableOpacity 
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowMatchSelector(false)}
+        >
+          <View style={styles.matchSelectorModal}>
+            <View style={styles.matchSelectorHeader}>
+              <Text style={styles.matchSelectorTitle}>Select Match to Link</Text>
+              <TouchableOpacity
+                onPress={() => setShowMatchSelector(false)}
+                style={styles.modalCloseButton}
+              >
+                <Ionicons name="close" size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView style={styles.matchList}>
+              {userMatches.length === 0 ? (
+                <View style={styles.noMatchesContainer}>
+                  <Ionicons name="trophy-outline" size={48} color="#ccc" />
+                  <Text style={styles.noMatchesText}>No matches found</Text>
+                  <Text style={styles.noMatchesSubtext}>
+                    Play some matches to link them to your posts!
+                  </Text>
+                </View>
+              ) : (
+                userMatches.map((match) => (
+                  <TouchableOpacity
+                    key={match.id}
+                    style={[
+                      styles.matchListItem,
+                      selectedMatch?.id === match.id && styles.matchListItemSelected
+                    ]}
+                    onPress={() => {
+                      setSelectedMatch(match);
+                      setShowMatchSelector(false);
+                    }}
+                  >
+                    <MatchSummary 
+                      matchData={match} 
+                      showFullDetails={false}
+                    />
+                    {selectedMatch?.id === match.id && (
+                      <View style={styles.selectedIndicator}>
+                        <Ionicons name="checkmark-circle" size={24} color="#007AFF" />
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                ))
+              )}
+            </ScrollView>
           </View>
         </TouchableOpacity>
       </Modal>
@@ -791,5 +933,96 @@ const styles = StyleSheet.create({
   },
   backButton: {
     marginRight: 10,
+  },
+  // Match selection styles
+  matchPreviewContainer: {
+    marginTop: 16,
+    position: 'relative',
+  },
+  removeMatchButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
+    padding: 8,
+    backgroundColor: '#FFF2F2',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#FFE6E6',
+  },
+  removeMatchText: {
+    color: '#FF3B30',
+    fontSize: 14,
+    fontWeight: '600',
+    marginLeft: 4,
+  },
+  matchSelectorModal: {
+    backgroundColor: 'white',
+    margin: 20,
+    marginTop: 80,
+    borderRadius: 20,
+    maxHeight: '80%',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  matchSelectorHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  matchSelectorTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1F2937',
+  },
+  modalCloseButton: {
+    padding: 4,
+  },
+  matchList: {
+    maxHeight: 400,
+  },
+  matchListItem: {
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+    position: 'relative',
+  },
+  matchListItemSelected: {
+    backgroundColor: '#F0F9FF',
+    borderLeftWidth: 4,
+    borderLeftColor: '#007AFF',
+  },
+  selectedIndicator: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    backgroundColor: 'white',
+    borderRadius: 12,
+  },
+  noMatchesContainer: {
+    alignItems: 'center',
+    padding: 40,
+  },
+  noMatchesText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#6B7280',
+    marginTop: 16,
+  },
+  noMatchesSubtext: {
+    fontSize: 14,
+    color: '#9CA3AF',
+    textAlign: 'center',
+    marginTop: 8,
+    lineHeight: 20,
   },
 });
