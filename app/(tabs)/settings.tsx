@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Alert, SafeAreaView, ScrollView, StyleSheet, Switch, TouchableOpacity, View } from 'react-native';
+import { Alert, SafeAreaView, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 
 import { UserAvatar } from '../../components/social/UserAvatar';
 import { ThemedButton } from '../../components/themed/ThemedButton';
@@ -244,6 +244,32 @@ export default function AccountScreen() {
             </ThemedText>
           )}
         </ThemedView>
+      ) : !session ? (
+        <ThemedView variant="card" style={styles.loginCard}>
+          <Ionicons name="settings-outline" size={64} color="#666" />
+          <ThemedText variant="subtitle" style={styles.loginTitle}>
+            Sign In to Access Settings
+          </ThemedText>
+          <ThemedText variant="body" style={styles.loginSubtext}>
+            Create an account or sign in to customize your profile and preferences
+          </ThemedText>
+          
+          <View style={styles.loginButtons}>
+            <TouchableOpacity 
+              style={styles.signInButton}
+              onPress={() => router.push('/(auth)/login')}
+            >
+              <Text style={styles.buttonText}>Sign In</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.createAccountButton}
+              onPress={() => router.push('/(auth)/signUp')}
+            >
+              <Text style={styles.buttonText}>Create Account</Text>
+            </TouchableOpacity>
+          </View>
+        </ThemedView>
       ) : (
         <ThemedText style={styles.guestText}>Loading user profile...</ThemedText>
       )}
@@ -331,66 +357,97 @@ export default function AccountScreen() {
       )}
 
       {/* Settings Sections */}
-      {settingsOptions.map((section, sectionIndex) => (
-        <ThemedView key={section.title} variant="section">
+      {session?.user ? (
+        settingsOptions.map((section, sectionIndex) => (
+          <ThemedView key={section.title} variant="section">
+            <View style={styles.sectionHeader}>
+              <Ionicons
+                name={section.icon as any}
+                size={24}
+                color={theme.colors.primary}
+              />
+              <ThemedText variant="subtitle" style={styles.sectionTitle}>
+                {section.title}
+              </ThemedText>
+            </View>
+
+            <ThemedView variant="card">
+              {section.items.map((item, itemIndex) => {
+                const uniqueKey = `${section.title}-${item.label}`; // ✅ unique key
+
+                const content = (
+                  <View
+                    style={[
+                      styles.settingItem,
+                      itemIndex < section.items.length - 1 && styles.settingItemBorder,
+                      { borderColor: theme.colors.border }
+                    ]}
+                  >
+                    <ThemedText variant="body">{item.label}</ThemedText>
+                    {item.type === 'switch' ? (
+                      <Switch
+                        value={item.value}
+                        onValueChange={item.onToggle}
+                        disabled={item.disabled}
+                        trackColor={{
+                          false: item.disabled ? theme.colors.textSecondary : theme.colors.border,
+                          true: item.disabled ? theme.colors.textSecondary : theme.colors.primary
+                        }}
+                        thumbColor={item.disabled ? theme.colors.textSecondary : (theme.dark ? '#f4f3f4' : '#f4f3f4')}
+                      />
+                    ) : (
+                      <Ionicons
+                        name="chevron-forward"
+                        size={20}
+                        color={theme.colors.textSecondary}
+                      />
+                    )}
+                  </View>
+                );
+
+                return item.type === 'button' ? (
+                  <TouchableOpacity key={uniqueKey} onPress={item.onPress}>
+                    {content}
+                  </TouchableOpacity>
+                ) : (
+                  <View key={uniqueKey}>
+                    {content}
+                  </View>
+                );
+              })}
+            </ThemedView>
+          </ThemedView>
+        ))
+      ) : (
+        /* Vibration Toggle for Unauthenticated Users */
+        <ThemedView variant="section">
           <View style={styles.sectionHeader}>
             <Ionicons
-              name={section.icon as any}
+              name="settings-outline"
               size={24}
               color={theme.colors.primary}
             />
             <ThemedText variant="subtitle" style={styles.sectionTitle}>
-              {section.title}
+              General Settings
             </ThemedText>
           </View>
 
           <ThemedView variant="card">
-            {section.items.map((item, itemIndex) => {
-              const uniqueKey = `${section.title}-${item.label}`; // ✅ unique key
-
-              const content = (
-                <View
-                  style={[
-                    styles.settingItem,
-                    itemIndex < section.items.length - 1 && styles.settingItemBorder,
-                    { borderColor: theme.colors.border }
-                  ]}
-                >
-                  <ThemedText variant="body">{item.label}</ThemedText>
-                  {item.type === 'switch' ? (
-                    <Switch
-                      value={item.value}
-                      onValueChange={item.onToggle}
-                      disabled={item.disabled}
-                      trackColor={{
-                        false: item.disabled ? theme.colors.textSecondary : theme.colors.border,
-                        true: item.disabled ? theme.colors.textSecondary : theme.colors.primary
-                      }}
-                      thumbColor={item.disabled ? theme.colors.textSecondary : (theme.dark ? '#f4f3f4' : '#f4f3f4')}
-                    />
-                  ) : (
-                    <Ionicons
-                      name="chevron-forward"
-                      size={20}
-                      color={theme.colors.textSecondary}
-                    />
-                  )}
-                </View>
-              );
-
-              return item.type === 'button' ? (
-                <TouchableOpacity key={uniqueKey} onPress={item.onPress}>
-                  {content}
-                </TouchableOpacity>
-              ) : (
-                <View key={uniqueKey}>
-                  {content}
-                </View>
-              );
-            })}
+            <View style={styles.settingItem}>
+              <ThemedText variant="body">Vibration</ThemedText>
+              <Switch
+                value={vibrationEnabled}
+                onValueChange={setVibrationEnabled}
+                trackColor={{
+                  false: theme.colors.border,
+                  true: theme.colors.primary
+                }}
+                thumbColor={theme.dark ? '#f4f3f4' : '#f4f3f4'}
+              />
+            </View>
           </ThemedView>
         </ThemedView>
-      ))}
+      )}
 
 
 
@@ -521,5 +578,44 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     opacity: 0.7,
     lineHeight: 18,
+  },
+  loginCard: {
+    alignItems: 'center',
+    marginBottom: 32,
+    padding: 24,
+  },
+  loginTitle: {
+    marginTop: 16,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  loginSubtext: {
+    textAlign: 'center',
+    marginBottom: 24,
+    opacity: 0.8,
+    lineHeight: 20,
+  },
+  loginButtons: {
+    width: '100%',
+    maxWidth: 300,
+    gap: 12,
+  },
+  signInButton: {
+    backgroundColor: '#007AFF',
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  createAccountButton: {
+    backgroundColor: '#007AFF',
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: 'white',
+    textAlign: 'center',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
 });

@@ -10,7 +10,7 @@ import { debugFeedProvider, debugRLSPolicies, debugUserCommunities, forceFeedRef
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Alert, Modal, Platform, SafeAreaView, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Modal, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 // Custom room code generator that only uses capital letters
 const generateRoomCode = (length: number = 6): string => {
@@ -269,9 +269,11 @@ export default function MainMenuScreen() {
       >
       {/* Header */}
       <ThemedView style={styles.header}>
-        <ThemedText variant="title">Hello, {userName}! 👋</ThemedText>
+        <ThemedText variant="title">
+          {session ? `Hello, ${userName}! 👋` : 'Welcome to DieStats! 🎲'}
+        </ThemedText>
         <ThemedText variant="caption" style={styles.headerSubtext}>
-          Ready to play?
+          {session ? 'Ready to play?' : 'Start playing or sign in to track your progress'}
         </ThemedText>
       </ThemedView>
 
@@ -302,22 +304,7 @@ export default function MainMenuScreen() {
             </View>
           </View>
         </ThemedView>
-      ) : (
-        <ThemedView variant="card" style={styles.statsCard}>
-          <ThemedText variant="subtitle" style={styles.statsTitle}>
-            Track Your Progress
-          </ThemedText>
-          <ThemedText variant="body" style={styles.guestText}>
-            Sign in to save your game history and track your stats!
-          </ThemedText>
-          <ThemedButton
-            title="Sign In"
-            onPress={() => router.push('/(auth)/login')}
-            size="medium"
-            style={{ marginTop: 16 }}
-          />
-        </ThemedView>
-      )}
+      ) : null}
 
       {/* Quick Actions */}
       <View style={styles.quickActions}>
@@ -345,49 +332,110 @@ export default function MainMenuScreen() {
         />
       </View>
 
-      {/* Menu Options */}
-      <View style={styles.menuGrid}>
-        <MenuCard
-          title="Game History"
-          icon="time-outline"
-          color={theme.colors.info}
-          onPress={() => {
-            if (handleAuthRequired('view game history')) {
-              // CORRECTED: Use absolute path
-              router.push('/history');
-            }
-          }}
-        />
-        <MenuCard
-          title="Statistics"
-          icon="stats-chart"
-          color={theme.colors.success}
-          onPress={() => {
-            if (handleAuthRequired('view statistics')) {
-              // CORRECTED: Use absolute path
-              router.push('/stats');
-            }
-          }}
-        />
-        <MenuCard
-          title="Friends"
-          icon="people-outline"
-          color={theme.colors.warning}
-          onPress={() => {
-            if (handleAuthRequired('view friends')) {
-              // Corrected action text
-              // CORRECTED: Use absolute path
-              router.push('/friends');
-            }
-          }}
-        />
-        <MenuCard
-          title="Schlevins"
-          icon="dice"
-          color={theme.colors.info}
-          onPress={() => router.push('/schlevins')}
-        />
-      </View>
+      {/* Menu Options - Different for authenticated vs unauthenticated users */}
+      {session ? (
+        <View style={styles.menuGrid}>
+          <MenuCard
+            title="Game History"
+            icon="time-outline"
+            color={theme.colors.info}
+            onPress={() => {
+              if (handleAuthRequired('view game history')) {
+                // CORRECTED: Use absolute path
+                router.push('/history');
+              }
+            }}
+          />
+          <MenuCard
+            title="Statistics"
+            icon="stats-chart"
+            color={theme.colors.success}
+            onPress={() => {
+              if (handleAuthRequired('view statistics')) {
+                // CORRECTED: Use absolute path
+                router.push('/stats');
+              }
+            }}
+          />
+          <MenuCard
+            title="Friends"
+            icon="people-outline"
+            color={theme.colors.warning}
+            onPress={() => {
+              if (handleAuthRequired('view friends')) {
+                // Corrected action text
+                // CORRECTED: Use absolute path
+                router.push('/friends');
+              }
+            }}
+          />
+          <MenuCard
+            title="Schlevins"
+            icon="dice"
+            color={theme.colors.info}
+            onPress={() => router.push('/schlevins')}
+          />
+        </View>
+      ) : (
+        <ThemedView variant="card" style={styles.featuresOverviewCard}>
+          <ThemedText variant="subtitle" style={styles.featuresTitle}>
+            What You Can Do
+          </ThemedText>
+          <ThemedText variant="body" style={styles.featuresDescription}>
+            Explore the app and see what DieStats has to offer! Sign in to save your progress and unlock all features.
+          </ThemedText>
+          
+          <View style={styles.featuresList}>
+            <View style={styles.featureItem}>
+              <Ionicons name="time-outline" size={24} color={theme.colors.info} />
+              <View style={styles.featureText}>
+                <ThemedText variant="body" style={styles.featureTitle}>Game History</ThemedText>
+                <ThemedText variant="caption" style={styles.featureSubtitle}>View your past matches and results</ThemedText>
+              </View>
+            </View>
+            
+            <View style={styles.featureItem}>
+              <Ionicons name="stats-chart" size={24} color={theme.colors.success} />
+              <View style={styles.featureText}>
+                <ThemedText variant="body" style={styles.featureTitle}>Statistics</ThemedText>
+                <ThemedText variant="caption" style={styles.featureSubtitle}>Track your performance and progress</ThemedText>
+              </View>
+            </View>
+            
+            <View style={styles.featureItem}>
+              <Ionicons name="people-outline" size={24} color={theme.colors.warning} />
+              <View style={styles.featureText}>
+                <ThemedText variant="body" style={styles.featureTitle}>Friends</ThemedText>
+                <ThemedText variant="caption" style={styles.featureSubtitle}>Connect with other players</ThemedText>
+              </View>
+            </View>
+            
+            <View style={styles.featureItem}>
+              <Ionicons name="dice" size={24} color={theme.colors.info} />
+              <View style={styles.featureText}>
+                <ThemedText variant="body" style={styles.featureTitle}>Schlevins</ThemedText>
+                <ThemedText variant="caption" style={styles.featureSubtitle}>Play the classic dice game</ThemedText>
+              </View>
+            </View>
+          </View>
+          
+          <View style={styles.featuresActions}>
+            <TouchableOpacity 
+              style={styles.signInButton}
+              onPress={() => router.push('/(auth)/login')}
+            >
+              <Text style={styles.buttonText}>Sign In</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.createAccountButton}
+              onPress={() => router.push('/(auth)/signUp')}
+            >
+              <Text style={styles.buttonText}>Create Account</Text>
+            </TouchableOpacity>
+          </View>
+        </ThemedView>
+      )}
 
       {/* Fun Fact Section */}
       <ThemedView variant="card" style={styles.funFactCard}>
@@ -477,10 +525,7 @@ export default function MainMenuScreen() {
           <View style={styles.modalOverlay}>
             <ThemedView variant="card" style={styles.modalContent}>
               <ThemedText variant="subtitle" style={styles.modalTitle}>
-                Join Room
-              </ThemedText>
-              <ThemedText variant="body" style={styles.modalDescription}>
-                Enter room code:
+              Enter room code:
               </ThemedText>
               <TextInput
                 style={styles.modalInput}
@@ -557,8 +602,18 @@ const styles = StyleSheet.create({
   quickStartButton: {
     flex: 1,
   },
+  quickStartDescription: {
+    textAlign: 'center',
+    marginBottom: 16,
+    opacity: 0.8,
+  },
   joinButton: {
     flex: 1,
+  },
+  joinDescription: {
+    textAlign: 'center',
+    marginBottom: 16,
+    opacity: 0.8,
   },
   menuGrid: {
     flexDirection: 'row',
@@ -634,6 +689,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     textAlign: 'center',
     textTransform: 'uppercase',
+    color: '#666',
   },
   modalButtons: {
     flexDirection: 'row',
@@ -652,5 +708,60 @@ const styles = StyleSheet.create({
   },
   modalButtonPrimary: {
     backgroundColor: '#007AFF',
+  },
+  featuresOverviewCard: {
+    marginBottom: 24,
+    padding: 24,
+  },
+  featuresTitle: {
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  featuresDescription: {
+    textAlign: 'center',
+    marginBottom: 24,
+    opacity: 0.8,
+    lineHeight: 20,
+  },
+  featuresList: {
+    gap: 16,
+    marginBottom: 24,
+  },
+  featureItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  featureText: {
+    flex: 1,
+  },
+  featureTitle: {
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  featureSubtitle: {
+    opacity: 0.7,
+    lineHeight: 16,
+  },
+  featuresActions: {
+    gap: 12,
+  },
+  signInButton: {
+    backgroundColor: '#007AFF',
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  createAccountButton: {
+    backgroundColor: '#007AFF',
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: 'white',
+    textAlign: 'center',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
 });

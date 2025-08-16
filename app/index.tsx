@@ -1,23 +1,20 @@
 // app/index.tsx
-import { useEffect } from 'react';
-import { View, ActivityIndicator } from 'react-native';
-import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'expo-router';
+import { useEffect } from 'react';
+import { ActivityIndicator, View } from 'react-native';
 
 export default function Index() {
   const router = useRouter();
-  const { session, isReady } = useAuth();
+  const { isReady } = useAuth();
 
   useEffect(() => {
     if (isReady) {
-      // Navigate based on authentication status
-      if (session) {
-        router.replace('/(tabs)/home');
-      } else {
-        router.replace('/(auth)/login');
-      }
+      // Always redirect to home page, regardless of authentication status
+      // Unauthenticated users will see the guest interface on the home page
+      router.replace('/(tabs)/home');
     }
-  }, [session, isReady, router]);
+  }, [isReady, router]);
 
   // Show loading indicator while determining auth state
   return (

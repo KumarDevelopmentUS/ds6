@@ -80,21 +80,17 @@ function useProtectedRoute(session: Session | null, isReady: boolean) {
     }
 
     const inAuthGroup = segments[0] === '(auth)';
-    const inTabsGroup = segments[0] === '(tabs)';
-
-    // If the user is not signed in and is not in the auth group or tabs group,
-    // redirect them to the sign-in page.
-    if (!session && !inAuthGroup && !inTabsGroup) {
-      console.log('🔒 ROUTE PROTECTION: Redirecting unauthenticated user to login from:', segments);
-      router.replace('/(auth)/login');
-    }
 
     // If the user is signed in and is in the auth group,
     // redirect them to the main app (home screen).
-    else if (session && inAuthGroup) {
+    if (session && inAuthGroup) {
       console.log('🔒 ROUTE PROTECTION: Redirecting authenticated user to home');
       router.replace('/(tabs)/home');
     }
+
+    // Note: We no longer redirect unauthenticated users to login
+    // They can freely access the home page and other public areas
+    // Only specific features that require authentication will show login prompts
   }, [session, isReady, segments, router]);
 }
 

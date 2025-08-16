@@ -263,7 +263,7 @@ export default function EditProfileScreen() {
       await queryClient.invalidateQueries({ queryKey: ['userCommunities'] });
 
       Alert.alert('Success', 'Profile updated successfully!');
-      router.back();
+      router.replace('/(tabs)/settings');
     }
   };
 

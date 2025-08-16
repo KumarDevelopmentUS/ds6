@@ -1,6 +1,7 @@
 // app/(tabs)/feed/index.tsx
 import { CommunitySettingsPanel } from '@/components/CommunitySettingsPanel';
 import { PostCard } from '@/components/social/PostCard';
+import { ThemedView } from '@/components/themed/ThemedView';
 import { getSchoolByValue } from '@/constants/schools';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFeed } from '@/contexts/FeedContext';
@@ -149,6 +150,43 @@ export default function FeedScreen() {
       Alert.alert('Debug Failed', error.message);
     }
   };
+
+  // If user is not logged in, show login prompt
+  if (!session) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.emptyContainer}>
+          <ThemedView variant="card" style={styles.loginCard}>
+            <Ionicons name="people-outline" size={64} color="#666" />
+            <Text style={styles.emptyText}>Join Communities</Text>
+            <Text style={styles.emptySubtext}>
+              Sign in to join communities and connect with other players!
+            </Text>
+            
+            <View style={{ marginTop: 30, gap: 12, width: '100%', maxWidth: 300 }}>
+              <TouchableOpacity 
+                style={{ backgroundColor: '#007AFF', padding: 16, borderRadius: 8 }}
+                onPress={() => router.push('/(auth)/login')}
+              >
+                <Text style={{ color: 'white', textAlign: 'center', fontWeight: 'bold', fontSize: 16 }}>
+                  Sign In
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={{ backgroundColor: '#007AFF', padding: 16, borderRadius: 8 }}
+                onPress={() => router.push('/(auth)/signUp')}
+              >
+                <Text style={{ color: 'white', textAlign: 'center', fontWeight: 'bold', fontSize: 16 }}>
+                  Create Account
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </ThemedView>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   // Handle the loading state for fetching communities
   if (isCommunitiesLoading) {
@@ -552,7 +590,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 40,
+    padding: 20,
     marginTop: 100,
   },
   emptyText: {
@@ -583,5 +621,16 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 5,
+  },
+  loginCard: {
+    padding: 24,
+    alignItems: 'center',
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+    marginHorizontal: -40,
   },
 });

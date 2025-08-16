@@ -337,10 +337,8 @@ const DieStatsTracker: React.FC = () => {
   const handleStartMatch = async (forceStart: boolean = false) => {
     console.log('handleStartMatch (Quick Start) called with forceStart:', forceStart);
 
-    if (!currentUser && !forceStart) {
-      setShowConfirm(true);
-      return;
-    }
+    // Allow unauthenticated users to start matches directly
+    // No need for confirmation dialog
 
     if (isLoading) {
       console.log('Already starting match, ignoring duplicate call');
