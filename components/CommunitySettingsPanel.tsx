@@ -2,16 +2,18 @@ import { getSchoolByValue } from '@/constants/schools';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/supabase';
 import { Ionicons } from '@expo/vector-icons';
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
-    Alert,
-    Dimensions,
-    Modal,
-    Platform,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  Alert,
+  Animated,
+  Dimensions,
+  Modal,
+  PanResponder,
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 
 const { height: screenHeight } = Dimensions.get('window');
@@ -38,13 +40,91 @@ export function CommunitySettingsPanel({
   const [showWebConfirm, setShowWebConfirm] = useState(false);
   const isWeb = Platform.OS === 'web';
 
+  // Animation and gesture handling
+  const pan = useRef(new Animated.ValueXY()).current;
+  const panelHeight = screenHeight * 0.7;
+  const isClosing = useRef(false);
+  const [internalVisible, setInternalVisible] = useState(visible);
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        return Math.abs(gestureState.dy) > 10;
+      },
+      onPanResponderGrant: () => {
+        pan.setOffset({
+          x: 0,
+          y: 0,
+        });
+      },
+      onPanResponderTerminate: () => {
+        // Reset if gesture is interrupted
+        pan.flattenOffset();
+        Animated.spring(pan.y, {
+          toValue: 0,
+          useNativeDriver: false,
+        }).start();
+      },
+      onPanResponderMove: (_, gestureState) => {
+        // Only allow downward movement
+        if (gestureState.dy > 0) {
+          pan.y.setValue(gestureState.dy);
+        }
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        pan.flattenOffset();
+        
+        // If dragged down more than 100px or with sufficient velocity, close the panel
+        if (gestureState.dy > 100 || gestureState.vy > 0.5) {
+          if (!isClosing.current) {
+            isClosing.current = true;
+            Animated.timing(pan.y, {
+              toValue: panelHeight,
+              duration: 300,
+              useNativeDriver: false,
+            }).start(() => {
+              // Reset position for next open
+              pan.setValue({ x: 0, y: 0 });
+              isClosing.current = false;
+              // Hide internally first, then notify parent
+              setInternalVisible(false);
+              setTimeout(() => {
+                onClose();
+              }, 100);
+            });
+          }
+        } else {
+          // Snap back to original position
+          Animated.spring(pan.y, {
+            toValue: 0,
+            useNativeDriver: false,
+          }).start();
+        }
+      },
+    })
+  ).current;
+
+  // Sync internal state with external visible prop
+  React.useEffect(() => {
+    setInternalVisible(visible);
+  }, [visible]);
+
+  // Reset panel position when modal becomes visible
+  React.useEffect(() => {
+    if (visible) {
+      pan.setValue({ x: 0, y: 0 });
+      isClosing.current = false;
+    }
+  }, [visible, pan]);
+
   const handleLeaveCommunity = () => {
     if (isWeb) {
       setShowWebConfirm(true);
     } else {
       Alert.alert(
         'Leave Community',
-        `Are you sure you want to leave "${communityName}"? You can rejoin later if you change your mind.`,
+        `Are you sure you want to leave ${communityName}? This action can not be undone.`,
         [
           {
             text: 'Cancel',
@@ -122,15 +202,30 @@ export function CommunitySettingsPanel({
   return (
     <>
       <Modal
-        visible={visible}
+        visible={internalVisible}
         transparent
         animationType="slide"
         onRequestClose={onClose}
         statusBarTranslucent
       >
         <View style={styles.overlay}>
-          <TouchableOpacity style={styles.backdrop} onPress={onClose} />
-          <View style={styles.panel}>
+          <TouchableOpacity 
+            style={styles.backdrop} 
+            onPress={() => {
+              if (!isClosing.current) {
+                onClose();
+              }
+            }} 
+          />
+          <Animated.View 
+            style={[
+              styles.panel,
+              {
+                transform: [{ translateY: pan.y }]
+              }
+            ]}
+            {...panResponder.panHandlers}
+          >
             {/* Handle bar */}
             <View style={styles.handleBar}>
               <View style={styles.handle} />
@@ -187,7 +282,7 @@ export function CommunitySettingsPanel({
                 </TouchableOpacity>
               </View>
             </View>
-          </View>
+          </Animated.View>
         </View>
       </Modal>
 
@@ -203,7 +298,7 @@ export function CommunitySettingsPanel({
             <View style={styles.webConfirmDialog}>
               <Text style={styles.webConfirmTitle}>Leave Community</Text>
               <Text style={styles.webConfirmMessage}>
-                Are you sure you want to leave &ldquo;{displayCommunityName}&rdquo;? You can rejoin later if you change your mind.
+                Are you sure you want to leave {displayCommunityName}? This action can not be undone.
               </Text>
               <View style={styles.webConfirmButtons}>
                 <TouchableOpacity

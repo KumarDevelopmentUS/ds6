@@ -264,7 +264,7 @@ export default function UserProfileScreen() {
         <Stack.Screen options={{ headerShown: false }} />
         <ThemedView style={styles.container}>
           <View style={styles.content}>
-            <HapticBackButton onPress={() => router.back()} />
+            <HapticBackButton onPress={() => router.back()} style={styles.backButton} />
             <ThemedView variant="card" style={styles.errorContainer}>
               <ThemedText variant="title">User Not Found</ThemedText>
               <ThemedText variant="body">This user profile could not be loaded.</ThemedText>
@@ -283,7 +283,7 @@ export default function UserProfileScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        <HapticBackButton onPress={() => router.back()} />
+        <HapticBackButton onPress={() => router.back()} style={styles.backButton} />
         {/* Profile Header */}
         <ThemedView variant="card" style={styles.profileHeader}>
           <View style={[styles.avatar, { backgroundColor: profile.avatar_background_color }]}>
@@ -438,6 +438,9 @@ const styles = StyleSheet.create({
     paddingTop: 60, // Space for back button
     paddingHorizontal: 20,
     paddingBottom: 20,
+  },
+  backButton: {
+    marginBottom: 20, // Add space between back button and first card
   },
   centerLoader: {
     flex: 1,
