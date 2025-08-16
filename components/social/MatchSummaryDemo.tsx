@@ -177,12 +177,12 @@ export default function MatchSummaryDemo() {
         </ThemedText>
       </ThemedView>
 
-      <ThemedText variant="heading" style={styles.sectionTitle}>
+      <ThemedText variant="title" style={styles.sectionTitle}>
         Compact View
       </ThemedText>
       <MatchSummary matchData={demoMatchData} showFullDetails={false} />
 
-      <ThemedText variant="heading" style={styles.sectionTitle}>
+      <ThemedText variant="title" style={styles.sectionTitle}>
         Detailed View
       </ThemedText>
       <MatchSummary matchData={demoMatchData} showFullDetails={true} />

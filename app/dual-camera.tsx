@@ -187,7 +187,6 @@ export default function DualCameraScreen() {
         />
         <View style={styles.headerTitleContainer}>
           <Text style={styles.headerTitle}>Dual Camera</Text>
-          <Text style={styles.headerSubtitle}>Captures back + front together</Text>
         </View>
         <TouchableOpacity onPress={() => setFacing((c) => (c === 'back' ? 'front' : 'back'))} style={styles.headerButton}>
           <Ionicons name="camera-reverse-outline" size={30} color="white" />

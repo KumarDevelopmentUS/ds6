@@ -153,7 +153,7 @@ export default function MatchSummary({ matchData, showFullDetails = false }: Mat
             {matchData.matchSetup.teamNames[0]}
           </ThemedText>
           <ThemedText 
-            variant="heading" 
+            variant="title" 
             style={[
               styles.score, 
               matchData.winnerTeam === 1 && styles.winnerScore
@@ -170,7 +170,7 @@ export default function MatchSummary({ matchData, showFullDetails = false }: Mat
             {matchData.matchSetup.teamNames[1]}
           </ThemedText>
           <ThemedText 
-            variant="heading" 
+            variant="title" 
             style={[
               styles.score, 
               matchData.winnerTeam === 2 && styles.winnerScore

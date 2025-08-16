@@ -388,12 +388,12 @@ export default function AccountScreen() {
                       <Switch
                         value={item.value}
                         onValueChange={item.onToggle}
-                        disabled={item.disabled}
+                        disabled={'disabled' in item ? item.disabled : false}
                         trackColor={{
-                          false: item.disabled ? theme.colors.textSecondary : theme.colors.border,
-                          true: item.disabled ? theme.colors.textSecondary : theme.colors.primary
+                          false: ('disabled' in item && item.disabled) ? theme.colors.textSecondary : theme.colors.border,
+                          true: ('disabled' in item && item.disabled) ? theme.colors.textSecondary : theme.colors.primary
                         }}
-                        thumbColor={item.disabled ? theme.colors.textSecondary : (theme.dark ? '#f4f3f4' : '#f4f3f4')}
+                        thumbColor={('disabled' in item && item.disabled) ? theme.colors.textSecondary : (theme.dark ? '#f4f3f4' : '#f4f3f4')}
                       />
                     ) : (
                       <Ionicons

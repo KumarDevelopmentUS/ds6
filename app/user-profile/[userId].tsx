@@ -327,7 +327,7 @@ export default function UserProfileScreen() {
                 title="Accept Request"
                 onPress={handleAcceptRequest}
                 size="medium"
-                variant="success"
+                variant="primary"
               />
             )}
             {friendshipStatus.status === 'friends' && (
