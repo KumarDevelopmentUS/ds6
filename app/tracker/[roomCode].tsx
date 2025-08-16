@@ -790,7 +790,7 @@ const DieStatsTracker: React.FC = () => {
     return teamScore - (teamPenalties[teamNumber as 1 | 2] || 0);
   };
 
-  // Calculates a player's rating based on various stats
+  // Calculates a player's rating: 45% throw + 45% catch + 15% FIFA (max 105%)
   const calculatePlayerRating = (playerId: number): number => {
     const player = playerStats[playerId];
     if (!player) return 0;
@@ -802,11 +802,10 @@ const DieStatsTracker: React.FC = () => {
     const totalDefensivePlays = player.catches + player.blunders;
     const catchRate = totalDefensivePlays > 0 ? player.catches / totalDefensivePlays : 0;
     
-    const averageRate = (hitRate + catchRate) / 2;
     const fifaRate = player.fifaAttempts > 0 ? player.fifaSuccess / player.fifaAttempts : 0;
 
-    // Calculate base score according to rulebook formula
-    const baseScore = ((0.85 * averageRate) + (0.10 * fifaRate)) / 0.95 * 100;
+    // New formula: 45% throw + 45% catch + 15% FIFA
+    const baseScore = (0.45 * hitRate + 0.45 * catchRate + 0.15 * fifaRate) * 100;
 
     // Check for awards (each adds 1 point to rating)
     let awards = 0;
@@ -835,7 +834,7 @@ const DieStatsTracker: React.FC = () => {
     // Dennis Rodman: Aura >= 8
     if (player.aura >= 8) awards++;
 
-    return Math.min(100, baseScore + awards);
+    return Math.min(105, baseScore + awards);
   };
 
   // Handles finishing the match, determining the winner and updating live session status

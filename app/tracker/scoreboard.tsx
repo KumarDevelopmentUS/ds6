@@ -72,17 +72,20 @@ export default function ScoreboardScreen() {
     return teamScore - (teamPenalties[teamNumber as 1 | 2] || 0);
   }, []);
 
-  // Calculate player rating
+  // Calculate player rating: 45% throw + 45% catch + 15% FIFA (max 105%)
   const calculatePlayerRating = useCallback((player: PlayerStats): number => {
     if (!player) return 0;
 
     const hitRate = player.throws > 0 ? player.hits / player.throws : 0;
     const totalDefensivePlays = player.catches + player.blunders;
     const catchRate = totalDefensivePlays > 0 ? player.catches / totalDefensivePlays : 0;
-    const averageRate = (hitRate + catchRate) / 2;
     const fifaRate = player.fifaAttempts > 0 ? player.fifaSuccess / player.fifaAttempts : 0;
 
-    return Math.round(((0.85 * averageRate) + (0.10 * fifaRate)) / 0.95 * 100);
+    // New formula: 45% throw + 45% catch + 15% FIFA
+    const baseScore = (0.45 * hitRate + 0.45 * catchRate + 0.15 * fifaRate) * 100;
+
+    // Note: Awards logic could be added here if needed, but keeping simple for scoreboard
+    return Math.round(Math.min(105, baseScore));
   }, []);
 
   // Load match data

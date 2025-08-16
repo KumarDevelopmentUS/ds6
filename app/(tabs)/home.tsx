@@ -1,4 +1,5 @@
 // app/(tabs)/home.tsx
+import { AuthRequiredPopup } from '@/components/AuthRequiredPopup';
 import { MenuCard } from '@/components/MenuCard';
 import { ThemedButton } from '@/components/themed/ThemedButton';
 import { ThemedText } from '@/components/themed/ThemedText';
@@ -86,6 +87,9 @@ export default function MainMenuScreen() {
   // Web modal state for join room
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [roomCodeInput, setRoomCodeInput] = useState('');
+  
+  // Auth required popup state
+  const [showAuthPopup, setShowAuthPopup] = useState(false);
 
   useEffect(() => {
     loadUserData();
@@ -208,6 +212,12 @@ export default function MainMenuScreen() {
   };
 
   const handleJoinRoom = () => {
+    // Check if user is authenticated
+    if (!session) {
+      setShowAuthPopup(true);
+      return;
+    }
+
     if (Platform.OS === 'web') {
       setShowJoinModal(true);
     } else {
@@ -559,6 +569,18 @@ export default function MainMenuScreen() {
           </View>
         </Modal>
       )}
+
+      {/* Auth Required Popup */}
+      <AuthRequiredPopup
+        visible={showAuthPopup}
+        onDismiss={() => setShowAuthPopup(false)}
+        onSignIn={() => {
+          setShowAuthPopup(false);
+          router.push('/(auth)/login');
+        }}
+        title="Sign In Required"
+        message="You must be logged in to join a room. Sign in to access all features and track your progress."
+      />
     </SafeAreaView>
   );
 }

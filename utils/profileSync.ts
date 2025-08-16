@@ -114,12 +114,12 @@ export const calculateUserStats = async (userId: string): Promise<UserStats> => 
     const catchRate = totalCatchAttempts > 0 ? (totalCatches / totalCatchAttempts) * 100 : 0;
     const fifaRate = totalFifaAttempts > 0 ? (totalFifaSuccess / totalFifaAttempts) * 100 : 0;
 
-    // Calculate average ranking (same formula as stats page)
+    // Calculate average ranking: 45% throw + 45% catch + 15% FIFA (max 105%)
     const hitRateDecimal = hitRate / 100;
     const catchRateDecimal = catchRate / 100;
     const fifaRateDecimal = fifaRate / 100;
-    const averageRate = (hitRateDecimal + catchRateDecimal) / 2;
-    const averageRanking = Math.round(((0.85 * averageRate) + (0.10 * fifaRateDecimal)) / 0.95 * 100);
+    const baseScore = (0.45 * hitRateDecimal + 0.45 * catchRateDecimal + 0.15 * fifaRateDecimal) * 100;
+    const averageRanking = Math.round(Math.min(105, baseScore));
 
     const winRate = totalMatches > 0 ? (totalWins / totalMatches) * 100 : 0;
 

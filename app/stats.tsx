@@ -332,12 +332,12 @@ export default function StatisticsScreen() {
     stats.fifaRate = stats.totalFifaAttempts > 0 ? (stats.totalFifaSuccess / stats.totalFifaAttempts) * 100 : 0;
     stats.avgMatchDuration = stats.totalMatches > 0 ? stats.totalMatchDuration / stats.totalMatches : 0;
 
-    // Calculate average ranking (85% for average of hit/catch rates, 10% for FIFA rate)
+    // Calculate average ranking: 45% throw + 45% catch + 15% FIFA (max 105%)
     const hitRateDecimal = stats.hitRate / 100;
     const catchRateDecimal = stats.catchRate / 100;
     const fifaRateDecimal = stats.fifaRate / 100;
-    const averageRate = (hitRateDecimal + catchRateDecimal) / 2;
-    stats.averageRanking = Math.round(((0.85 * averageRate) + (0.10 * fifaRateDecimal)) / 0.95 * 100);
+    const baseScore = (0.45 * hitRateDecimal + 0.45 * catchRateDecimal + 0.15 * fifaRateDecimal) * 100;
+    stats.averageRanking = Math.round(Math.min(105, baseScore));
 
     // Find favorite arena
     let maxArenaCount = 0;

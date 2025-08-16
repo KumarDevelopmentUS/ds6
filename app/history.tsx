@@ -6,13 +6,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    RefreshControl,
-    ScrollView,
-    StyleSheet,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Alert,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { ThemedButton } from '../components/themed/ThemedButton';
 import { ThemedText } from '../components/themed/ThemedText';
@@ -93,6 +93,55 @@ export default function GameHistoryScreen() {
       setLoading(false);
     }
   }, [session]);
+
+  // Calculate player rating: 45% throw + 45% catch + 15% FIFA (max 105%)
+  const calculatePlayerRating = (player: PlayerStats): number => {
+    if (!player) return 0;
+
+    const hitRate = player.throws > 0 ? player.hits / player.throws : 0;
+    
+    // Corrected Catch Rate calculation based on the rulebook
+    // Denominator is total catches plus total blunders (defensive errors + 'height' throws)
+    const totalDefensivePlays = player.catches + player.blunders;
+    const catchRate = totalDefensivePlays > 0 ? player.catches / totalDefensivePlays : 0;
+    
+    const fifaRate = player.fifaAttempts > 0 ? player.fifaSuccess / player.fifaAttempts : 0;
+
+    // New formula: 45% throw + 45% catch + 15% FIFA
+    const baseScore = (0.45 * hitRate + 0.45 * catchRate + 0.15 * fifaRate) * 100;
+
+    // Check for awards (each adds 1 point to rating)
+    let awards = 0;
+    
+    // Isaac Newton: Hit accuracy >= 80%
+    if (hitRate >= 0.80 && player.throws > 0) awards++;
+    
+    // Wayne Gretzky: 2 or more goals
+    if (player.goals >= 2) awards++;
+    
+    // Iron Dome: Catch rate >= 80% (using the corrected catch rate logic)
+    if (catchRate >= 0.80 && totalDefensivePlays > 0) awards++;
+    
+    // Incineroar: On fire throws > 70% of total throws
+    if (player.throws > 0 && player.onFireCount / player.throws > 0.70) awards++;
+    
+    // Yusuf Dikeç: Special throws > 15% of total throws
+    if (player.throws > 0 && player.specialThrows / player.throws > 0.15) awards++;
+    
+    // Ronaldo: FIFA success >= 70%
+    if (player.fifaAttempts > 0 && player.fifaSuccess / player.fifaAttempts >= 0.70) awards++;
+    
+    // Border Patrol: Line throws > 15% of total throws
+    if (player.throws > 0 && player.lineThrows / player.throws > 0.15) awards++;
+    
+    // Dennis Rodman: Aura >= 8
+    if (player.aura >= 8) awards++;
+
+    const finalRating = Math.min(105, baseScore + awards);
+    const roundedRating = Math.round(finalRating * 100) / 100; // Round to 2 decimal places
+    
+    return roundedRating;
+  };
 
   const loadMatches = async () => {
     if (!session?.user) return;
@@ -386,35 +435,66 @@ export default function GameHistoryScreen() {
                     <ThemedText variant="subtitle" style={styles.sectionTitle}>
                       Player Performance
                     </ThemedText>
-                    {[1, 2, 3, 4].map((playerId) => {
-                      const player = match.playerStats[playerId];
-                      if (!player) return null;
+                    <View style={styles.playersGrid}>
+                      {[1, 2, 3, 4].map((playerId) => {
+                        const player = match.playerStats[playerId];
+                        if (!player) return null;
 
-                      const isUserPlayer = match.userSlotMap[playerId.toString()] === session.user?.id;
-                      const hitRate = player.throws > 0 ? ((player.hits / player.throws) * 100).toFixed(1) : '0';
+                        const isUserPlayer = match.userSlotMap[playerId.toString()] === session.user?.id;
+                        const hitRate = player.throws > 0 ? ((player.hits / player.throws) * 100).toFixed(1) : '0';
+                        const totalDefensivePlays = player.catches + player.blunders;
+                        const catchRate = totalDefensivePlays > 0 ? ((player.catches / totalDefensivePlays) * 100).toFixed(1) : '0';
+                        const fifaRate = player.fifaAttempts > 0 ? ((player.fifaSuccess / player.fifaAttempts) * 100).toFixed(1) : '0';
 
-                      return (
-                        <View
-                          key={playerId}
-                          style={[
-                            styles.playerRow,
-                            isUserPlayer && styles.userPlayerRow,
-                          ]}
-                        >
-                          <ThemedText variant="body" style={styles.playerName}>
-                            {player.name} {isUserPlayer && '(You)'}
-                          </ThemedText>
-                          <View style={styles.playerStats}>
-                            <ThemedText variant="caption">
-                              {player.hits}/{player.throws} ({hitRate}%)
-                            </ThemedText>
-                            <ThemedText variant="caption" color="primary">
-                              {player.score} pts
-                            </ThemedText>
+                        return (
+                          <View
+                            key={playerId}
+                            style={[
+                              styles.playerCard,
+                              isUserPlayer && styles.userPlayerCard,
+                            ]}
+                          >
+                            <View style={styles.playerHeader}>
+                              <ThemedText variant="body" style={styles.playerName}>
+                                {player.name} {isUserPlayer && '(You)'}
+                              </ThemedText>
+                              <ThemedText variant="caption" color="primary">
+                                {player.score} pts
+                              </ThemedText>
+                            </View>
+                            
+                            <View style={styles.playerStatsGrid}>
+                              <View style={styles.statItem}>
+                                <ThemedText variant="caption" style={styles.statLabel}>Hit %</ThemedText>
+                                <ThemedText variant="body" style={styles.statValue}>{hitRate}%</ThemedText>
+                              </View>
+                              <View style={styles.statItem}>
+                                <ThemedText variant="caption" style={styles.statLabel}>Total Throws</ThemedText>
+                                <ThemedText variant="body" style={styles.statValue}>{player.throws}</ThemedText>
+                              </View>
+                              <View style={styles.statItem}>
+                                <ThemedText variant="caption" style={styles.statLabel}>Catch %</ThemedText>
+                                <ThemedText variant="body" style={styles.statValue}>{catchRate}%</ThemedText>
+                              </View>
+                              <View style={styles.statItem}>
+                                <ThemedText variant="caption" style={styles.statLabel}>Total Catches</ThemedText>
+                                <ThemedText variant="body" style={styles.statValue}>{player.catches}</ThemedText>
+                              </View>
+                              <View style={styles.statItem}>
+                                <ThemedText variant="caption" style={styles.statLabel}>FIFA %</ThemedText>
+                                <ThemedText variant="body" style={styles.statValue}>{fifaRate}%</ThemedText>
+                              </View>
+                              <View style={styles.statItem}>
+                                <ThemedText variant="caption" style={styles.statLabel}>Rating</ThemedText>
+                                <ThemedText variant="body" style={styles.statValue}>
+                                  {calculatePlayerRating(player)}%
+                                </ThemedText>
+                              </View>
+                            </View>
                           </View>
-                        </View>
-                      );
-                    })}
+                        );
+                      })}
+                    </View>
 
                     {/* Actions */}
                     
@@ -548,25 +628,63 @@ const styles = StyleSheet.create({
     marginTop: 16,
     marginBottom: 12,
   },
-  playerRow: {
+  playersGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    justifyContent: 'space-between',
+  },
+  playerCard: {
+    width: '48%',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    marginBottom: 12,
+    backgroundColor: '#f9fafb',
+    minHeight: 200,
+  },
+  userPlayerCard: {
+    backgroundColor: '#eff6ff',
+    borderWidth: 1,
+    borderColor: '#3b82f6',
+  },
+  playerHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    marginBottom: 4,
-  },
-  userPlayerRow: {
-    backgroundColor: '#eff6ff',
+    marginBottom: 12,
   },
   playerName: {
     flex: 1,
+    fontWeight: '600',
+    fontSize: 14,
   },
-  playerStats: {
+  playerStatsGrid: {
     flexDirection: 'row',
-    gap: 16,
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  statItem: {
+    width: '48%',
     alignItems: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    backgroundColor: '#ffffff',
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    marginBottom: 8,
+  },
+  statLabel: {
+    fontSize: 10,
+    color: '#6b7280',
+    marginBottom: 2,
+    textAlign: 'center',
+  },
+  statValue: {
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'center',
   },
   actions: {
     flexDirection: 'row',
