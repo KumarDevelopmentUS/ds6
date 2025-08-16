@@ -186,14 +186,6 @@ const PostCardComponent: React.FC<PostCardProps> = ({
           </Text>
         ) : null}
 
-        {/* Display linked match summary if present */}
-        {post.linked_match_data ? (
-          <MatchSummary 
-            matchData={post.linked_match_data} 
-            showFullDetails={false}
-          />
-        ) : null}
-
         {post.image_url ? (
           isIOSSimulator ? (
             <TouchableOpacity
@@ -219,6 +211,14 @@ const PostCardComponent: React.FC<PostCardProps> = ({
               </View>
             </TouchableOpacity>
           )
+        ) : null}
+
+        {/* Display linked match summary if present */}
+        {post.linked_match_data ? (
+          <MatchSummary 
+            matchData={post.linked_match_data} 
+            showFullDetails={false}
+          />
         ) : null}
 
         <View style={styles.footer}>

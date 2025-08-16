@@ -17,6 +17,7 @@ import {
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { CommentSection } from '../../components/social/CommentSection';
+import MatchSummary from '../../components/social/MatchSummary';
 import { UserAvatar } from '../../components/social/UserAvatar';
 import { VoteButtons } from '../../components/social/VoteButtons';
 import { useComments, usePost } from '../../hooks/useSocialFeatures';
@@ -131,6 +132,14 @@ export default function PostDetailScreen() {
             />
           </TouchableOpacity>
         }
+        
+        {/* Display linked match summary with full details if present */}
+        {post.linked_match_data && (
+          <MatchSummary 
+            matchData={post.linked_match_data} 
+            showFullDetails={true}
+          />
+        )}
 
         <View style={styles.actions}>
           <VoteButtons

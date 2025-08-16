@@ -357,7 +357,7 @@ export const usePost = (postId: string) => {
         .select(`
           id, uid, title, content, created_at, image_url, community_id, 
           communities(name), author_name, author_avatar_icon, 
-          author_avatar_icon_color, author_avatar_background_color, user_id
+          author_avatar_icon_color, author_avatar_background_color, user_id, linked_match_id
         `)
         .eq('uid', postId)
         .single();
@@ -384,6 +384,29 @@ export const usePost = (postId: string) => {
         .eq('id', data.user_id)
         .single();
 
+      // Fetch linked match data if present (same logic as usePosts)
+      let linkedMatchData = null;
+      if (data.linked_match_id) {
+        const { data: matchData } = await supabase
+          .from('saved_matches')
+          .select(`
+            id,
+            "matchSetup",
+            "playerStats",
+            "teamPenalties",
+            "userSlotMap",
+            "winnerTeam",
+            "matchDuration",
+            "matchStartTime"
+          `)
+          .eq('id', data.linked_match_id)
+          .single();
+        
+        if (matchData) {
+          linkedMatchData = matchData;
+        }
+      }
+
       return {
         id: data.uid,
         title: data.title,
@@ -401,6 +424,8 @@ export const usePost = (postId: string) => {
         comment_count: commentCounts?.length || 0,
         community_name: (data as any).communities?.name || null,
         author_username: authorProfile?.username || null,
+        linked_match_id: data.linked_match_id,
+        linked_match_data: linkedMatchData,
       } as unknown as Post;
     },
     enabled: typeof postId === 'string' && postId.length > 0,

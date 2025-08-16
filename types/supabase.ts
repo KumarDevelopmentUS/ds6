@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -25,6 +25,7 @@ export type Database = {
           id: number
           parent_comment_id: number | null
           post_id: number | null
+          post_uid: string
           user_id: string | null
         }
         Insert: {
@@ -37,6 +38,7 @@ export type Database = {
           id?: number
           parent_comment_id?: number | null
           post_id?: number | null
+          post_uid: string
           user_id?: string | null
         }
         Update: {
@@ -49,6 +51,7 @@ export type Database = {
           id?: number
           parent_comment_id?: number | null
           post_id?: number | null
+          post_uid?: string
           user_id?: string | null
         }
         Relationships: [
@@ -60,11 +63,18 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "comments_post_id_fkey"
-            columns: ["post_id"]
+            foreignKeyName: "comments_post_uid_fkey"
+            columns: ["post_uid"]
             isOneToOne: false
             referencedRelation: "posts"
-            referencedColumns: ["id"]
+            referencedColumns: ["uid"]
+          },
+          {
+            foreignKeyName: "comments_post_uid_fkey"
+            columns: ["post_uid"]
+            isOneToOne: false
+            referencedRelation: "posts_with_matches"
+            referencedColumns: ["uid"]
           },
         ]
       }
@@ -172,7 +182,9 @@ export type Database = {
           created_at: string | null
           id: number
           image_url: string | null
+          linked_match_id: string | null
           title: string
+          uid: string
           user_id: string | null
         }
         Insert: {
@@ -185,7 +197,9 @@ export type Database = {
           created_at?: string | null
           id?: number
           image_url?: string | null
+          linked_match_id?: string | null
           title: string
+          uid?: string
           user_id?: string | null
         }
         Update: {
@@ -198,7 +212,9 @@ export type Database = {
           created_at?: string | null
           id?: number
           image_url?: string | null
+          linked_match_id?: string | null
           title?: string
+          uid?: string
           user_id?: string | null
         }
         Relationships: [
@@ -207,6 +223,13 @@ export type Database = {
             columns: ["community_id"]
             isOneToOne: false
             referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "posts_linked_match_id_fkey"
+            columns: ["linked_match_id"]
+            isOneToOne: false
+            referencedRelation: "saved_matches"
             referencedColumns: ["id"]
           },
         ]
@@ -377,6 +400,7 @@ export type Database = {
           created_at: string | null
           id: number
           post_id: number | null
+          post_uid: string
           user_id: string
           vote_type: number | null
         }
@@ -384,6 +408,7 @@ export type Database = {
           created_at?: string | null
           id?: number
           post_id?: number | null
+          post_uid: string
           user_id: string
           vote_type?: number | null
         }
@@ -391,22 +416,69 @@ export type Database = {
           created_at?: string | null
           id?: number
           post_id?: number | null
+          post_uid?: string
           user_id?: string
           vote_type?: number | null
         }
         Relationships: [
           {
-            foreignKeyName: "votes_post_id_fkey"
-            columns: ["post_id"]
+            foreignKeyName: "votes_post_uid_fkey"
+            columns: ["post_uid"]
             isOneToOne: false
             referencedRelation: "posts"
-            referencedColumns: ["id"]
+            referencedColumns: ["uid"]
+          },
+          {
+            foreignKeyName: "votes_post_uid_fkey"
+            columns: ["post_uid"]
+            isOneToOne: false
+            referencedRelation: "posts_with_matches"
+            referencedColumns: ["uid"]
           },
         ]
       }
     }
     Views: {
-      [_ in never]: never
+      posts_with_matches: {
+        Row: {
+          author_avatar_background_color: string | null
+          author_avatar_icon: string | null
+          author_avatar_icon_color: string | null
+          author_name: string | null
+          community_id: number | null
+          content: string | null
+          created_at: string | null
+          id: number | null
+          image_url: string | null
+          linked_match_id: string | null
+          matchDuration: number | null
+          matchSetup: Json | null
+          matchStartTime: string | null
+          playerStats: Json | null
+          teamPenalties: Json | null
+          title: string | null
+          uid: string | null
+          user_id: string | null
+          userSlotMap: Json | null
+          winnerTeam: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "posts_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "posts_linked_match_id_fkey"
+            columns: ["linked_match_id"]
+            isOneToOne: false
+            referencedRelation: "saved_matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       calculate_user_achievements: {
@@ -420,75 +492,79 @@ export type Database = {
       get_friends_of_friends: {
         Args: { p_user_id: string }
         Returns: {
-          id: string
-          username: string
-          nickname: string
-          school: string
+          avatar_background_color: string
           avatar_icon: string
           avatar_icon_color: string
-          avatar_background_color: string
+          id: string
+          nickname: string
+          school: string
+          username: string
         }[]
       }
       get_mutual_friends: {
         Args: { user_a_id: string; user_b_id: string }
         Returns: {
-          id: string
-          username: string
-          nickname: string
-          school: string
+          avatar_background_color: string
           avatar_icon: string
           avatar_icon_color: string
-          avatar_background_color: string
+          id: string
+          nickname: string
+          school: string
+          username: string
         }[]
       }
       get_posts_with_counts: {
         Args: { community_id_param?: number }
         Returns: {
-          id: number
-          title: string
-          content: string
-          created_at: string
-          image_url: string
-          like_count: number
-          comment_count: number
-          user_id: string
-          community_id: number
-          author_name: string
+          author_avatar_background_color: string
           author_avatar_icon: string
           author_avatar_icon_color: string
-          author_avatar_background_color: string
+          author_name: string
+          comment_count: number
+          community_id: number
+          content: string
+          created_at: string
+          id: number
+          image_url: string
+          like_count: number
+          title: string
+          user_id: string
           username: string
         }[]
       }
       get_schoolmates: {
         Args: { user_id: string }
         Returns: {
-          id: string
-          username: string
-          nickname: string
-          school: string
+          avatar_background_color: string
           avatar_icon: string
           avatar_icon_color: string
-          avatar_background_color: string
+          id: string
+          nickname: string
+          school: string
+          username: string
         }[]
       }
       get_user_stats: {
         Args: { p_user_id: string }
         Returns: {
-          total_matches: number
-          total_wins: number
-          win_rate: number
-          total_throws: number
-          total_hits: number
+          avg_score: number
+          catch_rate: number
           hit_rate: number
           total_catches: number
-          catch_rate: number
-          avg_score: number
+          total_hits: number
+          total_matches: number
+          total_throws: number
+          total_wins: number
+          win_rate: number
         }[]
       }
       get_user_vote: {
         Args: { post_id_param: number; user_id_param: string }
         Returns: number
+      }
+      update_user_stats_from_matches: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
     }
     Enums: {

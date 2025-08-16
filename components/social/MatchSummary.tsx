@@ -84,6 +84,53 @@ export default function MatchSummary({ matchData, showFullDetails = false }: Mat
     return !!matchData.userSlotMap[playerId.toString()];
   };
 
+  // Condensed view for feed
+  if (!showFullDetails) {
+    return (
+      <ThemedView style={styles.condensedContainer}>
+        {/* Match Header */}
+        <View style={styles.condensedHeader}>
+          <Ionicons name="trophy-outline" size={14} color="#666" />
+          <ThemedText variant="caption" style={styles.condensedTitle}>
+            {matchData.matchSetup.title}
+          </ThemedText>
+        </View>
+
+        {/* Just the scores */}
+        <View style={styles.condensedScoreContainer}>
+          <ThemedText variant="body" style={styles.condensedTeamName}>
+            {matchData.matchSetup.teamNames[0]}
+          </ThemedText>
+          <ThemedText 
+            variant="body" 
+            style={[
+              styles.condensedScore, 
+              matchData.winnerTeam === 1 && styles.condensedWinnerScore
+            ]}
+          >
+            {team1Score}
+          </ThemedText>
+          
+          <ThemedText variant="caption" style={styles.condensedVs}>-</ThemedText>
+          
+          <ThemedText 
+            variant="body" 
+            style={[
+              styles.condensedScore, 
+              matchData.winnerTeam === 2 && styles.condensedWinnerScore
+            ]}
+          >
+            {team2Score}
+          </ThemedText>
+          <ThemedText variant="body" style={styles.condensedTeamName}>
+            {matchData.matchSetup.teamNames[1]}
+          </ThemedText>
+        </View>
+      </ThemedView>
+    );
+  }
+
+  // Full view for post detail
   return (
     <ThemedView style={styles.container}>
       {/* Match Header */}
@@ -186,20 +233,19 @@ export default function MatchSummary({ matchData, showFullDetails = false }: Mat
                   </ThemedText>
                 </View>
                 
-                {/* Always show rating */}
+                {/* Always show rating in full view */}
                 <View style={styles.playerStats}>
                   <ThemedText variant="caption" style={styles.statText}>
                     Rating: {rating}%
                   </ThemedText>
                 </View>
                 
-                {showFullDetails && (
-                  <View style={styles.playerStatsDetailed}>
-                    <ThemedText variant="caption" style={styles.statText}>
-                      Hits: {player.hits}/{player.throws} • Catches: {player.catches}
-                    </ThemedText>
-                  </View>
-                )}
+                {/* Show detailed stats in full view */}
+                <View style={styles.playerStatsDetailed}>
+                  <ThemedText variant="caption" style={styles.statText}>
+                    Hits: {player.hits}/{player.throws} • Catches: {player.catches}
+                  </ThemedText>
+                </View>
               </TouchableOpacity>
             );
           })}
@@ -227,6 +273,52 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E5E7EB',
     backgroundColor: '#F9FAFB',
+  },
+  condensedContainer: {
+    borderRadius: 8,
+    padding: 12,
+    marginVertical: 4,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#F9FAFB',
+  },
+  condensedHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  condensedTitle: {
+    marginLeft: 4,
+    fontWeight: '600',
+    color: '#374151',
+    fontSize: 12,
+  },
+  condensedScoreContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+  },
+  condensedTeamName: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#374151',
+    flex: 1,
+    textAlign: 'center',
+  },
+  condensedScore: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#374151',
+    marginHorizontal: 8,
+  },
+  condensedWinnerScore: {
+    color: '#059669',
+  },
+  condensedVs: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginHorizontal: 4,
   },
   header: {
     marginBottom: 12,
