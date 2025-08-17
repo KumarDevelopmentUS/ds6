@@ -16,6 +16,7 @@ import {
     View
 } from 'react-native';
 
+// NEW: Updated PlayerStats interface for Beer Die ruleset - matches types/social.ts
 interface PlayerStats {
   name: string;
   throws: number;
@@ -32,6 +33,27 @@ interface PlayerStats {
   goals: number;
   onFireCount: number;
   currentlyOnFire: boolean;
+
+  // NEW: Beer Die throw outcomes
+  line: number;
+  hit: number;
+  goal: number;
+  dink: number;
+  sink: number;
+  invalid: number; // Replaces all old bad throws
+
+  // NEW: Beer Die defense outcomes
+  miss: number; // Only miss, no drop/twoHands/body/catchPlusAura
+
+  // FIFA outcomes
+  goodKick: number;
+  badKick: number;
+
+  // NEW: Additional Beer Die stats
+  validThrows: number;      // Count of valid throws (line, hit, goal, dink, sink)
+  catchAttempts: number;    // Count of defensive attempts
+  successfulCatches: number; // Count of successful catches
+  redemptionShots: number;  // Count of redemption attempts
 }
 
 interface LiveMatch {

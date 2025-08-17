@@ -8,13 +8,13 @@ import * as Clipboard from 'expo-clipboard';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  Alert,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    Alert,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import QRCodeSVG from 'react-native-qrcode-svg';
 
@@ -28,7 +28,7 @@ const generateId = (length: number = 6): string => {
   return result;
 };
 
-// Types for player statistics, consistent with your jsonb schema
+// NEW: Updated PlayerStats interface for Beer Die ruleset - matches types/social.ts
 interface PlayerStats {
   name: string;
   throws: number;
@@ -46,29 +46,26 @@ interface PlayerStats {
   onFireCount: number;
   currentlyOnFire: boolean;
 
-  // Individual throw outcomes
-  tableDie: number;
+  // NEW: Beer Die throw outcomes
   line: number;
   hit: number;
-  knicker: number;
+  goal: number;
   dink: number;
   sink: number;
-  short: number;
-  long: number;
-  side: number;
-  height: number;
-  goal: number; // Added based on rulebook
+  invalid: number; // Replaces all old bad throws
 
-  // Defense outcomes
-  catchPlusAura: number;
-  drop: number;
-  miss: number;
-  twoHands: number;
-  body: number;
+  // NEW: Beer Die defense outcomes
+  miss: number; // Only miss, no drop/twoHands/body/catchPlusAura
 
   // FIFA outcomes
   goodKick: number;
   badKick: number;
+
+  // NEW: Additional Beer Die stats
+  validThrows: number;      // Count of valid throws (line, hit, goal, dink, sink)
+  catchAttempts: number;    // Count of defensive attempts
+  successfulCatches: number; // Count of successful catches
+  redemptionShots: number;  // Count of redemption attempts
 }
 
 // Type for match setup, consistent with your jsonb schema
@@ -146,15 +143,14 @@ const DieStatsTracker: React.FC = () => {
   const [defendingResult, setDefendingResult] = useState<string>('');
   const [fifaKicker, setFifaKicker] = useState<number | null>(null);
   const [fifaAction, setFifaAction] = useState<string>('');
-  const [redemptionAction, setRedemptionAction] = useState<string>('');
   const [showFifa, setShowFifa] = useState(false);
-  const [showRedemption, setShowRedemption] = useState(false);
+  // NEW: showRedemption removed - redemption is now a throw result
   const [showQRCode, setShowQRCode] = useState(true);
   const [showSetup, setShowSetup] = useState(false);
   const [showSettingsPanel, setShowSettingsPanel] = useState(false);
   const [showHomeConfirmation, setShowHomeConfirmation] = useState(false);
 
-  // Helper function to get initial empty player stats
+  // NEW: Helper function to get initial empty player stats - Beer Die ruleset
   const getInitialPlayerStats = (): PlayerStats => ({
     name: '',
     throws: 0,
@@ -171,24 +167,27 @@ const DieStatsTracker: React.FC = () => {
     goals: 0,
     onFireCount: 0,
     currentlyOnFire: false,
-    tableDie: 0,
+    
+    // NEW: Beer Die throw outcomes
     line: 0,
     hit: 0,
-    knicker: 0,
+    goal: 0,
     dink: 0,
     sink: 0,
-    short: 0,
-    long: 0,
-    side: 0,
-    height: 0,
-    goal: 0, // Added
-    catchPlusAura: 0,
-    drop: 0,
-    miss: 0,
-    twoHands: 0,
-    body: 0,
+    invalid: 0, // Replaces all old bad throws
+
+    // NEW: Beer Die defense outcomes  
+    miss: 0, // Only miss, no other defense options
+
+    // FIFA outcomes
     goodKick: 0,
     badKick: 0,
+
+    // NEW: Additional Beer Die stats
+    validThrows: 0,      // Count of valid throws (line, hit, goal, dink, sink)
+    catchAttempts: 0,    // Count of defensive attempts
+    successfulCatches: 0, // Count of successful catches
+    redemptionShots: 0,  // Count of redemption attempts
   });
 
   // Initialize player stats and router redirection on component mount
@@ -558,8 +557,9 @@ const DieStatsTracker: React.FC = () => {
     return playerId <= 2 ? 1 : 2;
   };
 
-  // Handles the submission of a player's turn/play
+  // NEW: Beer Die handleSubmitPlay - synced with nesTracker.tsx logic
   const handleSubmitPlay = async () => {
+    // Validation - matches nesTracker validation
     if (!throwingPlayer || !throwResult) {
       setErrorMessage('Please select a throwing player and result');
       return;
@@ -570,28 +570,53 @@ const DieStatsTracker: React.FC = () => {
       return;
     }
 
-    console.log('Submitting play...');
+    // Additional Beer Die validation
+    if (throwResult === 'line' && (!defendingPlayer || defendingPlayer === 0)) {
+      setErrorMessage('Line throws require a defending player');
+      return;
+    }
+
+    if (fifaKicker !== null || fifaAction) {
+      if (throwResult !== 'invalid') {
+        setErrorMessage('FIFA can only be activated on invalid throws');
+        return;
+      }
+    }
+
+    console.log('Submitting Beer Die play...');
     const updatedStats = { ...playerStats };
     const updatedPenalties = { ...teamPenalties };
 
+    // NEW: Beer Die throw result arrays
+    const validThrows = ['line', 'hit', 'goal', 'dink', 'sink'];
+    const scoringThrows = ['hit', 'goal', 'dink', 'sink'];
+    
+    const isScoringThrow = scoringThrows.includes(throwResult);
+    const isValidThrow = validThrows.includes(throwResult);
+
     // Track throw
     updatedStats[throwingPlayer].throws++;
-    (updatedStats[throwingPlayer] as any)[throwResult] =
+    (updatedStats[throwingPlayer] as any)[throwResult] = 
       ((updatedStats[throwingPlayer] as any)[throwResult] || 0) + 1;
 
-    const hitOutcomes = ['tableDie', 'hit', 'knicker', 'goal', 'dink', 'sink'];
-    const badThrowOutcomes = ['short', 'long', 'side', 'height'];
-    const wasOnFire = updatedStats[throwingPlayer].currentlyOnFire;
+    // NEW: Track valid throws
+    if (isValidThrow) {
+      updatedStats[throwingPlayer].validThrows++;
+    }
 
-    // Update hit streak and on fire status
-    if (hitOutcomes.includes(throwResult)) {
+    // NEW: Update hit streak and on fire status (Beer Die logic)
+    const wasOnFire = updatedStats[throwingPlayer].currentlyOnFire;
+    
+    if (isScoringThrow) {
       updatedStats[throwingPlayer].hits++;
       updatedStats[throwingPlayer].hitStreak++;
 
-      if (['knicker', 'dink', 'sink'].includes(throwResult)) {
+      // Track special throws (dink, sink)
+      if (['dink', 'sink'].includes(throwResult)) {
         updatedStats[throwingPlayer].specialThrows++;
       }
 
+      // Track goals
       if (throwResult === 'goal') {
         updatedStats[throwingPlayer].goals++;
       }
@@ -599,12 +624,7 @@ const DieStatsTracker: React.FC = () => {
       updatedStats[throwingPlayer].hitStreak = 0;
     }
 
-    if (badThrowOutcomes.includes(throwResult)) {
-      if (throwResult === 'height') {
-        updatedStats[throwingPlayer].blunders++;
-      }
-    }
-
+    // Track line throws
     if (throwResult === 'line') {
       updatedStats[throwingPlayer].lineThrows++;
     }
@@ -617,62 +637,63 @@ const DieStatsTracker: React.FC = () => {
       updatedStats[throwingPlayer].onFireCount++;
     }
 
-    // Calculate base points for the throw
+    // NEW: Beer Die scoring system
     const scoreMap: { [key: string]: number } = {
-      tableDie: 1,
-      hit: 1,
-      knicker: 1,
-      goal: 2,
-      dink: 2,
-      sink: matchSetup.sinkPoints,
+      'line': 0,
+      'hit': 1,
+      'goal': 2,
+      'dink': 2,
+      'sink': matchSetup.sinkPoints,
+      'invalid': 0,
+      'successfulRedemption': 0, // Special case handled separately
     };
+    
     let pointsToAdd = scoreMap[throwResult] || 0;
-    let preventScoring = false;
+    let isCaught = false;
 
-    // Handle defense
-    if (defendingPlayer && defendingResult) {
-      if (defendingPlayer === -1) {
-        // Team defense - apply to both players on opposing team
-        const throwingTeam = getPlayerTeam(throwingPlayer);
-        const defendingTeam = throwingTeam === 1 ? 2 : 1;
-        const defendingPlayers = defendingTeam === 1 ? [1, 2] : [3, 4];
-        
-        for (const playerId of defendingPlayers) {
-          if (defendingResult === 'catch' || defendingResult === 'catchPlusAura') {
-            updatedStats[playerId].catches++;
-            if (defendingResult === 'catchPlusAura') {
-              updatedStats[playerId].catchPlusAura++;
-              updatedStats[playerId].aura++;
-            }
-          } else {
-            updatedStats[playerId].blunders++;
-            (updatedStats[playerId] as any)[defendingResult] =
-              ((updatedStats[playerId] as any)[defendingResult] || 0) + 1;
-          }
-        }
-        
-        if (defendingResult === 'catch' || defendingResult === 'catchPlusAura') {
-          preventScoring = true;
-        }
-      } else if (defendingPlayer !== null && defendingPlayer > 0) {
-        // Individual player defense
-        if (defendingResult === 'catch' || defendingResult === 'catchPlusAura') {
-          updatedStats[defendingPlayer].catches++;
-          preventScoring = true;
-          if (defendingResult === 'catchPlusAura') {
-            updatedStats[defendingPlayer].catchPlusAura++;
-            updatedStats[defendingPlayer].aura++;
-          }
-        } else {
-          updatedStats[defendingPlayer].blunders++;
-          (updatedStats[defendingPlayer] as any)[defendingResult] =
-            ((updatedStats[defendingPlayer] as any)[defendingResult] || 0) + 1;
-        }
+    // NEW: Beer Die defense processing
+    if (defendingPlayer && defendingPlayer > 0 && defendingResult) {
+      updatedStats[defendingPlayer].catchAttempts++;
+
+      if (defendingResult === 'catch') {
+        updatedStats[defendingPlayer].catches++;
+        updatedStats[defendingPlayer].successfulCatches++;
+        isCaught = true;
+      } else if (defendingResult === 'miss') {
+        updatedStats[defendingPlayer].blunders++;
+        (updatedStats[defendingPlayer] as any)[defendingResult] = 
+          ((updatedStats[defendingPlayer] as any)[defendingResult] || 0) + 1;
       }
     }
 
-    // Handle FIFA
-    if (fifaKicker && fifaAction) {
+    // NEW: Successful Redemption logic
+    if (throwResult === 'successfulRedemption') {
+      updatedStats[throwingPlayer].redemptionShots++;
+      
+      const redeemingTeam = getPlayerTeam(throwingPlayer);
+      const opposingTeam = redeemingTeam === 1 ? 2 : 1;
+      const opposingTeamScore = calculateTeamScore(opposingTeam);
+      
+      if (!isCaught) {
+        // Reduce opponent score by 1 (teams can go negative per Beer Die rules)
+        updatedPenalties[opposingTeam as 1 | 2]++;
+        console.log('Rule Applied: Successful redemption - opponents lose 1 point');
+      }
+      // Thrower gets 0 points regardless
+      pointsToAdd = 0;
+    }
+
+    // NEW: Apply points with catch nullification
+    if (isCaught) {
+      // Caught throws score 0 points
+      pointsToAdd = 0;
+    }
+
+    // Apply points to thrower
+    updatedStats[throwingPlayer].score += pointsToAdd;
+
+    // NEW: Beer Die FIFA logic
+    if (fifaKicker && fifaAction && throwResult === 'invalid') {
       updatedStats[fifaKicker].fifaAttempts++;
       const fifaTeam = getPlayerTeam(fifaKicker);
       const opposingTeam = fifaTeam === 1 ? 2 : 1;
@@ -680,106 +701,65 @@ const DieStatsTracker: React.FC = () => {
       
       const fifaTeamScore = calculateTeamScore(fifaTeam);
       const opposingScore = calculateTeamScore(opposingTeam);
-      
-      const isFifaSave = 
-        badThrowOutcomes.includes(throwResult) &&
-        fifaAction === 'goodKick' &&
-        (defendingResult === 'catch' || defendingResult === 'catchPlusAura');
 
-      if (isFifaSave) {
-        console.log("Rule Applied: FIFA Save");
+      if (fifaAction === 'goodKick') {
         updatedStats[fifaKicker].fifaSuccess++;
         updatedStats[fifaKicker].goodKick++;
-
-        if (defendingPlayer === -1) {
-          const defendingTeamId = getPlayerTeam(throwingPlayer) === 1 ? 2 : 1;
-          const defenders = defendingTeamId === 1 ? [1, 2] : [3, 4];
-          for (const defender of defenders) {
-            updatedStats[defender].score++;
+        
+        // FIFA Good Kick: Kicker gets stat credit, catching player gets the point
+        if (defendingPlayer && defendingPlayer !== 'N/A') {
+          const catchingPlayerId = defendingPlayer as keyof typeof updatedStats;
+          const catchingTeamId = getPlayerTeam(catchingPlayerId);
+          const catchingTeamScore = calculateTeamScore(catchingTeamId);
+          const opponentTeamScore = calculateTeamScore(catchingTeamId === 1 ? 2 : 1);
+          
+          let fifaPoints = 1; // Default FIFA points
+          
+          // Overtime rule: Restrict points if catching team is leading
+          if (catchingTeamScore >= 10 || opponentTeamScore >= 10) {
+            if (catchingTeamScore > opponentTeamScore) {
+              fifaPoints = 0; // Leading team gets no points in overtime
+            }
           }
-        } else if (defendingPlayer !== null && defendingPlayer > 0) {
-          updatedStats[defendingPlayer].score++;
+          
+          updatedStats[catchingPlayerId].score += fifaPoints;
+          console.log(`Rule Applied: FIFA Good Kick - ${fifaPoints} point(s) to catching player ${catchingPlayerId}`);
         }
       } else {
-        if (fifaAction === 'goodKick') {
-          updatedStats[fifaKicker].fifaSuccess++;
-          updatedStats[fifaKicker].goodKick++;
-          
-          if (gameState === 'matchPoint' || gameState === 'advantage') {
-            updatedPenalties[opposingTeam as 1 | 2]++;
-          } else if (gameState === 'overtime') {
-            if (fifaTeamScore <= opposingScore) {
-              updatedStats[fifaKicker].score++;
-            }
-          } else {
-            // Standard play: good kick scores 1 point
-            updatedStats[fifaKicker].score++;
-          }
-        } else { // badKick
-          updatedStats[fifaKicker].badKick++;
-          
-          if (gameState === 'overtime') {
-            if (fifaTeamScore <= opposingScore) {
-              updatedStats[fifaKicker].score++;
-            }
-          } else {
-            // Standard play: bad kick also scores 1 point
-            updatedStats[fifaKicker].score++;
-          }
-        }
+        updatedStats[fifaKicker].badKick++;
+        console.log('Rule Applied: FIFA Bad Kick - 0 points');
       }
     }
 
-    // Handle redemption
-    if (redemptionAction === 'success') {
-      const throwingPlayerTeam = getPlayerTeam(throwingPlayer);
-      const opposingTeam = throwingPlayerTeam === 1 ? 2 : 1;
-      updatedPenalties[opposingTeam as 1 | 2]++;
-      preventScoring = true; // Redemption negates scoring
-    }
-
-    // Apply points from throw (if not prevented by catch or redemption)
-    if (!preventScoring && pointsToAdd > 0) {
-      updatedStats[throwingPlayer].score += pointsToAdd;
-    }
-
+    // Save updated data
     setPlayerStats(updatedStats);
     setTeamPenalties(updatedPenalties);
-
     await updateLiveMatchData();
 
-    // Reset for next play
-    setThrowingPlayer(null);
-    setThrowResult('');
-    setDefendingPlayer(null);
-    setDefendingResult('');
+    // NEW: Beer Die form reset logic
+    const allowRetoss = throwResult === 'line';
+    
+    if (allowRetoss) {
+      // Only reset defense fields for line throws
+      setDefendingPlayer(null);
+      setDefendingResult('');
+    } else if (throwResult !== 'successfulRedemption') {
+      // Full reset for non-redemption throws
+      setThrowingPlayer(null);
+      setThrowResult('');
+      setDefendingPlayer(null);
+      setDefendingResult('');
+    }
+    
+    // Always reset FIFA and show states
     setFifaKicker(null);
     setFifaAction('');
-    setRedemptionAction('');
     setShowFifa(false);
-    setShowRedemption(false);
+    // NEW: setShowRedemption removed - redemption is now a throw result
     setErrorMessage('');
   };
 
-  // Handles the "Self Sink" action
-  const handleSelfSink = () => {
-    if (!throwingPlayer) {
-      setErrorMessage('Please select a player for Self Sink');
-      return;
-    }
-
-    Alert.alert(
-      'Uh Oh!',
-      `Uh Oh! ${matchSetup.playerNames[throwingPlayer - 1]} just sunk it in their own cup! ${
-        matchSetup.playerNames[throwingPlayer - 1]
-      } must run a naked lap or forfeit the match!!!`
-    );
-
-    setThrowingPlayer(null);
-    setThrowResult('');
-    setDefendingPlayer(null);
-    setDefendingResult('');
-  };
+  // NEW: Self Sink removed - not part of Beer Die ruleset
 
   // Calculates the score for a given team
   const calculateTeamScore = (teamNumber: number): number => {
@@ -1368,7 +1348,8 @@ const DieStatsTracker: React.FC = () => {
               {/* Throw Result Selection (Combined) */}
               <Text style={styles.sectionHeader}>Throw Result:</Text>
               <View style={styles.buttonRow}>
-                {['tableDie', 'line', 'hit', 'knicker', 'goal', 'dink', 'sink'].map((result) => (
+                {/* NEW: Beer Die ruleset throw results */}
+                {['line', 'hit', 'goal', 'dink', 'sink'].map((result) => (
                   <TouchableOpacity
                     key={result}
                     style={[
@@ -1382,28 +1363,42 @@ const DieStatsTracker: React.FC = () => {
                       styles.throwResultButtonText,
                       throwResult === result && styles.selectedThrowText
                     ]}>
-                      {result === 'tableDie' ? 'Table Die' : result.charAt(0).toUpperCase() + result.slice(1)}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-                {['short', 'long', 'side', 'height'].map((result) => (
-                  <TouchableOpacity
-                    key={result}
-                    style={[
-                      styles.throwResultButton,
-                      styles.badResultOutline,
-                      throwResult === result && styles.badResultSelected,
-                    ]}
-                    onPress={() => setThrowResult(result)}
-                  >
-                    <Text style={[
-                      styles.throwResultButtonText,
-                      throwResult === result && styles.selectedThrowText
-                    ]}>
                       {result.charAt(0).toUpperCase() + result.slice(1)}
                     </Text>
                   </TouchableOpacity>
                 ))}
+                {/* Invalid throw - bad result styling */}
+                <TouchableOpacity
+                  style={[
+                    styles.throwResultButton,
+                    styles.badResultOutline,
+                    throwResult === 'invalid' && styles.badResultSelected,
+                  ]}
+                  onPress={() => setThrowResult('invalid')}
+                >
+                  <Text style={[
+                    styles.throwResultButtonText,
+                    throwResult === 'invalid' && styles.selectedThrowText
+                  ]}>
+                    Invalid
+                  </Text>
+                </TouchableOpacity>
+                {/* Successful Redemption - special styling */}
+                <TouchableOpacity
+                  style={[
+                    styles.throwResultButton,
+                    styles.specialResultOutline,
+                    throwResult === 'successfulRedemption' && styles.specialResultSelected,
+                  ]}
+                  onPress={() => setThrowResult('successfulRedemption')}
+                >
+                  <Text style={[
+                    styles.throwResultButtonText,
+                    throwResult === 'successfulRedemption' && styles.selectedThrowText
+                  ]}>
+                    Successful Redemption
+                  </Text>
+                </TouchableOpacity>
               </View>
 
               {/* Defending Player Selection */}
@@ -1466,42 +1461,54 @@ const DieStatsTracker: React.FC = () => {
               {/* Defense Result Selection (Combined) */}
               <Text style={styles.sectionHeader}>Defense Result:</Text>
               <View style={styles.buttonRow}>
-                {['catch', 'catchPlusAura'].map((result) => (
-                  <TouchableOpacity
-                    key={result}
-                    style={[
-                      styles.throwResultButton,
-                      styles.goodResultOutline,
-                      defendingResult === result && styles.goodResultSelected,
-                    ]}
-                    onPress={() => setDefendingResult(result)}
-                  >
-                    <Text style={[
-                      styles.throwResultButtonText,
-                      defendingResult === result && styles.selectedThrowText
-                    ]}>
-                      {result === 'catchPlusAura' ? 'Catch + Aura' : 'Catch'}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-                {['drop', 'miss', 'twoHands', 'body'].map((result) => (
-                  <TouchableOpacity
-                    key={result}
-                    style={[
-                      styles.throwResultButton,
-                      styles.badResultOutline,
-                      defendingResult === result && styles.badResultSelected,
-                    ]}
-                    onPress={() => setDefendingResult(result)}
-                  >
-                    <Text style={[
-                      styles.throwResultButtonText,
-                      defendingResult === result && styles.selectedThrowText
-                    ]}>
-                      {result === 'twoHands' ? '2 Hands' : result.charAt(0).toUpperCase() + result.slice(1)}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+                {/* NEW: Beer Die Defense Results - Catch (good) */}
+                <TouchableOpacity
+                  style={[
+                    styles.throwResultButton,
+                    styles.goodResultOutline,
+                    defendingResult === 'catch' && styles.goodResultSelected,
+                  ]}
+                  onPress={() => setDefendingResult('catch')}
+                >
+                  <Text style={[
+                    styles.throwResultButtonText,
+                    defendingResult === 'catch' && styles.selectedThrowText
+                  ]}>
+                    Catch
+                  </Text>
+                </TouchableOpacity>
+                {/* NEW: Beer Die Defense Results - Miss (bad) */}
+                <TouchableOpacity
+                  style={[
+                    styles.throwResultButton,
+                    styles.badResultOutline,
+                    defendingResult === 'miss' && styles.badResultSelected,
+                  ]}
+                  onPress={() => setDefendingResult('miss')}
+                >
+                  <Text style={[
+                    styles.throwResultButtonText,
+                    defendingResult === 'miss' && styles.selectedThrowText
+                  ]}>
+                    Miss
+                  </Text>
+                </TouchableOpacity>
+                {/* NEW: Beer Die Defense Results - N/A (neutral) */}
+                <TouchableOpacity
+                  style={[
+                    styles.throwResultButton,
+                    styles.neutralResultOutline,
+                    defendingResult === 'none' && styles.neutralResultSelected,
+                  ]}
+                  onPress={() => setDefendingResult('none')}
+                >
+                  <Text style={[
+                    styles.throwResultButtonText,
+                    defendingResult === 'none' && styles.selectedThrowText
+                  ]}>
+                    N/A
+                  </Text>
+                </TouchableOpacity>
               </View>
 
               {/* Special Actions Buttons */}
@@ -1514,17 +1521,8 @@ const DieStatsTracker: React.FC = () => {
                     {showFifa ? 'Hide FIFA' : 'Show FIFA'}
                   </Text>
                 </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.actionButton}
-                  onPress={() => setShowRedemption(!showRedemption)}
-                >
-                  <Text style={styles.actionButtonText}>
-                    {showRedemption ? 'Hide Redemption' : 'Show Redemption'}
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.redButton} onPress={handleSelfSink}>
-                  <Text style={styles.redButtonText}>Self Sink</Text>
-                </TouchableOpacity>
+                {/* NEW: Show Redemption button removed - redemption is now a throw result */}
+                {/* NEW: Self Sink button removed - not part of Beer Die ruleset */}
               </View>
 
               {/* FIFA Section (conditionally rendered) */}
@@ -1577,32 +1575,7 @@ const DieStatsTracker: React.FC = () => {
                 </View>
               )}
 
-              {/* Redemption Section (conditionally rendered) */}
-              {showRedemption && (
-                <View style={styles.nestedCardYellow}>
-                  <Text style={styles.sectionHeader}>Redemption:</Text>
-                  <View style={styles.buttonRow}>
-                    <TouchableOpacity
-                      style={[
-                        styles.playerButton,
-                        redemptionAction === 'success' && styles.goodResultSelected,
-                      ]}
-                      onPress={() => setRedemptionAction('success')}
-                    >
-                      <Text style={styles.throwResultButtonText}>Success</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[
-                        styles.playerButton,
-                        redemptionAction === 'failed' && styles.badResultSelected,
-                      ]}
-                      onPress={() => setRedemptionAction('failed')}
-                    >
-                      <Text style={styles.throwResultButtonText}>Failed</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              )}
+              {/* NEW: Redemption Section removed - redemption is now a throw result (Successful Redemption) */}
 
               {/* Submit Play Button */}
               <TouchableOpacity style={styles.submitButton} onPress={handleSubmitPlay}>
@@ -1619,9 +1592,8 @@ const DieStatsTracker: React.FC = () => {
                   setDefendingResult('');
                   setFifaKicker(null);
                   setFifaAction('');
-                  setRedemptionAction('');
+                  // NEW: redemptionAction and showRedemption removed - redemption is now a throw result
                   setShowFifa(false);
-                  setShowRedemption(false);
                   setErrorMessage('');
                 }}
               >
@@ -2582,6 +2554,26 @@ const styles = StyleSheet.create({
   badResultSelected: {
     backgroundColor: '#ef4444',
     borderColor: '#ef4444',
+  },
+  // NEW: Special result styling for Successful Redemption
+  specialResultOutline: {
+    borderWidth: 1,
+    borderColor: '#8b5cf6',
+    backgroundColor: '#faf5ff',
+  },
+  specialResultSelected: {
+    backgroundColor: '#8b5cf6',
+    borderColor: '#8b5cf6',
+  },
+  // NEW: Neutral result styling for N/A
+  neutralResultOutline: {
+    borderWidth: 1,
+    borderColor: '#6b7280',
+    backgroundColor: '#f9fafb',
+  },
+  neutralResultSelected: {
+    backgroundColor: '#6b7280',
+    borderColor: '#6b7280',
   },
   selectedThrowText: {
     color: '#ffffff',

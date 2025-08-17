@@ -6,13 +6,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  TouchableOpacity,
-  View
+    ActivityIndicator,
+    Alert,
+    RefreshControl,
+    ScrollView,
+    StyleSheet,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import { ThemedButton } from '../components/themed/ThemedButton';
 import { ThemedText } from '../components/themed/ThemedText';
@@ -74,6 +74,11 @@ interface PlayerStats {
   body: number;
   goodKick: number;
   badKick: number;
+  // NEW PROPERTIES (ADDED FOR BEER DIE RULESET)
+  validThrows?: number;
+  catchAttempts?: number;
+  successfulCatches?: number;
+  redemptionShots?: number;
 }
 
 export default function GameHistoryScreen() {

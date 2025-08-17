@@ -80,6 +80,7 @@ export interface MatchSummaryData {
 }
 
 export interface PlayerStats {
+  // EXISTING PROPERTIES (KEEP ALL)
   name: string;
   throws: number;
   hits: number;
@@ -112,4 +113,10 @@ export interface PlayerStats {
   body: number;
   goodKick: number;
   badKick: number;
+  
+  // NEW PROPERTIES (ADDED FOR BEER DIE RULESET)
+  validThrows: number;
+  catchAttempts: number;
+  successfulCatches: number;
+  redemptionShots: number;
 }

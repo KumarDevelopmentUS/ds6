@@ -1,5 +1,5 @@
 // utils/profileSync.ts
-import { supabase } from '@/supabase';
+import { supabase } from '../supabase';
 
 export interface ProfileData {
   username?: string;

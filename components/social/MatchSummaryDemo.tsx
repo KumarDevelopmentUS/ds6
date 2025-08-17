@@ -51,6 +51,11 @@ const demoMatchData: MatchSummaryData = {
       body: 1,
       goodKick: 2,
       badKick: 1,
+      // NEW PROPERTIES (ADDED FOR BEER DIE RULESET)
+      validThrows: 9,
+      catchAttempts: 7,
+      successfulCatches: 5,
+      redemptionShots: 1,
     },
     2: {
       name: 'Bob',
@@ -85,6 +90,11 @@ const demoMatchData: MatchSummaryData = {
       body: 1,
       goodKick: 1,
       badKick: 1,
+      // NEW PROPERTIES (ADDED FOR BEER DIE RULESET)
+      validThrows: 7,
+      catchAttempts: 5,
+      successfulCatches: 3,
+      redemptionShots: 0,
     },
     3: {
       name: 'Charlie',
@@ -119,6 +129,11 @@ const demoMatchData: MatchSummaryData = {
       body: 0,
       goodKick: 3,
       badKick: 1,
+      // NEW PROPERTIES (ADDED FOR BEER DIE RULESET)
+      validThrows: 11,
+      catchAttempts: 6,
+      successfulCatches: 4,
+      redemptionShots: 2,
     },
     4: {
       name: 'Diana',
@@ -153,6 +168,11 @@ const demoMatchData: MatchSummaryData = {
       body: 2,
       goodKick: 1,
       badKick: 0,
+      // NEW PROPERTIES (ADDED FOR BEER DIE RULESET)
+      validThrows: 5,
+      catchAttempts: 8,
+      successfulCatches: 6,
+      redemptionShots: 0,
     },
   },
   teamPenalties: { 1: 0, 2: 1 },
