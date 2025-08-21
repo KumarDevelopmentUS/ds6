@@ -255,7 +255,8 @@ export const usePosts = (communityId?: number) => {
 
       // Combine the data
       let combinedPosts = posts.map((post: any) => ({
-        id: post.uid || String(post.id), // Use UUID as the main ID
+        id: post.id, // Keep numeric ID
+        uid: post.uid, // Add the required uid property
         title: post.title,
         content: post.content,
         created_at: post.created_at,

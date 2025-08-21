@@ -8,13 +8,13 @@ import * as Clipboard from 'expo-clipboard';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-    Alert,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import QRCodeSVG from 'react-native-qrcode-svg';
 
@@ -707,7 +707,7 @@ const DieStatsTracker: React.FC = () => {
         updatedStats[fifaKicker].goodKick++;
         
         // FIFA Good Kick: Kicker gets stat credit, catching player gets the point
-        if (defendingPlayer && defendingPlayer !== 'N/A') {
+        if (defendingPlayer && defendingPlayer > 0) {
           const catchingPlayerId = defendingPlayer as keyof typeof updatedStats;
           const catchingTeamId = getPlayerTeam(catchingPlayerId);
           const catchingTeamScore = calculateTeamScore(catchingTeamId);
