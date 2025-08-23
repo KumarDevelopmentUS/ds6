@@ -419,20 +419,20 @@ export default function AccountScreen() {
           </ThemedView>
         ))
       ) : (
-        /* Vibration Toggle for Unauthenticated Users */
-        <ThemedView variant="section">
-          <View style={styles.sectionHeader}>
-            <Ionicons
-              name="settings-outline"
-              size={24}
-              color={theme.colors.primary}
-            />
-            <ThemedText variant="subtitle" style={styles.sectionTitle}>
-              General Settings
-            </ThemedText>
-          </View>
+        /* General Settings for Unauthenticated Users - Centered Layout */
+        <View style={styles.centeredContainer}>
+          <ThemedView variant="card" style={styles.generalSettingsCard}>
+            <View style={styles.cardHeader}>
+              <Ionicons
+                name="settings-outline"
+                size={24}
+                color={theme.colors.primary}
+              />
+              <ThemedText variant="subtitle" style={styles.cardHeaderTitle}>
+                General Settings
+              </ThemedText>
+            </View>
 
-          <ThemedView variant="card">
             <View style={styles.settingItem}>
               <ThemedText variant="body">Vibration</ThemedText>
               <Switch
@@ -446,7 +446,7 @@ export default function AccountScreen() {
               />
             </View>
           </ThemedView>
-        </ThemedView>
+        </View>
       )}
 
 
@@ -617,5 +617,25 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: 'bold',
     fontSize: 16,
+  },
+  centeredContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    marginTop: 20,
+  },
+  generalSettingsCard: {
+    width: '100%',
+    maxWidth: 400,
+    padding: 20,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  cardHeaderTitle: {
+    marginLeft: 12,
+    fontWeight: '600',
   },
 });
