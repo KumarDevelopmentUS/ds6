@@ -66,6 +66,7 @@ export default function FriendsScreen() {
   const [viewingProfileOf, setViewingProfileOf] = useState<UserProfile | null>(null);
   const [viewingProfileStats, setViewingProfileStats] = useState<UserStats | null>(null);
   const [loadingProfileStats, setLoadingProfileStats] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(false);
 
   useEffect(() => {
     const initialize = async () => {
@@ -85,6 +86,17 @@ export default function FriendsScreen() {
       fetchExpandNetworkData(currentUser.id);
     }
   }, [currentTab, currentUser]);
+
+  // Debounced search effect
+  useEffect(() => {
+    if (currentTab !== 'expand') return;
+    
+    const searchTimeout = setTimeout(() => {
+      handleSearch();
+    }, 300); // 300ms delay for debouncing
+
+    return () => clearTimeout(searchTimeout);
+  }, [searchQuery, currentTab, currentUser]);
 
   const combineProfileData = (userProfile: any, secondaryProfile?: any): UserProfile => {
     return {
@@ -175,7 +187,7 @@ export default function FriendsScreen() {
       setSearchResults([]);
       return;
     }
-    setLoading(true);
+    setSearchLoading(true);
     
     const { data: foundUsers, error } = await supabase
       .from('user_profiles')
@@ -186,14 +198,14 @@ export default function FriendsScreen() {
     if (error) {
       console.error("Search Error Details:", error);
       Alert.alert('Search Error', 'Could not perform the user search.');
-      setLoading(false);
+      setSearchLoading(false);
       return;
     }
 
     const foundIds = foundUsers.map(u => u.id);
     const fullProfilesMap = await fetchFullProfiles(foundIds);
     setSearchResults(Array.from(fullProfilesMap.values()));
-    setLoading(false);
+    setSearchLoading(false);
   };
   
   const handleAddFriend = async (friendId: string) => {
@@ -409,8 +421,15 @@ export default function FriendsScreen() {
         {currentTab === 'expand' && (
           <View style={{flex: 1}}>
             <View style={styles.searchSection}>
-              <ThemedInput placeholder="Search by username..." value={searchQuery} onChangeText={setSearchQuery} icon={<Ionicons name="search-outline" size={20} color={theme.colors.textSecondary} />} />
-              <ThemedButton title="Search" onPress={handleSearch} style={{ marginTop: 10 }} />
+              <ThemedInput 
+                placeholder="Search by username..." 
+                value={searchQuery} 
+                onChangeText={setSearchQuery} 
+                icon={searchLoading ? 
+                  <ActivityIndicator size={20} color={theme.colors.textSecondary} /> : 
+                  <Ionicons name="search-outline" size={20} color={theme.colors.textSecondary} />
+                } 
+              />
             </View>
 
             {loadingExpand ? <ActivityIndicator/> : 

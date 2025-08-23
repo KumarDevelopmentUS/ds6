@@ -449,9 +449,9 @@ export async function debugFeedProvider() {
   }
 }
 
-// Debug RLS policies and permissions
+// Debug RLS policies and permissions including storage security
 export async function debugRLSPolicies() {
-  console.log('🔐 RLS DEBUG: Checking Row Level Security policies...');
+  console.log('🔐 RLS DEBUG: Checking Row Level Security policies and storage security...');
   
   try {
     // Get current user
@@ -535,11 +535,39 @@ export async function debugRLSPolicies() {
         console.log('🧹 Cleaned up test insert');
       }
     }
+
+    // Test 5: Storage Security Tests
+    console.log('🔍 TEST 5: Running storage security tests...');
+    await runStorageSecurityTests();
     
     return true;
   } catch (error) {
     console.error('❌ RLS debug failed:', error);
     return false;
+  }
+}
+
+// Storage security tests integrated into RLS debugging
+async function runStorageSecurityTests() {
+  try {
+    // Import the storage security test function
+    const { quickStorageSecurityCheck, testUnauthorizedAccess } = await import('./storageSecurityTest');
+    
+    console.log('🔐 Running quick storage security check...');
+    const quickCheck = await quickStorageSecurityCheck();
+    console.log(`📊 Quick storage check: ${quickCheck ? '✅ PASSED' : '❌ FAILED'}`);
+    
+    console.log('🔐 Testing unauthorized storage access...');
+    const unauthorizedCheck = await testUnauthorizedAccess();
+    console.log(`📊 Unauthorized access test: ${unauthorizedCheck ? '✅ BLOCKED' : '❌ ALLOWED'}`);
+    
+    if (!unauthorizedCheck) {
+      console.log('🚨 SECURITY WARNING: Storage buckets may be publicly accessible!');
+      console.log('📝 Recommendation: Enable RLS policies on storage buckets immediately');
+    }
+    
+  } catch (error) {
+    console.error('❌ Storage security tests failed:', error);
   }
 }
 

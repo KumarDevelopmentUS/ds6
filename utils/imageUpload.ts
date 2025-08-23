@@ -75,13 +75,29 @@ export const takePhoto = async (): Promise<ImagePicker.ImagePickerResult | null>
 };
 
 /**
- * Upload image to Supabase Storage
+ * Upload image to Supabase Storage with enhanced security validation
  */
 export const uploadProfilePicture = async (
   imageUri: string, 
   userId: string
 ): Promise<UploadResult> => {
   try {
+    // Security Check 1: Validate user authentication
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return { 
+        success: false, 
+        error: 'Authentication required. Please log in and try again.' 
+      };
+    }
+
+    // Security Check 2: Validate user ID matches authenticated user
+    if (user.id !== userId) {
+      return { 
+        success: false, 
+        error: 'Unauthorized: Cannot upload files for another user.' 
+      };
+    }
     // Create a unique filename with proper path structure
     const fileExt = imageUri.split('.').pop()?.toLowerCase() || 'jpg';
     const fileName = `profile-${userId}-${Date.now()}.${fileExt}`;
@@ -140,10 +156,17 @@ export const uploadProfilePicture = async (
       return { success: false, error: error.message };
     }
 
-    // Get the public URL
+    // Get the public URL (temporary - will work with private buckets via signed URLs)
     const { data: urlData } = supabase.storage
       .from('profile-pictures')
       .getPublicUrl(fileName);
+
+    // Validate the URL before returning
+    if (!urlData.publicUrl || typeof urlData.publicUrl !== 'string') {
+      return { success: false, error: 'Invalid URL generated' };
+    }
+
+    console.log('[DEBUG] Generated profile picture URL:', urlData.publicUrl);
 
     return { 
       success: true, 
@@ -159,13 +182,28 @@ export const uploadProfilePicture = async (
 };
 
 /**
- * Delete profile picture from Supabase Storage
+ * Delete profile picture from Supabase Storage with user ownership validation
  */
 export const deleteProfilePicture = async (profilePictureUrl: string): Promise<boolean> => {
   try {
+    // Security Check 1: Validate user authentication
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      console.error('Authentication required for file deletion');
+      return false;
+    }
+
     // Extract filename from URL
     const filename = profilePictureUrl.split('/').pop();
     if (!filename) {
+      console.error('Invalid profile picture URL - cannot extract filename');
+      return false;
+    }
+
+    // Security Check 2: Validate user owns this file
+    // Profile picture filenames should contain the user ID
+    if (!filename.includes(user.id)) {
+      console.error('Unauthorized: Cannot delete files belonging to another user');
       return false;
     }
 
@@ -186,13 +224,26 @@ export const deleteProfilePicture = async (profilePictureUrl: string): Promise<b
 };
 
 /**
- * Update user profile with new avatar URL
+ * Update user profile with new avatar URL with security validation
  */
 export const updateUserProfilePicture = async (
   userId: string, 
   avatarUrl: string | null
 ): Promise<boolean> => {
   try {
+    // Security Check 1: Validate user authentication
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      console.error('Authentication required for profile update');
+      return false;
+    }
+
+    // Security Check 2: Validate user can only update their own profile
+    if (user.id !== userId) {
+      console.error('Unauthorized: Cannot update another user\'s profile');
+      return false;
+    }
+
     const { error } = await supabase
       .from('user_profiles')
       .update({ avatar_url: avatarUrl })

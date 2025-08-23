@@ -1380,7 +1380,7 @@ const DieStatsTracker: React.FC = () => {
                     styles.throwResultButtonText,
                     throwResult === 'invalid' && styles.selectedThrowText
                   ]}>
-                    Invalid
+                    Bad Throw
                   </Text>
                 </TouchableOpacity>
                 {/* Successful Redemption - special styling */}

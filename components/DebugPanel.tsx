@@ -1,5 +1,6 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/supabase';
+import { testStorageSecurity } from '@/utils/storageSecurityTest';
 import React, { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
@@ -162,6 +163,32 @@ User has ${info.step5?.count || 0} memberships
     }
   };
 
+  const runSecurityTest = async () => {
+    try {
+      setIsLoading(true);
+      console.log('🔐 Starting comprehensive security test...');
+      
+      const securityResult = await testStorageSecurity();
+      
+      setDebugInfo({
+        ...debugInfo,
+        securityTest: securityResult
+      });
+      
+      if (securityResult.success) {
+        Alert.alert('Security Test Complete', 'Security test completed. Check console for detailed results.');
+      } else {
+        Alert.alert('Security Issues Found', `Found ${securityResult.errors.length} security issues. Check console for details.`);
+      }
+      
+    } catch (error) {
+      console.error('Security test failed:', error);
+      Alert.alert('Security Test Failed', error instanceof Error ? error.message : 'Unknown error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <ScrollView style={styles.container}>
       <Text style={styles.title}>🔍 Debug Panel</Text>
@@ -190,6 +217,14 @@ User has ${info.step5?.count || 0} memberships
         disabled={isLoading}
       >
         <Text style={styles.buttonText}>🔄 Refresh Cache</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity 
+        style={[styles.button, styles.securityButton, isLoading && styles.buttonDisabled]} 
+        onPress={runSecurityTest}
+        disabled={isLoading}
+      >
+        <Text style={styles.buttonText}>🔐 Security Test</Text>
       </TouchableOpacity>
 
       {Object.keys(debugInfo).length > 0 && (
@@ -227,6 +262,9 @@ const styles = StyleSheet.create({
   },
   refreshButton: {
     backgroundColor: '#ffc107',
+  },
+  securityButton: {
+    backgroundColor: '#dc3545',
   },
   buttonDisabled: {
     opacity: 0.6,

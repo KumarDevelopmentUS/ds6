@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { supabase } from '@/supabase';
 import { debugFeedProvider, debugRLSPolicies, debugUserCommunities, forceFeedRefetch, joinCommunityManually, refreshFeedCache, testDatabaseConnection } from '@/utils/profileSync';
+import { testStorageSecurity } from '@/utils/storageSecurityTest';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -271,6 +272,22 @@ export default function MainMenuScreen() {
     joinCommunityManually('arizona_state_university', 'school');
   };
 
+  const handleSecurityTest = async () => {
+    try {
+      console.log('🔐 Starting comprehensive security test...');
+      const result = await testStorageSecurity();
+      
+      if (result.success) {
+        Alert.alert('Security Test Complete', 'Security test completed. Check console for detailed results.');
+      } else {
+        Alert.alert('Security Issues Found', `Found ${result.errors.length} security issues. Check console for details.`);
+      }
+    } catch (error) {
+      console.error('Security test failed:', error);
+      Alert.alert('Security Test Failed', error instanceof Error ? error.message : 'Unknown error');
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
@@ -461,7 +478,7 @@ export default function MainMenuScreen() {
       </ThemedView>
 
       {/* Debug Section - Only show for authenticated users */}
-      {false && session && (
+      {true && session && (
         <ThemedView variant="card" style={styles.debugCard}>
           <View style={styles.debugHeader}>
             <Ionicons name="bug" size={24} color={theme.colors.warning} />
@@ -516,6 +533,13 @@ export default function MainMenuScreen() {
               title="🎓 Join ASU"
               variant="outline"
               onPress={handleTestJoinCommunity}
+              size="small"
+              style={styles.debugButton}
+            />
+            <ThemedButton
+              title="🔐 Security Test"
+              variant="outline"
+              onPress={handleSecurityTest}
               size="small"
               style={styles.debugButton}
             />

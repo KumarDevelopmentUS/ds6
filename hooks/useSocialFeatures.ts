@@ -512,6 +512,11 @@ export const useCreatePost = () => {
       if (imageUri) {
         console.log('[DEBUG] Starting image upload for URI:', imageUri);
         try {
+          // Security Check: Validate user authentication (additional check)
+          if (!user || !user.id) {
+            throw new Error('User authentication required for image upload');
+          }
+
           const fileName = `${user.id}-${Date.now()}.jpg`;
           
           if (Platform.OS === 'ios' || Platform.OS === 'android') {
@@ -573,23 +578,17 @@ export const useCreatePost = () => {
             console.log('[DEBUG] Upload successful:', uploadData);
           }
 
-          // Get the public URL
+          // Get the public URL (temporary - will work with private buckets)
           const { data: { publicUrl } } = supabase.storage
             .from('post-images')
             .getPublicUrl(fileName);
           
-          console.log('[DEBUG] Got public URL:', publicUrl);
-          
-          // Verify the URL is accessible
-          try {
-            const testResponse = await fetch(publicUrl, { method: 'HEAD' });
-            console.log('[DEBUG] URL verification status:', testResponse.status);
-            if (!testResponse.ok) {
-              console.warn('[DEBUG] Warning: Public URL might not be accessible');
-            }
-          } catch (e) {
-            console.warn('[DEBUG] Could not verify URL accessibility:', e);
+          // Validate the URL
+          if (!publicUrl || typeof publicUrl !== 'string') {
+            throw new Error('Invalid URL generated for post image');
           }
+          
+          console.log('[DEBUG] Got public URL:', publicUrl);
           
           image_url = publicUrl;
 
