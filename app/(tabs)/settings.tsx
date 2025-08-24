@@ -245,31 +245,33 @@ export default function AccountScreen() {
           )}
         </ThemedView>
       ) : !session ? (
-        <ThemedView variant="card" style={styles.loginCard}>
-          <Ionicons name="settings-outline" size={64} color="#666" />
-          <ThemedText variant="subtitle" style={styles.loginTitle}>
-            Sign In to Access Settings
-          </ThemedText>
-          <ThemedText variant="body" style={styles.loginSubtext}>
-            Create an account or sign in to customize your profile and preferences
-          </ThemedText>
-          
-          <View style={styles.loginButtons}>
-            <TouchableOpacity 
-              style={styles.signInButton}
-              onPress={() => router.push('/(auth)/login')}
-            >
-              <Text style={styles.buttonText}>Sign In</Text>
-            </TouchableOpacity>
+        <View style={styles.centeredContainer}>
+          <ThemedView variant="card" style={styles.loginCard}>
+            <Ionicons name="settings-outline" size={64} color="#666" />
+            <ThemedText variant="subtitle" style={styles.loginTitle}>
+              Sign In to Access Settings
+            </ThemedText>
+            <ThemedText variant="body" style={styles.loginSubtext}>
+              Create an account or sign in to customize your profile and preferences
+            </ThemedText>
+            
+            <View style={styles.loginButtons}>
+              <TouchableOpacity 
+                style={styles.signInButton}
+                onPress={() => router.push('/(auth)/login')}
+              >
+                <Text style={styles.buttonText}>Sign In</Text>
+              </TouchableOpacity>
 
-            <TouchableOpacity 
-              style={styles.createAccountButton}
-              onPress={() => router.push('/(auth)/signUp')}
-            >
-              <Text style={styles.buttonText}>Create Account</Text>
-            </TouchableOpacity>
-          </View>
-        </ThemedView>
+              <TouchableOpacity 
+                style={styles.createAccountButton}
+                onPress={() => router.push('/(auth)/signUp')}
+              >
+                <Text style={styles.buttonText}>Create Account</Text>
+              </TouchableOpacity>
+            </View>
+          </ThemedView>
+        </View>
       ) : (
         <ThemedText style={styles.guestText}>Loading user profile...</ThemedText>
       )}
@@ -583,6 +585,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 32,
     padding: 24,
+    width: '100%',
+    maxWidth: 400,
   },
   loginTitle: {
     marginTop: 16,
