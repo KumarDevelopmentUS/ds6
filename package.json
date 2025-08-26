@@ -26,6 +26,7 @@
     "@react-navigation/native": "^7.1.6",
     "@supabase/supabase-js": "^2.50.0",
     "@tanstack/react-query": "^5.81.5",
+    "@vercel/analytics": "^1.5.0",
     "dotenv": "^16.5.0",
     "expo": "53.0.20",
     "expo-blur": "~14.1.5",
@@ -60,11 +61,11 @@
     "react-native-reanimated": "~3.17.4",
     "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "~4.11.1",
+    "react-native-svg": "15.11.2",
     "react-native-url-polyfill": "^2.0.0",
     "react-native-view-shot": "4.0.3",
     "react-native-web": "~0.20.0",
-    "react-native-webview": "13.13.5",
-    "react-native-svg": "15.11.2"
+    "react-native-webview": "13.13.5"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

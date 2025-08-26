@@ -11,6 +11,7 @@ import { SplashScreen, Stack, useRouter, useSegments } from 'expo-router';
 import React, { useEffect } from 'react';
 import { Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { Analytics } from '@vercel/analytics/react';
 
 // Keep the native splash screen visible while the app initializes.
 SplashScreen.preventAutoHideAsync();
@@ -167,6 +168,7 @@ export default function RootLayout() {
                 <AuthProvider>
                   <FeedProvider>
                     <RootLayoutNav />
+                    <Analytics />
                   </FeedProvider>
                 </AuthProvider>
               </HapticsProvider>
