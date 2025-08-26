@@ -10,12 +10,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    View
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  View
 } from 'react-native';
 
 export default function LoginScreen() {
@@ -42,13 +42,13 @@ export default function LoginScreen() {
     if (error) {
       Alert.alert('Login Error', error.message);
     } else {
-      router.replace('/(tabs)/home');
+      router.replace('/(tabs)/' as any);
     }
   };
 
   const handleBack = () => {
     console.log('🏠 LOGIN: Home button pressed, navigating to home');
-    router.replace('/(tabs)/home');
+    router.push('/(tabs)/' as any);
   };
 
   return (

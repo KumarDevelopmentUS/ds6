@@ -85,7 +85,7 @@ function useProtectedRoute(session: Session | null, isReady: boolean) {
     // redirect them to the main app (home screen).
     if (session && inAuthGroup) {
       console.log('🔒 ROUTE PROTECTION: Redirecting authenticated user to home');
-      router.replace('/(tabs)/home');
+      router.replace('/(tabs)/' as any);
     }
 
     // Note: We no longer redirect unauthenticated users to login

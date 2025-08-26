@@ -12,7 +12,7 @@ export default function Index() {
     if (isReady) {
       // Always redirect to home page, regardless of authentication status
       // Unauthenticated users will see the guest interface on the home page
-      router.replace('/(tabs)/home');
+      router.replace('/(tabs)/' as any);
     }
   }, [isReady, router]);
 

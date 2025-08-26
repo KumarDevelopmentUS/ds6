@@ -42,7 +42,10 @@ export default function PostDetailScreen() {
 
   // Handle back navigation to feed
   const handleBackToFeed = () => {
-    router.push('/(tabs)/feed');
+    router.push({
+      pathname: '/(tabs)/' as any,
+      params: { initialTab: 'feed' }
+    });
   };
 
   // --- Temporary Gesture State ---
@@ -170,17 +173,12 @@ export default function PostDetailScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header with Back Button */}
-      <View style={styles.headerContainer}>
-        <HapticBackButton 
-          onPress={handleBackToFeed} 
-          style={styles.backButton}
-          color="#007AFF"
-          text=""
-        />
-        <Text style={styles.headerTitle}>Post</Text>
-        <View style={styles.headerSpacer} />
-      </View>
+      {/* Back Button */}
+      <HapticBackButton 
+        onPress={handleBackToFeed} 
+        style={styles.backButton}
+        color="#3b82f6"
+      />
 
       <Modal
         animationType="fade"
@@ -209,6 +207,7 @@ export default function PostDetailScreen() {
         }
         contentContainerStyle={styles.listContentContainer}
         showsVerticalScrollIndicator={false}
+        style={styles.scrollView}
       />
     </SafeAreaView>
   );
@@ -219,7 +218,12 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#f5f5f5',
       },
+      scrollView: {
+        flex: 1,
+      },
       listContentContainer: {
+        padding: 20,
+        paddingTop: 100,
         paddingBottom: 40,
       },
       loadingContainer: {
@@ -233,9 +237,17 @@ const styles = StyleSheet.create({
       },
       postContainer: {
         backgroundColor: '#fff',
-        padding: 16,
-        borderBottomWidth: 1,
-        borderBottomColor: '#e0e0e0'
+        padding: 20,
+        borderRadius: 12,
+        marginBottom: 16,
+        shadowColor: '#000',
+        shadowOffset: {
+          width: 0,
+          height: 1,
+        },
+        shadowOpacity: 0.05,
+        shadowRadius: 2,
+        elevation: 1,
       },
       header: {
         flexDirection: 'row',
@@ -249,18 +261,27 @@ const styles = StyleSheet.create({
       content: { fontSize: 16, lineHeight: 24, marginBottom: 16 },
       image: { 
         width: '100%', 
-        aspectRatio: 1.7,
+        aspectRatio: 1.3,
         borderRadius: 8, 
         marginBottom: 16, 
+        marginHorizontal: -20,
         backgroundColor: '#f0f0f0' 
       },
       actions: { paddingTop: 16, borderTopWidth: 1, borderTopColor: '#eee' },
       commentContainer: {
         flexDirection: 'row',
-        padding: 16,
         backgroundColor: '#fff',
-        borderTopWidth: 1,
-        borderTopColor: '#f0f0f0',
+        padding: 16,
+        borderRadius: 12,
+        marginBottom: 12,
+        shadowColor: '#000',
+        shadowOffset: {
+          width: 0,
+          height: 1,
+        },
+        shadowOpacity: 0.05,
+        shadowRadius: 2,
+        elevation: 1,
       },
       commentTextContainer: {
         marginLeft: 12,
@@ -288,25 +309,12 @@ const styles = StyleSheet.create({
         width: 380,
         height: 380,
       },
-      headerContainer: {
+      backButton: {
+        position: 'absolute',
+        top: 60,
+        left: 20,
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 16,
-        paddingTop: 10,
-        paddingBottom: 8,
-        backgroundColor: '#fff',
-        borderBottomWidth: 1,
-        borderBottomColor: '#e0e0e0',
-      },
-      backButton: {
-        marginRight: 10,
-      },
-      headerTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: '#333',
-      },
-      headerSpacer: {
-        flex: 1,
+        zIndex: 1,
       },
 });

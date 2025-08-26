@@ -1,6 +1,7 @@
 // app/(tabs)/home.tsx
 import { AuthRequiredPopup } from '@/components/AuthRequiredPopup';
 import { MenuCard } from '@/components/MenuCard';
+
 import { ThemedButton } from '@/components/themed/ThemedButton';
 import { ThemedText } from '@/components/themed/ThemedText';
 import { ThemedView } from '@/components/themed/ThemedView';
@@ -294,15 +295,114 @@ export default function MainMenuScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-      {/* Header */}
-      <ThemedView style={styles.header}>
-        <ThemedText variant="title">
-          {session ? `Hello, ${userName}! 👋` : 'Welcome to DieStats! 🎲'}
-        </ThemedText>
-        <ThemedText variant="caption" style={styles.headerSubtext}>
-          {session ? 'Ready to play?' : 'Start playing or sign in to track your progress'}
-        </ThemedText>
-      </ThemedView>
+      {!session ? (
+        // Non-logged in users - centered layout like feed
+        <View style={styles.centeredContainer}>
+          <ThemedView variant="card" style={styles.loginCard}>
+            <ThemedText variant="title" style={styles.headerTitle}>
+              Welcome to DieStats
+            </ThemedText>
+            <ThemedText variant="caption" style={styles.headerSubtext}>
+              Start playing or sign in to track your progress
+            </ThemedText>
+            
+            <View style={styles.headerActions}>
+              <TouchableOpacity 
+                style={styles.signInButton}
+                onPress={() => router.push('/(auth)/login')}
+              >
+                <Text style={styles.buttonText}>Sign In</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.createAccountButton}
+                onPress={() => router.push('/(auth)/signUp')}
+              >
+                <Text style={styles.buttonText}>Create Account</Text>
+              </TouchableOpacity>
+            </View>
+          </ThemedView>
+
+          {/* Quick Actions for non-logged in users */}
+          <View style={styles.quickActions}>
+            <ThemedButton
+              title="Quick Start"
+              onPress={handleQuickStart}
+              size="large"
+              icon={<Ionicons name="flash" size={24} color="#FFFFFF" />}
+              style={styles.quickStartButtonFull}
+            />
+          </View>
+
+          {/* What You Can Do section */}
+          <ThemedView variant="card" style={styles.featuresOverviewCard}>
+            <ThemedText variant="subtitle" style={styles.featuresTitle}>
+              What You Can Do
+            </ThemedText>
+            <ThemedText variant="body" style={styles.featuresDescription}>
+              Explore the app and see what DieStats has to offer! Sign in to save your progress and unlock all features.
+            </ThemedText>
+            
+            <View style={styles.featuresList}>
+              <View style={styles.featureItem}>
+                <Ionicons name="enter-outline" size={24} color={theme.colors.info} />
+                <View style={styles.featureText}>
+                  <ThemedText variant="body" style={styles.featureTitle}>Join Rooms</ThemedText>
+                  <ThemedText variant="caption" style={styles.featureSubtitle}>Track games with friends in real-time</ThemedText>
+                </View>
+              </View>
+              
+              <View style={styles.featureItem}>
+                <Ionicons name="time-outline" size={24} color={theme.colors.info} />
+                <View style={styles.featureText}>
+                  <ThemedText variant="body" style={styles.featureTitle}>Game History</ThemedText>
+                  <ThemedText variant="caption" style={styles.featureSubtitle}>View your past matches and results</ThemedText>
+                </View>
+              </View>
+              
+              <View style={styles.featureItem}>
+                <Ionicons name="stats-chart" size={24} color={theme.colors.success} />
+                <View style={styles.featureText}>
+                  <ThemedText variant="body" style={styles.featureTitle}>Statistics</ThemedText>
+                  <ThemedText variant="caption" style={styles.featureSubtitle}>Track your performance and progress</ThemedText>
+                </View>
+              </View>
+              
+              <View style={styles.featureItem}>
+                <Ionicons name="people-outline" size={24} color={theme.colors.warning} />
+                <View style={styles.featureText}>
+                  <ThemedText variant="body" style={styles.featureTitle}>Friends</ThemedText>
+                  <ThemedText variant="caption" style={styles.featureSubtitle}>Connect with other players</ThemedText>
+                </View>
+              </View>
+            </View>
+          </ThemedView>
+
+          {/* Fun Fact Section */}
+          <ThemedView variant="card" style={styles.funFactCard}>
+            <View style={styles.funFactHeader}>
+              <Ionicons name="dice" size={24} color={theme.colors.primary} />
+              <ThemedText variant="subtitle" style={styles.funFactTitle}>
+                Fun Fact
+              </ThemedText>
+            </View>
+            <ThemedText variant="body" style={styles.funFactText}>
+              {randomFact}
+            </ThemedText>
+          </ThemedView>
+        </View>
+      ) : (
+        // Logged in users - original layout
+        <>
+          {/* Header */}
+          <ThemedView variant="card" style={styles.header}>
+            <ThemedText variant="title" style={styles.headerTitle}>
+              Hello, {userName}! 👋
+            </ThemedText>
+            <ThemedText variant="caption" style={styles.headerSubtext}>
+              Ready to play?
+            </ThemedText>
+          </ThemedView>
 
       {/* Quick Stats - Show login prompt for guests */}
       {session ? (
@@ -340,23 +440,25 @@ export default function MainMenuScreen() {
           onPress={handleQuickStart}
           size="large"
           icon={<Ionicons name="flash" size={24} color="#FFFFFF" />}
-          style={styles.quickStartButton}
+          style={session ? styles.quickStartButton : styles.quickStartButtonFull}
         />
 
-        <ThemedButton
-          title="Join Room"
-          variant="outline"
-          onPress={handleJoinRoom}
-          size="large"
-          icon={
-            <Ionicons
-              name="enter-outline"
-              size={24}
-              color={theme.colors.primary}
-            />
-          }
-          style={styles.joinButton}
-        />
+        {session && (
+          <ThemedButton
+            title="Join Room"
+            variant="outline"
+            onPress={handleJoinRoom}
+            size="large"
+            icon={
+              <Ionicons
+                name="enter-outline"
+                size={24}
+                color={theme.colors.primary}
+              />
+            }
+            style={styles.joinButton}
+          />
+        )}
       </View>
 
       {/* Menu Options - Different for authenticated vs unauthenticated users */}
@@ -414,6 +516,14 @@ export default function MainMenuScreen() {
           
           <View style={styles.featuresList}>
             <View style={styles.featureItem}>
+              <Ionicons name="enter-outline" size={24} color={theme.colors.info} />
+              <View style={styles.featureText}>
+                <ThemedText variant="body" style={styles.featureTitle}>Join Rooms</ThemedText>
+                <ThemedText variant="caption" style={styles.featureSubtitle}>Track games with friends in real-time</ThemedText>
+              </View>
+            </View>
+            
+            <View style={styles.featureItem}>
               <Ionicons name="time-outline" size={24} color={theme.colors.info} />
               <View style={styles.featureText}>
                 <ThemedText variant="body" style={styles.featureTitle}>Game History</ThemedText>
@@ -436,30 +546,6 @@ export default function MainMenuScreen() {
                 <ThemedText variant="caption" style={styles.featureSubtitle}>Connect with other players</ThemedText>
               </View>
             </View>
-            
-            <View style={styles.featureItem}>
-              <Ionicons name="dice" size={24} color={theme.colors.info} />
-              <View style={styles.featureText}>
-                <ThemedText variant="body" style={styles.featureTitle}>Schlevins</ThemedText>
-                <ThemedText variant="caption" style={styles.featureSubtitle}>Play the classic dice game</ThemedText>
-              </View>
-            </View>
-          </View>
-          
-          <View style={styles.featuresActions}>
-            <TouchableOpacity 
-              style={styles.signInButton}
-              onPress={() => router.push('/(auth)/login')}
-            >
-              <Text style={styles.buttonText}>Sign In</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={styles.createAccountButton}
-              onPress={() => router.push('/(auth)/signUp')}
-            >
-              <Text style={styles.buttonText}>Create Account</Text>
-            </TouchableOpacity>
           </View>
         </ThemedView>
       )}
@@ -478,7 +564,7 @@ export default function MainMenuScreen() {
       </ThemedView>
 
       {/* Debug Section - Only show for authenticated users */}
-      {true && session && (
+      {false && session && (
         <ThemedView variant="card" style={styles.debugCard}>
           <View style={styles.debugHeader}>
             <Ionicons name="bug" size={24} color={theme.colors.warning} />
@@ -545,6 +631,8 @@ export default function MainMenuScreen() {
             />
           </View>
         </ThemedView>
+      )}
+      </>
       )}
       </ScrollView>
 
@@ -615,13 +703,48 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   content: {
-    padding: 20,
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingHorizontal: Platform.OS === 'web' ? 60 : 20,
+    paddingBottom: 40,
+    maxWidth: Platform.OS === 'web' ? 800 : '100%',
+    alignSelf: 'center',
+    width: '100%',
   },
   header: {
+    marginTop: 40,
     marginBottom: 24,
+    padding: 20,
+    alignItems: 'center',
+  },
+  headerTitle: {
+    textAlign: 'center',
   },
   headerSubtext: {
     marginTop: 4,
+    textAlign: 'center',
+  },
+  headerActions: {
+    marginTop: 20,
+    gap: 12,
+    width: '100%',
+    maxWidth: 300,
+  },
+  centeredContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: Platform.OS === 'web' ? 60 : 20,
+    paddingTop: 40,
+    maxWidth: Platform.OS === 'web' ? 800 : '100%',
+    alignSelf: 'center',
+    width: '100%',
+  },
+  loginCard: {
+    alignItems: 'center',
+    marginBottom: 32,
+    padding: Platform.OS === 'web' ? 32 : 24,
+    width: '100%',
+    maxWidth: Platform.OS === 'web' ? 500 : 400,
   },
   statsCard: {
     marginBottom: 24,
@@ -642,11 +765,18 @@ const styles = StyleSheet.create({
   },
   quickActions: {
     flexDirection: 'row',
-    gap: 12,
+    gap: Platform.OS === 'web' ? 20 : 12,
     marginBottom: 24,
+    justifyContent: 'center',
   },
   quickStartButton: {
     flex: 1,
+    maxWidth: Platform.OS === 'web' ? 200 : 150,
+    minWidth: Platform.OS === 'web' ? 180 : 140,
+  },
+  quickStartButtonFull: {
+    minWidth: Platform.OS === 'web' ? 200 : 150,
+    maxWidth: Platform.OS === 'web' ? 250 : 200,
   },
   quickStartDescription: {
     textAlign: 'center',
@@ -655,6 +785,8 @@ const styles = StyleSheet.create({
   },
   joinButton: {
     flex: 1,
+    maxWidth: Platform.OS === 'web' ? 200 : 150,
+    minWidth: Platform.OS === 'web' ? 180 : 140,
   },
   joinDescription: {
     textAlign: 'center',
@@ -669,6 +801,9 @@ const styles = StyleSheet.create({
   funFactCard: {
     marginTop: 24,
     marginBottom: 20,
+    width: '100%',
+    maxWidth: Platform.OS === 'web' ? 500 : '100%',
+    padding: Platform.OS === 'web' ? 24 : 20,
   },
   funFactHeader: {
     flexDirection: 'row',
@@ -757,7 +892,9 @@ const styles = StyleSheet.create({
   },
   featuresOverviewCard: {
     marginBottom: 24,
-    padding: 24,
+    padding: Platform.OS === 'web' ? 32 : 24,
+    width: '100%',
+    maxWidth: Platform.OS === 'web' ? 500 : '100%',
   },
   featuresTitle: {
     textAlign: 'center',

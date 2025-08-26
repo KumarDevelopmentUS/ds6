@@ -7,16 +7,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-  Alert,
-  FlatList,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  View
+    Alert,
+    FlatList,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import { ThemedButton } from '../../components/themed/ThemedButton';
 import { ThemedInput } from '../../components/themed/ThemedInput';
@@ -293,7 +293,7 @@ export default function SignUpScreen() {
       if (authData.session) {
         console.log('✅ SIGNUP DEBUG: User has session, redirecting to home');
         Alert.alert('Success', 'Account created successfully!');
-        router.replace('/(tabs)/home');
+        router.replace('/(tabs)/' as any);
       } else {
         console.log('📧 SIGNUP DEBUG: No session, user needs email verification');
         Alert.alert('Check Your Email', 'Please verify your email to continue.');
@@ -461,7 +461,7 @@ export default function SignUpScreen() {
           <ThemedButton
             title="Go to Home"
             variant="ghost"
-            onPress={() => router.replace('/(tabs)/home')}
+            onPress={() => router.replace('/(tabs)/' as any)}
             size="small"
             style={{ marginTop: theme.spacing.sm }}
           />

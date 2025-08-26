@@ -628,7 +628,7 @@ export const useCreatePost = () => {
       queryClient.invalidateQueries({ queryKey: ['posts'] });
       Alert.alert('Success', 'Post created successfully!');
       
-      router.push('./(tabs)/feed/');
+      router.push('./(tabs)/');
     },
     onError: (error: Error) => {
       console.error('Create post error:', error);

@@ -6,19 +6,19 @@ import { useQueryClient } from '@tanstack/react-query'; // 1. Import useQueryCli
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  Dimensions,
-  FlatList,
-  Image,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  View
+    ActivityIndicator,
+    Alert,
+    Dimensions,
+    FlatList,
+    Image,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import { ThemedButton } from '../components/themed/ThemedButton';
 import { ThemedInput } from '../components/themed/ThemedInput';
@@ -263,7 +263,7 @@ export default function EditProfileScreen() {
       await queryClient.invalidateQueries({ queryKey: ['userCommunities'] });
 
       Alert.alert('Success', 'Profile updated successfully!');
-      router.replace('/(tabs)/settings');
+      router.replace('/(tabs)/' as any);
     }
   };
 

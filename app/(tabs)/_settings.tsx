@@ -6,6 +6,7 @@ import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Alert, SafeAreaView, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 
+
 import { UserAvatar } from '../../components/social/UserAvatar';
 import { ThemedButton } from '../../components/themed/ThemedButton';
 import { ThemedText } from '../../components/themed/ThemedText';
@@ -155,7 +156,7 @@ export default function AccountScreen() {
       console.log('🔴 LOGOUT DEBUG: Current session after signOut:', session);
       
       console.log('🔴 LOGOUT DEBUG: Navigating to home...');
-      router.replace('/(tabs)/home');
+      router.replace('/(tabs)/' as any);
       console.log('🔴 LOGOUT DEBUG: Navigation completed');
       
     } catch (error) {
@@ -476,6 +477,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   content: {
+    flexGrow: 1,
+    justifyContent: 'center',
     padding: 20,
     paddingBottom: 40,
   },
@@ -511,7 +514,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 16,
+    paddingVertical: 6,
   },
   settingItemBorder: {
     borderBottomWidth: 1,
@@ -626,17 +629,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 20,
-    marginTop: 20,
   },
   generalSettingsCard: {
     width: '100%',
     maxWidth: 400,
-    padding: 20,
+    padding: 12,
   },
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 8,
   },
   cardHeaderTitle: {
     marginLeft: 12,

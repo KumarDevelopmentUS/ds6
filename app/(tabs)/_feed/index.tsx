@@ -1,6 +1,7 @@
 // app/(tabs)/feed/index.tsx
 import { CommunitySettingsPanel } from '@/components/CommunitySettingsPanel';
 import { PostCard } from '@/components/social/PostCard';
+import { ThemedText } from '@/components/themed/ThemedText';
 import { ThemedView } from '@/components/themed/ThemedView';
 import { getSchoolByValue } from '@/constants/schools';
 import { useAuth } from '@/contexts/AuthContext';
@@ -19,6 +20,7 @@ import {
     Pressable,
     RefreshControl,
     SafeAreaView,
+    ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
@@ -76,10 +78,10 @@ export default function FeedScreen() {
       post={item}
       onPress={() => router.push({
         pathname: "/post/[id]",
-        params: { id: item.id }
+        params: { id: item.uid }
       })}
-      onVote={(voteType) => handleVote(item.id, voteType)}
-      userVote={userVotes?.[item.id]}
+      onVote={(voteType) => handleVote(item.uid, voteType)}
+      userVote={userVotes?.[item.uid]}
     />
   ), [router, handleVote, userVotes]);
 
@@ -155,35 +157,38 @@ export default function FeedScreen() {
   if (!session) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.emptyContainer}>
-          <ThemedView variant="card" style={styles.loginCard}>
-            <Ionicons name="people-outline" size={64} color="#666" />
-            <Text style={styles.emptyText}>Join Communities</Text>
-            <Text style={styles.emptySubtext}>
-              Sign in to join communities and connect with other players!
-            </Text>
-            
-            <View style={{ marginTop: 30, gap: 12, width: '100%', maxWidth: 300 }}>
-              <TouchableOpacity 
-                style={{ backgroundColor: '#007AFF', padding: 16, borderRadius: 8 }}
-                onPress={() => router.push('/(auth)/login')}
-              >
-                <Text style={{ color: 'white', textAlign: 'center', fontWeight: 'bold', fontSize: 16 }}>
-                  Sign In
-                </Text>
-              </TouchableOpacity>
+        <ScrollView
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.centeredContainer}>
+            <ThemedView variant="card" style={styles.loginCard}>
+              <Ionicons name="people-outline" size={64} color="#666" />
+              <ThemedText variant="subtitle" style={styles.loginTitle}>
+                Join Communities
+              </ThemedText>
+              <ThemedText variant="body" style={styles.loginSubtext}>
+                Sign in to join communities and connect with other players!
+              </ThemedText>
+              
+              <View style={styles.loginButtons}>
+                <TouchableOpacity 
+                  style={styles.signInButton}
+                  onPress={() => router.push('/(auth)/login')}
+                >
+                  <Text style={styles.buttonText}>Sign In</Text>
+                </TouchableOpacity>
 
-              <TouchableOpacity 
-                style={{ backgroundColor: '#007AFF', padding: 16, borderRadius: 8 }}
-                onPress={() => router.push('/(auth)/signUp')}
-              >
-                <Text style={{ color: 'white', textAlign: 'center', fontWeight: 'bold', fontSize: 16 }}>
-                  Create Account
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </ThemedView>
-        </View>
+                <TouchableOpacity 
+                  style={styles.createAccountButton}
+                  onPress={() => router.push('/(auth)/signUp')}
+                >
+                  <Text style={styles.buttonText}>Create Account</Text>
+                </TouchableOpacity>
+              </View>
+            </ThemedView>
+          </View>
+        </ScrollView>
       </SafeAreaView>
     );
   }
@@ -197,6 +202,7 @@ export default function FeedScreen() {
           <Text style={styles.loadingText}>Loading communities...</Text>
         </View>
       </SafeAreaView>
+
     );
   }
 
@@ -229,6 +235,7 @@ export default function FeedScreen() {
           </View>
         </View>
       </SafeAreaView>
+
     );
   }
 
@@ -264,6 +271,7 @@ export default function FeedScreen() {
           </View>
         </View>
       </SafeAreaView>
+
     );
   }
 
@@ -329,7 +337,7 @@ export default function FeedScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header with Dropdown */}
+        {/* Header with Dropdown */}
       <View style={styles.header}>
         <TouchableOpacity
           style={[
@@ -623,14 +631,54 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   loginCard: {
-    padding: 24,
     alignItems: 'center',
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
-    marginHorizontal: -40,
+    marginBottom: 32,
+    padding: 24,
+    width: '100%',
+    maxWidth: 400,
+  },
+  loginTitle: {
+    marginTop: 16,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  loginSubtext: {
+    textAlign: 'center',
+    marginBottom: 24,
+    opacity: 0.8,
+    lineHeight: 20,
+  },
+  loginButtons: {
+    width: '100%',
+    maxWidth: 300,
+    gap: 12,
+  },
+  signInButton: {
+    backgroundColor: '#007AFF',
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  createAccountButton: {
+    backgroundColor: '#007AFF',
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  centeredContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  content: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    padding: 20,
+    paddingBottom: 40,
   },
 });

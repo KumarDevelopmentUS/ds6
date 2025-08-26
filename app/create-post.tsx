@@ -82,7 +82,7 @@ export default function CreatePostScreen() {
 
   // Handle back navigation to feed
   const handleBackToFeed = () => {
-    router.push('/(tabs)/feed');
+    router.push('/(tabs)/' as any);
   };
 
   // Debug logging for state changes
@@ -616,10 +616,12 @@ export default function CreatePostScreen() {
               <Text style={styles.modalOptionText}>Take Photo</Text>
             </TouchableOpacity>
             
-            <TouchableOpacity onPress={takeDualPhotoWithCamera} style={styles.modalOption}>
-              <Ionicons name="camera-reverse-outline" size={24} color="#007AFF" />
-              <Text style={styles.modalOptionText}>Dual Camera</Text>
-            </TouchableOpacity>
+            {Platform.OS !== 'web' && (
+              <TouchableOpacity onPress={takeDualPhotoWithCamera} style={styles.modalOption}>
+                <Ionicons name="camera-reverse-outline" size={24} color="#007AFF" />
+                <Text style={styles.modalOptionText}>Dual Camera</Text>
+              </TouchableOpacity>
+            )}
             
             <TouchableOpacity 
               onPress={() => setShowMediaOptions(false)} 
