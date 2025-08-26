@@ -819,37 +819,53 @@ const DieStatsTracker: React.FC = () => {
 
   // Handles finishing the match, determining the winner and updating live session status
   const handleFinishMatch = async () => {
-    console.log('Attempting to finish match...');
-    const team1Score = calculateTeamScore(1);
-    const team2Score = calculateTeamScore(2);
+    Alert.alert(
+      'Finish Match',
+      'Are you sure you want to finish this match? This action cannot be undone.',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Finish Match',
+          style: 'destructive',
+          onPress: async () => {
+            console.log('Attempting to finish match...');
+            const team1Score = calculateTeamScore(1);
+            const team2Score = calculateTeamScore(2);
 
-    let winner = 0;
-    if (team1Score > team2Score) {
-      winner = 1;
-    } else if (team2Score > team1Score) {
-      winner = 2;
-    }
+            let winner = 0;
+            if (team1Score > team2Score) {
+              winner = 1;
+            } else if (team2Score > team1Score) {
+              winner = 2;
+            }
 
-    setWinnerTeam(winner);
-    setMatchFinished(true);
+            setWinnerTeam(winner);
+            setMatchFinished(true);
 
-    if (liveSessionId) {
-      try {
-        const { error } = await supabase
-          .from('live_matches')
-          .update({
-            status: 'finished',
-            winnerTeam: winner,
-          })
-          .eq('id', liveSessionId);
+            if (liveSessionId) {
+              try {
+                const { error } = await supabase
+                  .from('live_matches')
+                  .update({
+                    status: 'finished',
+                    winnerTeam: winner,
+                  })
+                  .eq('id', liveSessionId);
 
-        if (error) {
-          console.error('Error finishing live match record:', error);
-        }
-      } catch (error) {
-        console.error('Error updating match status:', error);
-      }
-    }
+                if (error) {
+                  console.error('Error finishing live match record:', error);
+                }
+              } catch (error) {
+                console.error('Error updating match status:', error);
+              }
+            }
+          },
+        },
+      ]
+    );
   };
 
   // Handles saving match statistics to the 'saved_matches' table
@@ -930,7 +946,16 @@ const DieStatsTracker: React.FC = () => {
         // Don't fail the match save if stats update fails
       }
   
-      Alert.alert('Success', 'Match statistics saved successfully!');
+      Alert.alert(
+        'Success', 
+        'Match statistics saved successfully!',
+        [
+          {
+            text: 'Go Home',
+            onPress: () => router.push('/(tabs)/' as any),
+          }
+        ]
+      );
   
       if (liveSessionId) {
         await supabase
@@ -948,26 +973,7 @@ const DieStatsTracker: React.FC = () => {
     }
   };
 
-  // Handles starting a completely new game, prompting to save current first
-  const handleNewGame = () => {
-    Alert.alert(
-      'Start New Game',
-      'Are you sure you want to start a new game? Current match data will be lost if not saved.',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Yes',
-          onPress: () => {
-            const newRoomCode = generateId(6);
-            router.push(`/tracker/${newRoomCode}`);
-          },
-        },
-      ]
-    );
-  };
+
 
   // Handles going to home screen with confirmation
   const handleGoHome = () => {
@@ -1629,9 +1635,7 @@ const DieStatsTracker: React.FC = () => {
                   <Text style={styles.buttonText}>{isLoading ? 'Saving...' : 'Save Stats'}</Text>
                 </TouchableOpacity>
               )}
-              <TouchableOpacity style={styles.actionButton} onPress={handleNewGame}>
-                <Text style={styles.actionButtonText}>New Game</Text>
-              </TouchableOpacity>
+
               
               {/* Home Button */}
               <TouchableOpacity

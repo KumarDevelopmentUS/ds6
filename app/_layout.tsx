@@ -7,11 +7,11 @@ import { supabase } from '@/supabase';
 import { ensureUserProfilesExist } from '@/utils/profileSync';
 import type { Session } from '@supabase/supabase-js';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Analytics } from '@vercel/analytics/react';
 import { SplashScreen, Stack, useRouter, useSegments } from 'expo-router';
 import React, { useEffect } from 'react';
 import { Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { Analytics } from '@vercel/analytics/react';
 
 // Keep the native splash screen visible while the app initializes.
 SplashScreen.preventAutoHideAsync();
