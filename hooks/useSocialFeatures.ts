@@ -186,18 +186,57 @@ export const usePosts = (communityId?: number) => {
       
       if (postsError) throw postsError;
 
-      // Get profile pictures for all post authors
+      // Get profile pictures and fallback avatar data for all post authors
       const userIds = [...new Set(posts.map(p => p.user_id))];
-      const { data: userProfiles } = await supabase
+      
+      // Fetch both user_profiles (for avatar_url and username) and profiles (for fallback avatar data)
+      const { data: userProfiles, error: userProfileError } = await supabase
         .from('user_profiles')
         .select('id, avatar_url, username')
         .in('id', userIds);
 
-      // Create profile map for quick lookup
+      const { data: fallbackProfiles, error: fallbackProfileError } = await supabase
+        .from('profiles')
+        .select('id, avatar_icon, avatar_icon_color, avatar_background_color')
+        .in('id', userIds);
+
+      // Log usernames instead of user IDs for better debugging
+      if (userProfiles && userProfiles.length > 0) {
+        const usernames = userProfiles.map(p => p.username || 'unknown').join(', ');
+        console.log('🔍 Fetching profiles for users:', usernames);
+      }
+
+
+
+      // Create profile map for quick lookup, merging both data sources
       const profileMap = (userProfiles || []).reduce((acc: any, profile: any) => {
         acc[profile.id] = profile;
         return acc;
       }, {});
+
+      // Merge fallback avatar data
+      (fallbackProfiles || []).forEach((fallbackProfile: any) => {
+        if (profileMap[fallbackProfile.id]) {
+          profileMap[fallbackProfile.id] = {
+            ...profileMap[fallbackProfile.id],
+            avatar_icon: fallbackProfile.avatar_icon || 'person',
+            avatar_icon_color: fallbackProfile.avatar_icon_color || '#FFFFFF',
+            avatar_background_color: fallbackProfile.avatar_background_color || '#007AFF',
+          };
+        } else {
+          // Create entry if user_profiles doesn't exist
+          profileMap[fallbackProfile.id] = {
+            id: fallbackProfile.id,
+            avatar_url: null,
+            username: null,
+            avatar_icon: fallbackProfile.avatar_icon || 'person',
+            avatar_icon_color: fallbackProfile.avatar_icon_color || '#FFFFFF',
+            avatar_background_color: fallbackProfile.avatar_background_color || '#007AFF',
+          };
+        }
+      });
+
+
 
       // Get vote counts for all posts
       const postUids = posts.map(p => p.uid || String(p.id));
@@ -254,27 +293,35 @@ export const usePosts = (communityId?: number) => {
       }
 
       // Combine the data
-      let combinedPosts = posts.map((post: any) => ({
-        id: post.id, // Keep numeric ID
-        uid: post.uid, // Add the required uid property
-        title: post.title,
-        content: post.content,
-        created_at: post.created_at,
-        image_url: post.image_url,
-        user_id: post.user_id,
-        community_id: post.community_id,
-        author_name: post.author_name,
-        author_avatar_icon: post.author_avatar_icon,
-        author_avatar_icon_color: post.author_avatar_icon_color,
-        author_avatar_background_color: post.author_avatar_background_color,
-        author_profile_picture_url: profileMap[post.user_id]?.avatar_url || null,
-        community_name: post.communities?.name || null,
-        like_count: voteCountMap[post.uid || String(post.id)] || 0,
-        comment_count: commentCountMap[post.uid || String(post.id)] || 0,
-        author_username: profileMap[post.user_id]?.username || null,
-        linked_match_id: post.linked_match_id,
-        linked_match_data: post.linked_match_id ? matchDataMap[post.linked_match_id] : null,
-      }));
+      let combinedPosts = posts.map((post: any) => {
+        const profileData = profileMap[post.user_id];
+        const postData = {
+          id: post.id, // Keep numeric ID
+          uid: post.uid, // Add the required uid property
+          title: post.title,
+          content: post.content,
+          created_at: post.created_at,
+          image_url: post.image_url,
+          user_id: post.user_id,
+          community_id: post.community_id,
+          author_name: post.author_name,
+          // Use fallback avatar data from profileMap if posts table doesn't have it
+          author_avatar_icon: post.author_avatar_icon || profileData?.avatar_icon || 'person',
+          author_avatar_icon_color: post.author_avatar_icon_color || profileData?.avatar_icon_color || '#FFFFFF',
+          author_avatar_background_color: post.author_avatar_background_color || profileData?.avatar_background_color || '#007AFF',
+          author_profile_picture_url: profileData?.avatar_url || null,
+          community_name: post.communities?.name || null,
+          like_count: voteCountMap[post.uid || String(post.id)] || 0,
+          comment_count: commentCountMap[post.uid || String(post.id)] || 0,
+          author_username: profileData?.username || null,
+          linked_match_id: post.linked_match_id,
+          linked_match_data: post.linked_match_id ? matchDataMap[post.linked_match_id] : null,
+        };
+        
+
+        
+        return postData;
+      });
       
       // Filter posts when "All Communities" is selected to only show posts from user's communities
       if (!communityId && userCommunityIds.length > 0) {
@@ -378,10 +425,17 @@ export const usePost = (postId: string) => {
         .select('id')
         .eq('post_uid', postId);
 
-      // Get author profile picture
+      // Get author profile picture and fallback avatar data
       const { data: authorProfile } = await supabase
         .from('user_profiles')
         .select('avatar_url, username')
+        .eq('id', data.user_id)
+        .single();
+
+      // Get fallback avatar data from profiles table
+      const { data: fallbackProfile } = await supabase
+        .from('profiles')
+        .select('avatar_icon, avatar_icon_color, avatar_background_color')
         .eq('id', data.user_id)
         .single();
 
@@ -416,9 +470,10 @@ export const usePost = (postId: string) => {
         image_url: data.image_url,
         community_id: data.community_id,
         author_name: data.author_name,
-        author_avatar_icon: data.author_avatar_icon,
-        author_avatar_icon_color: data.author_avatar_icon_color,
-        author_avatar_background_color: data.author_avatar_background_color,
+        // Use fallback avatar data if posts table doesn't have it
+        author_avatar_icon: data.author_avatar_icon || fallbackProfile?.avatar_icon || 'person',
+        author_avatar_icon_color: data.author_avatar_icon_color || fallbackProfile?.avatar_icon_color || '#FFFFFF',
+        author_avatar_background_color: data.author_avatar_background_color || fallbackProfile?.avatar_background_color || '#007AFF',
         author_profile_picture_url: authorProfile?.avatar_url || null,
         user_id: data.user_id,
         like_count: voteCounts?.length || 0,
@@ -510,7 +565,7 @@ export const useCreatePost = () => {
       let image_url = null;
 
       if (imageUri) {
-        console.log('[DEBUG] Starting image upload for URI:', imageUri);
+  
         try {
           // Security Check: Validate user authentication (additional check)
           if (!user || !user.id) {
@@ -521,13 +576,13 @@ export const useCreatePost = () => {
           
           if (Platform.OS === 'ios' || Platform.OS === 'android') {
             // For React Native (iOS/Android), use expo-file-system
-            console.log('[DEBUG] Using expo-file-system for mobile upload...');
+  
             
             // Read the file as base64
             const base64 = await FileSystem.readAsStringAsync(imageUri, {
               encoding: FileSystem.EncodingType.Base64,
             });
-            console.log('[DEBUG] Image converted to base64, length:', base64.length);
+
             
             // Decode base64 to binary
             const decode = (base64: string) => {
@@ -540,7 +595,7 @@ export const useCreatePost = () => {
             };
             
             const imageData = decode(base64);
-            console.log('[DEBUG] Decoded image data, size:', imageData.length);
+
             
             // Upload to Supabase
             const { data: uploadData, error: uploadError } = await supabase.storage
@@ -555,13 +610,10 @@ export const useCreatePost = () => {
               throw uploadError;
             }
             
-            console.log('[DEBUG] Upload successful:', uploadData);
           } else {
             // For web platform, use standard fetch
-            console.log('[DEBUG] Using standard fetch for web upload...');
             const response = await fetch(imageUri);
             const blob = await response.blob();
-            console.log('[DEBUG] Image fetched as blob, size:', blob.size);
             
             const { data: uploadData, error: uploadError } = await supabase.storage
               .from('post-images')
@@ -575,7 +627,6 @@ export const useCreatePost = () => {
               throw uploadError;
             }
             
-            console.log('[DEBUG] Upload successful:', uploadData);
           }
 
           // Get the public URL (temporary - will work with private buckets)
@@ -588,7 +639,7 @@ export const useCreatePost = () => {
             throw new Error('Invalid URL generated for post image');
           }
           
-          console.log('[DEBUG] Got public URL:', publicUrl);
+
           
           image_url = publicUrl;
 
@@ -598,7 +649,7 @@ export const useCreatePost = () => {
         }
       }
 
-      console.log('[DEBUG] Inserting post into database with image_url:', image_url);
+
       const { data, error } = await supabase
         .from('posts')
         .insert({
@@ -621,7 +672,7 @@ export const useCreatePost = () => {
         throw error;
       }
 
-      console.log('[DEBUG] Post successfully inserted into database.');
+
       return data;
     },
     onSuccess: (data, variables) => {

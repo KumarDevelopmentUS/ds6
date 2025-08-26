@@ -39,7 +39,7 @@ export default function CreatePostScreen() {
     if (params.selectedCommunity && typeof params.selectedCommunity === 'string') {
       const communityId = parseInt(params.selectedCommunity, 10);
       if (!isNaN(communityId)) {
-        console.log('🔄 INITIAL: Restoring community from params', { param: params.selectedCommunity, parsed: communityId });
+    
         return communityId;
       }
     }
@@ -69,11 +69,11 @@ export default function CreatePostScreen() {
 
   // Wrap setSelectedCommunity with logging
   const setSelectedCommunityWithLog = (value: number | null) => {
-    console.log('🏘️ COMMUNITY CHANGE:', {
-      from: selectedCommunity,
-      to: value,
-      stack: new Error().stack?.split('\n')[2]?.trim() // Get caller info
-    });
+    // Log community change with username for better debugging
+    if (session?.user) {
+      const username = session.user.user_metadata?.username || session.user.email?.split('@')[0] || 'unknown';
+      console.log('🏘️ Community change for user:', username, 'from:', selectedCommunity, 'to:', value);
+    }
     setSelectedCommunity(value);
   };
 
@@ -85,44 +85,8 @@ export default function CreatePostScreen() {
     router.push('/(tabs)/' as any);
   };
 
-  // Debug logging for state changes
-  useEffect(() => {
-    console.log('🔍 STATE CHANGE:', {
-      selectedCommunity,
-      isRestoringFromCamera,
-      hasInitializedCommunity,
-      communitiesCount: userCommunityMemberships?.length || 0,
-      areCommunitiesLoading
-    });
-  }, [selectedCommunity, isRestoringFromCamera, hasInitializedCommunity, userCommunityMemberships, areCommunitiesLoading]);
-
-  // Debug logging
-  console.log('🔍 CREATE POST: Component state:', {
-    communities: userCommunityMemberships?.length || 0,
-    isLoading: areCommunitiesLoading,
-    error: communitiesError?.message,
-    selectedCommunity,
-    showCommunityFix,
-    rawData: userCommunityMemberships,
-    dataType: typeof userCommunityMemberships,
-    isArray: Array.isArray(userCommunityMemberships)
-  });
-
   // Check the noCommunities calculation
   const noCommunities = !userCommunityMemberships || userCommunityMemberships.length === 0;
-  console.log('🔍 CREATE POST: noCommunities check:', {
-    noCommunities,
-    reason: !userCommunityMemberships ? 'falsy userCommunityMemberships' : 
-           userCommunityMemberships.length === 0 ? 'empty array' : 'has communities'
-  });
-
-  // Extra debug to see if FeedProvider fix worked
-  console.log('🔄 CREATE POST: FeedProvider fix test:', {
-    timestamp: new Date().toISOString(),
-    hasData: !!userCommunityMemberships,
-    dataLength: userCommunityMemberships?.length,
-    shouldShowCommunities: !noCommunities
-  });
 
   // Simple image setter without processing
   const handleSetImage = (uri: string | null) => {
@@ -139,10 +103,7 @@ export default function CreatePostScreen() {
   // Check if we received data from the camera screen (photo + preserved form data)
   useEffect(() => {
     if (params.photoUri && typeof params.photoUri === 'string') {
-      console.log('📷 RESTORATION: Processing photo from camera', {
-        photoUri: params.photoUri,
-        // Form data already restored during state initialization
-      });
+
       
       handleSetImage(params.photoUri);
       
@@ -156,7 +117,6 @@ export default function CreatePostScreen() {
       
       // Reset the flag after a short delay to allow effects to settle
       setTimeout(() => {
-        console.log('📷 RESTORATION: Completed, resetting flag');
         setIsRestoringFromCamera(false);
       }, 100);
     }
@@ -179,22 +139,26 @@ export default function CreatePostScreen() {
 
   // Auto-select first community if none selected (but not when restoring from camera)
   useEffect(() => {
-    // Only auto-select if selectedCommunity is null or undefined (not 0, not NaN)
-    // AND we're not currently restoring from camera AND we haven't already set a community
-    if (
-      userCommunityMemberships &&
-      userCommunityMemberships.length > 0 &&
-      selectedCommunity === null &&
-      !isRestoringFromCamera &&
-      !hasInitializedCommunity // Only auto-select if not already initialized
-    ) {
-      console.log('🔄 AUTO-SELECT: Setting first community', userCommunityMemberships[0].communities.id);
-      setSelectedCommunityWithLog(userCommunityMemberships[0].communities.id);
-      setShowCommunityFix(false);
-      setHasInitializedCommunity(true); // Mark as initialized
-    } else if (!areCommunitiesLoading && (!userCommunityMemberships || userCommunityMemberships.length === 0)) {
-      setShowCommunityFix(true);
-    }
+          // Only auto-select if selectedCommunity is null or undefined (not 0, not NaN)
+      // AND we're not currently restoring from camera AND we haven't already set a community
+      if (
+        userCommunityMemberships &&
+        userCommunityMemberships.length > 0 &&
+        selectedCommunity === null &&
+        !isRestoringFromCamera &&
+        !hasInitializedCommunity // Only auto-select if not already initialized
+      ) {
+        // Log auto-select with username for better debugging
+        if (session?.user) {
+          const username = session.user.user_metadata?.username || session.user.email?.split('@')[0] || 'unknown';
+          console.log('🔄 Auto-selecting first community for user:', username, 'community:', userCommunityMemberships[0].communities.id);
+        }
+        setSelectedCommunityWithLog(userCommunityMemberships[0].communities.id);
+        setShowCommunityFix(false);
+        setHasInitializedCommunity(true); // Mark as initialized
+      } else if (!areCommunitiesLoading && (!userCommunityMemberships || userCommunityMemberships.length === 0)) {
+        setShowCommunityFix(true);
+      }
   }, [userCommunityMemberships, areCommunitiesLoading, isRestoringFromCamera, hasInitializedCommunity]); // Added hasInitializedCommunity to deps
 
   // Load user matches when component mounts
@@ -264,17 +228,7 @@ export default function CreatePostScreen() {
   const takePhotoWithCamera = async () => {
     setShowMediaOptions(false);
     try {
-      console.log('📷 CAMERA NAV: Current state before navigation:', {
-        selectedCommunity,
-        title,
-        content
-      });
-      
       const communityParam = selectedCommunity !== null && selectedCommunity !== undefined ? String(selectedCommunity) : undefined;
-      console.log('📷 CAMERA NAV: Community param being passed:', {
-        originalValue: selectedCommunity,
-        stringifiedParam: communityParam
-      });
       
       // Navigate to the custom camera screen with current form data
       router.push({

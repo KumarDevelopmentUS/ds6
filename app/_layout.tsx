@@ -7,11 +7,13 @@ import { supabase } from '@/supabase';
 import { ensureUserProfilesExist } from '@/utils/profileSync';
 import type { Session } from '@supabase/supabase-js';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Analytics } from '@vercel/analytics/react';
 import { SplashScreen, Stack, useRouter, useSegments } from 'expo-router';
 import React, { useEffect } from 'react';
-import { Text, View } from 'react-native';
+import { Platform, Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+
+// Conditionally import Vercel Analytics only for web
+const Analytics = Platform.OS === 'web' ? require('@vercel/analytics/react').Analytics : () => null;
 
 // Keep the native splash screen visible while the app initializes.
 SplashScreen.preventAutoHideAsync();
@@ -168,7 +170,7 @@ export default function RootLayout() {
                 <AuthProvider>
                   <FeedProvider>
                     <RootLayoutNav />
-                    <Analytics />
+                    {Platform.OS === 'web' && <Analytics />}
                   </FeedProvider>
                 </AuthProvider>
               </HapticsProvider>

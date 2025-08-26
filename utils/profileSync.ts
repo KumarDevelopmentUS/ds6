@@ -162,9 +162,25 @@ export const updateUserStats = async (userId: string, stats: UserStats): Promise
       .eq('id', userId);
 
     if (error) throw error;
-    console.log(`Updated stats for user ${userId}:`, stats);
+            // Get username for logging
+        const { data: userProfile } = await supabase
+          .from('user_profiles')
+          .select('username')
+          .eq('id', userId)
+          .single();
+        
+        const username = userProfile?.username || 'unknown';
+        console.log(`Updated stats for user ${username}:`, stats);
   } catch (error) {
-    console.error(`Error updating stats for user ${userId}:`, error);
+          // Get username for error logging
+      const { data: userProfile } = await supabase
+        .from('user_profiles')
+        .select('username')
+        .eq('id', userId)
+        .single();
+      
+      const username = userProfile?.username || 'unknown';
+      console.error(`Error updating stats for user ${username}:`, error);
     throw error;
   }
 };
@@ -202,7 +218,7 @@ export const updateAllUserProfilesWithStats = async (): Promise<void> => {
           await updateUserStats(user.id, stats);
           return { success: true, userId: user.id, username: user.username };
         } catch (error) {
-          console.error(`Failed to update user ${user.username} (${user.id}):`, error);
+          console.error(`Failed to update user ${user.username}:`, error);
           return { success: false, userId: user.id, username: user.username, error };
         }
       });
@@ -228,8 +244,7 @@ export const updateAllUserProfilesWithStats = async (): Promise<void> => {
     }
 
     console.log(`Bulk update completed!`);
-    console.log(`✅ Successfully updated: ${successCount} users`);
-    console.log(`❌ Failed to update: ${errorCount} users`);
+    
     
     if (errorCount > 0) {
       console.warn(`${errorCount} users failed to update. Check the logs above for details.`);
@@ -307,7 +322,7 @@ export const getUserStatsHybrid = async (userId: string): Promise<UserStats> => 
     
     if (profileStats && profileStats.totalMatches && profileStats.totalMatches > 0) {
       // We have stored stats with the core data, use them for performance
-      console.log(`✅ Using stored stats for user ${userId}: ${profileStats.totalMatches} matches`);
+      
       
       // If we need more detailed stats (catch/fifa), calculate those separately
       // For now, return the stored stats with some calculated fields
@@ -329,15 +344,23 @@ export const getUserStatsHybrid = async (userId: string): Promise<UserStats> => 
       } as UserStats;
     } else {
       // No stored stats, calculate them (slower but complete)
-      console.log(`❌ No stored stats found for user ${userId}, calculating from matches...`);
+      
       const calculatedStats = await calculateUserStats(userId);
       
       // Store the calculated stats for future use
       try {
         await updateUserStats(userId, calculatedStats);
-        console.log(`✅ Stored calculated stats for user ${userId}`);
+
       } catch (storeError) {
-        console.warn(`⚠️ Failed to store calculated stats for user ${userId}:`, storeError);
+        // Get username for warning logging
+        const { data: userProfile } = await supabase
+          .from('user_profiles')
+          .select('username')
+          .eq('id', userId)
+          .single();
+        
+        const username = userProfile?.username || 'unknown';
+        console.warn(`⚠️ Failed to store calculated stats for user ${username}:`, storeError);
       }
       
       return calculatedStats;
@@ -351,7 +374,7 @@ export const getUserStatsHybrid = async (userId: string): Promise<UserStats> => 
 
 // Debug function to check user's current community memberships
 export async function debugUserCommunities() {
-  console.log('🔍 COMMUNITY DEBUG: Checking user community memberships...');
+  
   
   try {
     // Always get current user from auth
@@ -361,7 +384,15 @@ export async function debugUserCommunities() {
       return false;
     }
     
-    console.log('👤 Checking communities for user:', user.id);
+    // Get username for logging
+    const { data: userProfile } = await supabase
+      .from('user_profiles')
+      .select('username')
+      .eq('id', user.id)
+      .single();
+    
+    const username = userProfile?.username || 'unknown';
+    console.log('👤 Checking communities for user:', username);
     
     // Check user_communities table
     const { data: userCommunities, error: ucError } = await supabase
@@ -375,31 +406,11 @@ export async function debugUserCommunities() {
       errorMessage: ucError?.message,
     });
     
-    // Log each community individually for clarity
-    if (userCommunities && userCommunities.length > 0) {
-      console.log('🏘️ Your communities:');
-      userCommunities.forEach((uc, index) => {
-        console.log(`  ${index + 1}. ${uc.communities?.name} (ID: ${uc.community_id}, Type: ${uc.communities?.type})`);
-      });
-    } else {
-      console.log('❌ No communities found for user');
-    }
-    
     // Check all communities
     const { data: allCommunities, error: allError } = await supabase
       .from('communities')
       .select('*')
       .order('name');
-    
-    console.log('📋 All available communities:', {
-      count: allCommunities?.length || 0,
-      hasError: !!allError,
-      communities: allCommunities?.map(c => ({
-        id: c.id,
-        name: c.name,
-        type: c.type
-      }))
-    });
     
     return true;
   } catch (error) {
@@ -410,7 +421,7 @@ export async function debugUserCommunities() {
 
 // Debug function to test what FeedProvider sees
 export async function debugFeedProvider() {
-  console.log('🔍 FEED DEBUG: Testing what FeedProvider sees...');
+
   
   try {
     // Get current user
@@ -426,21 +437,11 @@ export async function debugFeedProvider() {
       .select('*, communities(*)')
       .eq('user_id', user.id);
     
-    console.log('📥 FeedProvider query result:', {
-      hasError: !!error,
-      errorMessage: error?.message,
-      dataLength: data?.length || 0,
-      rawData: data
-    });
-    
-    if (data && data.length > 0) {
-      console.log('🏘️ FeedProvider communities:');
-      data.forEach((uc, index) => {
-        console.log(`  ${index + 1}. ${uc.communities?.name} (ID: ${uc.communities?.id})`);
-      });
-    } else {
-      console.log('❌ FeedProvider found no communities');
-    }
+          if (data && data.length > 0) {
+        // FeedProvider found communities
+      } else {
+        // FeedProvider found no communities
+      }
     
     return true;
   } catch (error) {
@@ -451,7 +452,7 @@ export async function debugFeedProvider() {
 
 // Debug RLS policies and permissions including storage security
 export async function debugRLSPolicies() {
-  console.log('🔐 RLS DEBUG: Checking Row Level Security policies and storage security...');
+
   
   try {
     // Get current user
@@ -461,38 +462,21 @@ export async function debugRLSPolicies() {
       return false;
     }
     
-    console.log('👤 Current user:', user.id);
-    
-    // Test 1: Try to read user_communities with detailed error info
-    console.log('🔍 TEST 1: Reading user_communities...');
+
     const { data: ucData, error: ucError } = await supabase
       .from('user_communities')
       .select('*')
       .eq('user_id', user.id);
     
-    console.log('📥 user_communities result:', {
-      success: !ucError,
-      dataCount: ucData?.length || 0,
-      error: ucError,
-      errorMessage: ucError?.message,
-      errorCode: ucError?.code,
-      errorDetails: ucError?.details,
-      errorHint: ucError?.hint
-    });
+
     
     // Test 2: Try to read user_communities without WHERE clause (should fail if RLS is enabled)
-    console.log('🔍 TEST 2: Reading all user_communities (should fail with RLS)...');
     const { data: allUC, error: allUCError } = await supabase
       .from('user_communities')
       .select('*')
       .limit(1);
     
-    console.log('📥 All user_communities result:', {
-      success: !allUCError,
-      dataCount: allUC?.length || 0,
-      error: allUCError?.message,
-      errorCode: allUCError?.code
-    });
+
     
     // Test 3: Check if we can read communities table
     console.log('🔍 TEST 3: Reading communities table...');
@@ -644,7 +628,15 @@ export async function joinCommunityManually(communityName: string, communityType
       return false;
     }
     
-    console.log('👤 User ID:', user.id);
+    // Get username for logging
+    const { data: userProfile } = await supabase
+      .from('user_profiles')
+      .select('username')
+      .eq('id', user.id)
+      .single();
+    
+    const username = userProfile?.username || 'unknown';
+    console.log('👤 Username:', username);
     
     // Find or create the community
     let { data: community, error: findError } = await supabase
@@ -794,7 +786,15 @@ export async function testDatabaseConnection() {
 
 // Debug function to log profile sync status
 export async function debugProfileStatus(userId: string) {
-  console.log('🔍 Debug: Checking profile status for user:', userId);
+      // Get username for logging
+    const { data: userProfile } = await supabase
+      .from('user_profiles')
+      .select('username')
+      .eq('id', userId)
+      .single();
+    
+    const username = userProfile?.username || 'unknown';
+    console.log('🔍 Debug: Checking profile status for user:', username);
   
   try {
     const { data: userProfile } = await supabase
@@ -817,7 +817,15 @@ export async function debugProfileStatus(userId: string) {
 }
 
 export async function ensureUserProfilesExist(userId: string, userData?: ProfileData) {
-  console.log('🔄 PROFILE SYNC: Starting profile sync for user:', userId);
+      // Get username for logging
+    const { data: userProfile } = await supabase
+      .from('user_profiles')
+      .select('username')
+      .eq('id', userId)
+      .single();
+    
+    const username = userProfile?.username || 'unknown';
+    console.log('🔄 PROFILE SYNC: Starting profile sync for user:', username);
   console.log('📋 PROFILE SYNC: Profile data:', userData);
 
   try {
@@ -895,7 +903,15 @@ export async function ensureUserProfilesExist(userId: string, userData?: Profile
 }
 
 export async function joinDefaultCommunity(userId: string) {
-  console.log('🏘️ COMMUNITY DEBUG: Starting joinDefaultCommunity for user:', userId);
+  // Get username for logging
+  const { data: userProfile } = await supabase
+    .from('user_profiles')
+    .select('username')
+    .eq('id', userId)
+    .single();
+  
+  const username = userProfile?.username || 'unknown';
+  console.log('🏘️ COMMUNITY DEBUG: Starting joinDefaultCommunity for user:', username);
 
   try {
     // First, check if user is already in any community

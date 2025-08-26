@@ -37,11 +37,12 @@ export default function FeedScreen() {
   const [userJoinDate, setUserJoinDate] = useState<string>('');
 
   // Debug logging
+  const username = session?.user?.user_metadata?.username || session?.user?.email?.split('@')[0] || 'unknown';
   console.log('🏘️ FEED SCREEN: Current state:', {
     communities: communities?.length || 0,
     isLoading: isCommunitiesLoading,
     error: communitiesError?.message,
-    userId: session?.user?.id
+    username: username
   });
 
   // Get the currently selected community
@@ -139,7 +140,7 @@ export default function FeedScreen() {
     }
 
     try {
-      console.log('🔍 DEBUG: Starting community diagnostic...');
+
       
       // Run both debug functions
       await debugUserCommunities();

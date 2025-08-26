@@ -40,7 +40,15 @@ export async function testStorageSecurity(): Promise<SecurityTestResult> {
       return result;
     }
 
-    console.log('👤 Testing with user:', user.id);
+    // Get username for logging
+    const { data: userProfile } = await supabase
+      .from('user_profiles')
+      .select('username')
+      .eq('id', user.id)
+      .single();
+    
+    const username = userProfile?.username || 'unknown';
+    console.log('👤 Testing with user:', username);
 
     // Test 2: Test authenticated upload to profile-pictures
     console.log('🔍 TEST 1: Testing authenticated upload to profile-pictures bucket...');

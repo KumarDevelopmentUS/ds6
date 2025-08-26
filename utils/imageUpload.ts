@@ -166,7 +166,7 @@ export const uploadProfilePicture = async (
       return { success: false, error: 'Invalid URL generated' };
     }
 
-    console.log('[DEBUG] Generated profile picture URL:', urlData.publicUrl);
+    
 
     return { 
       success: true, 

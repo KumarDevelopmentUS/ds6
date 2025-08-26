@@ -122,7 +122,15 @@ export default function UserProfileScreen() {
     try {
       setLoadingStats(true);
       
-      console.log('Loading stats for user:', userId);
+      // Get username for logging
+    const { data: userProfile } = await supabase
+      .from('user_profiles')
+      .select('username')
+      .eq('id', userId)
+      .single();
+    
+    const username = userProfile?.username || 'unknown';
+    console.log('Loading stats for user:', username);
       
       // Use the hybrid approach: try stored stats first, fallback to calculation
       const { getUserStatsHybrid } = await import('../../utils/profileSync');
