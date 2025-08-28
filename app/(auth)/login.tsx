@@ -24,23 +24,47 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleLogin = async () => {
+    // Clear any previous errors
+    setError(null);
+    
     if (!email || !password) {
-      Alert.alert('Error', 'Please fill in all fields');
+      setError('Please fill in all fields');
+      return;
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError('Please enter a valid email address');
       return;
     }
 
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({
+    const { error: authError } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
     setLoading(false);
 
-    if (error) {
-      Alert.alert('Login Error', error.message);
+    if (authError) {
+      // Provide user-friendly error messages
+      let userFriendlyMessage = 'Login failed. Please try again.';
+      
+      if (authError.message.includes('Invalid login credentials')) {
+        userFriendlyMessage = 'Invalid email or password. Please check your credentials and try again.';
+      } else if (authError.message.includes('Email not confirmed')) {
+        userFriendlyMessage = 'Please verify your email address before signing in.';
+      } else if (authError.message.includes('Too many requests')) {
+        userFriendlyMessage = 'Too many login attempts. Please wait a moment before trying again.';
+      } else if (authError.message.includes('User not found')) {
+        userFriendlyMessage = 'No account found with this email address.';
+      }
+      
+      setError(userFriendlyMessage);
     } else {
       router.replace('/(tabs)/' as any);
     }
@@ -49,6 +73,16 @@ export default function LoginScreen() {
   const handleBack = () => {
     console.log('🏠 LOGIN: Home button pressed, navigating to home');
     router.push('/(tabs)/' as any);
+  };
+
+  const handleEmailChange = (text: string) => {
+    setEmail(text);
+    if (error) setError(null);
+  };
+
+  const handlePasswordChange = (text: string) => {
+    setPassword(text);
+    if (error) setError(null);
   };
 
   return (
@@ -92,7 +126,7 @@ export default function LoginScreen() {
             <ThemedInput
               placeholder="Email"
               value={email}
-              onChangeText={setEmail}
+              onChangeText={handleEmailChange}
               keyboardType="email-address"
               autoCapitalize="none"
               icon={
@@ -102,12 +136,13 @@ export default function LoginScreen() {
                   color={theme.colors.textSecondary}
                 />
               }
+              style={{ marginBottom: error ? 5 : 0 }}
             />
 
             <ThemedInput
               placeholder="Password"
               value={password}
-              onChangeText={setPassword}
+              onChangeText={handlePasswordChange}
               secureTextEntry
               icon={
                 <Ionicons
@@ -116,13 +151,24 @@ export default function LoginScreen() {
                   color={theme.colors.textSecondary}
                 />
               }
-              style={{ marginTop: theme.spacing.md }}
+              style={{ marginTop: theme.spacing.md, marginBottom: error ? 5 : 0 }}
             />
+
+            {/* Error Display */}
+            {error && (
+              <View style={styles.errorContainer}>
+                <Ionicons name="alert-circle" size={16} color={theme.colors.error} />
+                <ThemedText variant="caption" style={[styles.errorText, { color: theme.colors.error }]}>
+                  {error}
+                </ThemedText>
+              </View>
+            )}
 
             <ThemedButton
               title="Sign In"
               onPress={handleLogin}
               loading={loading}
+              disabled={!email.trim() || !password.trim()}
               style={{ marginTop: theme.spacing.lg }}
             />
           </ThemedView>
@@ -205,5 +251,17 @@ const styles = StyleSheet.create({
     marginTop: 24,
     alignItems: 'center',
     gap: 8,
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 10,
+    paddingHorizontal: 4,
+  },
+  errorText: {
+    fontSize: 12,
+    fontWeight: '500',
+    flex: 1,
   },
 });
