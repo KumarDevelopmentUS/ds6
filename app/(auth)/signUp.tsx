@@ -5,7 +5,7 @@ import { supabase } from '@/supabase';
 import { ensureUserProfilesExist, joinDefaultCommunity } from '@/utils/profileSync';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Alert,
     FlatList,
@@ -47,6 +47,18 @@ export default function SignUpScreen() {
     password: '',
     confirmPassword: '',
   });
+  const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
+  const [checkingUsername, setCheckingUsername] = useState(false);
+  const [usernameCheckTimeout, setUsernameCheckTimeout] = useState<ReturnType<typeof setTimeout> | null>(null);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (usernameCheckTimeout) {
+        clearTimeout(usernameCheckTimeout);
+      }
+    };
+  }, [usernameCheckTimeout]);
 
   const handleSchoolSearch = (text: string) => {
     setSchoolSearch(text);
@@ -103,6 +115,33 @@ export default function SignUpScreen() {
     return '';
   };
 
+  // Check if username is already taken
+  const checkUsernameAvailability = async (username: string): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('id')
+        .eq('username', username.toLowerCase())
+        .single();
+
+      if (error && error.code === 'PGRST116') {
+        // No user found with this username, so it's available
+        return true;
+      }
+
+      if (data) {
+        // Username is already taken
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error checking username availability:', error);
+      // If there's an error checking, assume username is taken to be safe
+      return false;
+    }
+  };
+
   const validateConfirmPassword = (password: string, confirmPassword: string) => {
     if (confirmPassword.length > 0 && password !== confirmPassword) {
       return 'Passwords do not match';
@@ -118,6 +157,12 @@ export default function SignUpScreen() {
     switch (field) {
       case 'username':
         error = validateUsername(value);
+        // Check username availability when username field changes
+        if (value.length >= 5) {
+          handleUsernameCheck(value);
+        } else {
+          setUsernameAvailable(null);
+        }
         break;
       case 'nickname':
         error = validateNickname(value);
@@ -141,6 +186,25 @@ export default function SignUpScreen() {
     }
     
     setErrors(prev => ({ ...prev, [field]: error }));
+  };
+
+  const handleUsernameCheck = async (username: string) => {
+    if (username.length < 5) return;
+    
+    // Clear any existing timeout
+    if (usernameCheckTimeout) {
+      clearTimeout(usernameCheckTimeout);
+    }
+    
+    // Set a new timeout for debounced username check
+    const timeoutId = setTimeout(async () => {
+      setCheckingUsername(true);
+      const isAvailable = await checkUsernameAvailability(username);
+      setUsernameAvailable(isAvailable);
+      setCheckingUsername(false);
+    }, 500); // 500ms delay
+    
+    setUsernameCheckTimeout(timeoutId);
   };
 
   const handleSignUp = async () => {
@@ -174,6 +238,24 @@ export default function SignUpScreen() {
     if (!/^[a-zA-Z0-9._]+$/.test(nickname)) {
       Alert.alert('Invalid Nickname', 'Nickname can only contain letters, numbers, dots (.), and underscores (_).');
       return;
+    }
+
+    // Check if username is available
+    if (usernameAvailable === false) {
+      Alert.alert('Username Taken', 'This username is already taken. Please choose a different username.');
+      return;
+    }
+
+    // If username availability hasn't been checked yet, check it now
+    if (usernameAvailable === null) {
+      setLoading(true);
+      const isAvailable = await checkUsernameAvailability(username);
+      setLoading(false);
+      
+      if (!isAvailable) {
+        Alert.alert('Username Taken', 'This username is already taken. Please choose a different username.');
+        return;
+      }
     }
 
     const lowerEmail = email.toLowerCase();
@@ -316,6 +398,33 @@ export default function SignUpScreen() {
                   {errors.username}
                 </ThemedText>
               ) : null}
+              {/* Username availability indicator */}
+              {formData.username.length >= 5 && usernameAvailable !== null && (
+                <View style={styles.usernameStatusContainer}>
+                  {checkingUsername ? (
+                    <View style={styles.usernameStatusRow}>
+                      <Ionicons name="time-outline" size={16} color={theme.colors.textSecondary} />
+                      <ThemedText variant="caption" style={[styles.usernameStatusText, { color: theme.colors.textSecondary }]}>
+                        Checking username availability...
+                      </ThemedText>
+                    </View>
+                  ) : usernameAvailable ? (
+                    <View style={styles.usernameStatusRow}>
+                      <Ionicons name="checkmark-circle" size={16} color={theme.colors.success} />
+                      <ThemedText variant="caption" style={[styles.usernameStatusText, { color: theme.colors.success }]}>
+                        Username available
+                      </ThemedText>
+                    </View>
+                  ) : (
+                    <View style={styles.usernameStatusRow}>
+                      <Ionicons name="close-circle" size={16} color={theme.colors.error} />
+                      <ThemedText variant="caption" style={[styles.usernameStatusText, { color: theme.colors.error }]}>
+                        Username already taken
+                      </ThemedText>
+                    </View>
+                  )}
+                </View>
+              )}
             </View>
             <View style={{ marginBottom: 20 }}>
               <ThemedInput
@@ -384,8 +493,19 @@ export default function SignUpScreen() {
               title="Create Account"
               onPress={handleSignUp}
               loading={loading}
+              disabled={usernameAvailable === false || checkingUsername}
               style={{ marginTop: theme.spacing.lg }}
             />
+            
+            {/* Helpful message when username is taken */}
+            {usernameAvailable === false && (
+              <ThemedText 
+                variant="caption" 
+                style={[styles.helpText, { color: theme.colors.textSecondary, textAlign: 'center', marginTop: 10 }]}
+              >
+                Please choose a different username to continue
+              </ThemedText>
+            )}
           </ThemedView>
 
           <ThemedButton
@@ -569,5 +689,21 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
     marginTop: 5,
+  },
+  usernameStatusContainer: {
+    marginTop: 5,
+  },
+  usernameStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  usernameStatusText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  helpText: {
+    fontSize: 12,
+    fontWeight: '400',
   },
 });
