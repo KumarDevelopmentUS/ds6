@@ -196,11 +196,7 @@ export const usePosts = (communityId?: number) => {
         .select('id, avatar_url, username, nickname, display_name, avatar_icon, avatar_icon_color, avatar_background_color')
         .in('id', userIds);
 
-      // Log usernames instead of user IDs for better debugging
-      if (userProfiles && userProfiles.length > 0) {
-        const usernames = userProfiles.map(p => p.username || 'unknown').join(', ');
-        console.log('🔍 Fetching profiles for users:', usernames);
-      }
+
 
 
 

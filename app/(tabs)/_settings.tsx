@@ -8,6 +8,7 @@ import React, { useEffect, useState } from 'react';
 import { Alert, SafeAreaView, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 
 
+import { CommunitySettingsPanel } from '../../components/CommunitySettingsPanel';
 import { UserAvatar } from '../../components/social/UserAvatar';
 import { ThemedButton } from '../../components/themed/ThemedButton';
 import { ThemedText } from '../../components/themed/ThemedText';
@@ -38,6 +39,12 @@ export default function AccountScreen() {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isInGeneralCommunity, setIsInGeneralCommunity] = useState<boolean | null>(null);
   const [joiningGeneral, setJoiningGeneral] = useState(false);
+  const [selectedCommunityForSettings, setSelectedCommunityForSettings] = useState<{
+    id: number;
+    name: string;
+    joinedAt: string;
+  } | null>(null);
+  const [communitySettingsVisible, setCommunitySettingsVisible] = useState(false);
 
   useEffect(() => {
     loadUserAndProfile();
@@ -109,6 +116,25 @@ export default function AccountScreen() {
       Alert.alert('Error', 'Failed to join General community');
     } finally {
       setJoiningGeneral(false);
+    }
+  };
+
+  const handleOpenCommunitySettings = (community: { community_id: number; communities: { name: string }; joined_at: string }) => {
+    setSelectedCommunityForSettings({
+      id: community.community_id,
+      name: community.communities.name,
+      joinedAt: community.joined_at,
+    });
+    setCommunitySettingsVisible(true);
+  };
+
+  const handleLeaveCommunity = () => {
+    setCommunitySettingsVisible(false);
+    setSelectedCommunityForSettings(null);
+    // Refresh communities and check if user is still in general community
+    refetch();
+    if (session?.user) {
+      isUserInGeneralCommunity(session.user.id).then(setIsInGeneralCommunity);
     }
   };
 
@@ -347,6 +373,12 @@ export default function AccountScreen() {
                     <ThemedText variant="caption" style={styles.joinedDate}>
                       Joined {new Date(membership.joined_at).toLocaleDateString()}
                     </ThemedText>
+                    <TouchableOpacity
+                      style={styles.communitySettingsButton}
+                      onPress={() => handleOpenCommunitySettings(membership)}
+                    >
+                      <Ionicons name="settings-outline" size={20} color={theme.colors.textSecondary} />
+                    </TouchableOpacity>
                   </View>
                 </View>
               ))
@@ -504,6 +536,18 @@ export default function AccountScreen() {
           icon={<Ionicons name="log-out-outline" size={24} color={theme.colors.error} />}
         />
       )}
+
+      {/* Community Settings Panel */}
+      {selectedCommunityForSettings && (
+        <CommunitySettingsPanel
+          visible={communitySettingsVisible}
+          onClose={() => setCommunitySettingsVisible(false)}
+          communityId={selectedCommunityForSettings.id}
+          communityName={selectedCommunityForSettings.name}
+          joinedAt={selectedCommunityForSettings.joinedAt}
+          onLeaveCommunity={handleLeaveCommunity}
+        />
+      )}
     </ScrollView>
     </SafeAreaView>
   );
@@ -598,7 +642,9 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   communityMeta: {
-    alignItems: 'flex-end',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   joinedDate: {
     opacity: 0.6,
@@ -639,6 +685,10 @@ const styles = StyleSheet.create({
   },
   joinButton: {
     marginLeft: 12,
+  },
+  communitySettingsButton: {
+    padding: 4,
+    borderRadius: 4,
   },
   loginCard: {
     alignItems: 'center',

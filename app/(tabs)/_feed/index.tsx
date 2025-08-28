@@ -36,14 +36,7 @@ export default function FeedScreen() {
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [userJoinDate, setUserJoinDate] = useState<string>('');
 
-  // Debug logging
-  const username = session?.user?.user_metadata?.username || session?.user?.email?.split('@')[0] || 'unknown';
-  console.log('🏘️ FEED SCREEN: Current state:', {
-    communities: communities?.length || 0,
-    isLoading: isCommunitiesLoading,
-    error: communitiesError?.message,
-    username: username
-  });
+
 
   // Get the currently selected community
   const selectedCommunity = selectedCommunityId
@@ -62,6 +55,18 @@ export default function FeedScreen() {
 
   // Enable real-time updates for the selected community
   useRealtimeUpdates(selectedCommunityId || undefined);
+
+  // Auto-select first community when communities load and none is selected
+  useEffect(() => {
+    if (communities && communities.length > 0 && selectedCommunityId === null) {
+      // Find General community first, otherwise select the first available community
+      const generalCommunity = communities.find(m => m.communities?.id === 1);
+      const firstCommunity = generalCommunity || communities[0];
+      if (firstCommunity?.communities?.id) {
+        setSelectedCommunityId(firstCommunity.communities.id);
+      }
+    }
+  }, [communities, selectedCommunityId]);
 
   // Fetch join date when component mounts and a community is already selected
   useEffect(() => {

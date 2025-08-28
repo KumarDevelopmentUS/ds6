@@ -871,27 +871,23 @@ export async function joinDefaultCommunity(userId: string) {
     .single();
   
   const username = userProfile?.username || 'unknown';
-  console.log('🏘️ COMMUNITY DEBUG: Starting joinDefaultCommunity for user:', username);
 
   try {
-    // First, check if user is already in any community
-    const { data: existingMembership, error: membershipError } = await supabase
+    // Check if user is already in the General community specifically (ID 1)
+    const { data: generalMembership, error: membershipError } = await supabase
       .from('user_communities')
       .select('id')
       .eq('user_id', userId)
-      .limit(1);
+      .eq('community_id', 1); // Check specifically for General community
 
     if (membershipError) {
-      console.error('❌ COMMUNITY DEBUG: Error checking existing membership:', membershipError);
-    } else if (existingMembership && existingMembership.length > 0) {
-      console.log('✅ COMMUNITY DEBUG: User already has community membership');
-      return { success: true, message: 'User already in a community' };
+      console.error('Error checking General community membership:', membershipError);
+    } else if (generalMembership && generalMembership.length > 0) {
+      return { success: true, message: 'User already in General community' };
     }
 
     // Use the specific General community (ID 1) instead of searching by name
     const defaultCommunityId = 1; // This is the original "General" community
-    
-    console.log('🔄 COMMUNITY DEBUG: Adding user to General community (ID 1)...');
     const { error: joinError } = await supabase
       .from('user_communities')
       .insert({
@@ -902,18 +898,16 @@ export async function joinDefaultCommunity(userId: string) {
     if (joinError) {
       // Check if it's a duplicate key error (user already joined)
       if (joinError.code === '23505') {
-        console.log('✅ COMMUNITY DEBUG: User already in community (duplicate ignored)');
         return { success: true, message: 'User already in community' };
       }
-      console.error('❌ COMMUNITY DEBUG: Error joining community:', joinError);
+      console.error('Error joining community:', joinError);
       throw joinError;
     }
 
-    console.log('🎉 COMMUNITY DEBUG: Successfully joined General community (ID 1)!');
     return { success: true, message: 'Joined General community' };
 
   } catch (error) {
-    console.error('💥 COMMUNITY DEBUG: Unexpected error:', error);
+    console.error('Unexpected error joining community:', error);
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 }
@@ -957,4 +951,133 @@ export const isUserInGeneralCommunity = async (userId: string): Promise<boolean>
 // Join General community function for manual use
 export const joinGeneralCommunity = async (userId: string) => {
   return await joinDefaultCommunity(userId);
+};
+
+// Leave a specific community function
+export const leaveCommunity = async (userId: string, communityId: number) => {
+  try {
+    const { data: userProfile } = await supabase
+      .from('user_profiles')
+      .select('username')
+      .eq('id', userId)
+      .single();
+    
+    const username = userProfile?.username || 'unknown';
+
+    const { error } = await supabase
+      .from('user_communities')
+      .delete()
+      .eq('user_id', userId)
+      .eq('community_id', communityId);
+
+    if (error) {
+      console.error('Error leaving community:', error);
+      return { success: false, error: error.message };
+    }
+    
+    // Force cache refresh
+    if (typeof window !== 'undefined') {
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
+    }
+
+    return { success: true, message: 'Successfully left community' };
+  } catch (error) {
+    console.error('Unexpected error leaving community:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+};
+
+// Debug function to create a test post in General community
+export const createTestPostInGeneral = async () => {
+  try {
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      console.error('❌ No authenticated user found');
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    // Get username for logging
+    const { data: userProfile } = await supabase
+      .from('user_profiles')
+      .select('username, nickname, display_name')
+      .eq('id', user.id)
+      .single();
+    
+    const username = userProfile?.username || 'unknown';
+    const authorName = userProfile?.nickname || userProfile?.display_name || 'Player';
+
+    // Create a test post
+    const { data: newPost, error: postError } = await supabase
+      .from('posts')
+      .insert({
+        title: 'Welcome to the General Community!',
+        content: 'This is a test post to make sure the feed is working properly. Feel free to interact with it!',
+        user_id: user.id,
+        community_id: 1, // General community
+        author_name: authorName,
+        uid: `test-${Date.now()}-${user.id.slice(0, 8)}`
+      })
+      .select()
+      .single();
+
+    if (postError) {
+      console.error('Error creating test post:', postError);
+      return { success: false, error: postError.message };
+    }
+
+    return { success: true, message: 'Test post created', post: newPost };
+  } catch (error) {
+    console.error('Error creating test post:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+};
+
+// Debug function to show exactly which communities a user is in
+export const debugUserCommunityMemberships = async () => {
+  try {
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      console.error('❌ No authenticated user found');
+      return false;
+    }
+
+    // Get username for logging
+    const { data: userProfile } = await supabase
+      .from('user_profiles')
+      .select('username')
+      .eq('id', user.id)
+      .single();
+    
+    const username = userProfile?.username || 'unknown';
+
+    // Get all user's community memberships with full community details
+    const { data: memberships, error: membershipError } = await supabase
+      .from('user_communities')
+      .select('*, communities(*)')
+      .eq('user_id', user.id);
+
+    if (membershipError) {
+      console.error('Error fetching memberships:', membershipError);
+      return false;
+    }
+
+    if (memberships && memberships.length > 0) {
+      memberships.forEach((membership, index) => {
+        console.log(`${index + 1}. ${membership.communities?.name} (ID: ${membership.communities?.id}, Type: ${membership.communities?.type})`);
+      });
+      
+      // Check specifically for General community
+      const isInGeneral = memberships.some(m => m.communities?.id === 1);
+      console.log('Is in General community (ID 1):', isInGeneral);
+    } else {
+      console.log('No community memberships found');
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error checking memberships:', error);
+    return false;
+  }
 };

@@ -68,12 +68,7 @@ export const useFeed = (): FeedContextType => {
     throw new Error('useFeed must be used within a FeedProvider');
   }
 
-  // Log for debugging
-  console.log('🏘️ FEED HOOK: useFeed called with:', {
-    communities: context.communities?.length || 0,
-    isLoading: context.isLoading,
-    error: context.error?.message
-  });
+
 
   return context;
 };
