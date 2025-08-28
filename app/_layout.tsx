@@ -109,21 +109,14 @@ function RootLayoutNav() {
       if (session?.user && event === 'SIGNED_IN') {
         console.log('🔄 User signed in, ensuring profiles exist...');
         try {
-                  // Run profile sync in background, don't await it to prevent blocking
-        ensureUserProfilesExist(session.user.id, {
-          username: session.user.user_metadata?.username,
-          nickname: session.user.user_metadata?.nickname,
-          school: session.user.user_metadata?.school,
-        }).then(() => {
-          // After profile sync, ensure user is in General community
-          import('@/utils/profileSync').then(({ joinDefaultCommunity }) => {
-            joinDefaultCommunity(session.user.id).catch((error) => {
-              console.error('❌ Community join failed:', error);
-            });
+          // Run profile sync in background, don't await it to prevent blocking
+          ensureUserProfilesExist(session.user.id, {
+            username: session.user.user_metadata?.username,
+            nickname: session.user.user_metadata?.nickname,
+            school: session.user.user_metadata?.school,
+          }).catch((error) => {
+            console.error('❌ Profile sync failed:', error);
           });
-        }).catch((error) => {
-          console.error('❌ Profile sync failed:', error);
-        });
         } catch (error) {
           console.error('❌ Profile sync error:', error);
         }

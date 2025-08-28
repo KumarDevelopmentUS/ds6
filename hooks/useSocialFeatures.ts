@@ -190,10 +190,10 @@ export const usePosts = (communityId?: number) => {
       // Get profile pictures and fallback avatar data for all post authors
       const userIds = [...new Set(posts.map(p => p.user_id))];
       
-      // Fetch both user_profiles (for avatar_url and username) and profiles (for fallback avatar data)
+      // Fetch user_profiles for author information and avatar data
       const { data: userProfiles, error: userProfileError } = await supabase
         .from('user_profiles')
-        .select('id, avatar_url, username, avatar_icon, avatar_icon_color, avatar_background_color')
+        .select('id, avatar_url, username, nickname, display_name, avatar_icon, avatar_icon_color, avatar_background_color')
         .in('id', userIds);
 
       // Log usernames instead of user IDs for better debugging
@@ -274,6 +274,9 @@ export const usePosts = (communityId?: number) => {
       // Combine the data
       let combinedPosts = posts.map((post: any) => {
         const profileData = profileMap[post.user_id];
+        // Determine the best author name from profile data
+        const authorName = profileData?.nickname || profileData?.display_name || post.author_name || 'Anonymous';
+        
         const postData = {
           id: post.id, // Keep numeric ID
           uid: post.uid, // Add the required uid property
@@ -283,7 +286,7 @@ export const usePosts = (communityId?: number) => {
           image_url: post.image_url,
           user_id: post.user_id,
           community_id: post.community_id,
-          author_name: post.author_name,
+          author_name: authorName,
           // Use fallback avatar data from profileMap if posts table doesn't have it
           author_avatar_icon: post.author_avatar_icon || profileData?.avatar_icon || 'person',
           author_avatar_icon_color: post.author_avatar_icon_color || profileData?.avatar_icon_color || '#FFFFFF',
@@ -407,7 +410,7 @@ export const usePost = (postId: string) => {
       // Get author profile from unified user_profiles table
       const { data: authorProfile } = await supabase
         .from('user_profiles')
-        .select('avatar_url, username, avatar_icon, avatar_icon_color, avatar_background_color')
+        .select('avatar_url, username, nickname, display_name, avatar_icon, avatar_icon_color, avatar_background_color')
         .eq('id', data.user_id)
         .single();
 
@@ -434,6 +437,9 @@ export const usePost = (postId: string) => {
         }
       }
 
+      // Determine the best author name from profile data
+      const authorName = authorProfile?.nickname || authorProfile?.display_name || data.author_name || 'Anonymous';
+      
       return {
         id: data.uid,
         title: data.title,
@@ -441,7 +447,7 @@ export const usePost = (postId: string) => {
         created_at: data.created_at,
         image_url: data.image_url,
         community_id: data.community_id,
-        author_name: data.author_name,
+        author_name: authorName,
         // Use author profile data if posts table doesn't have it
         author_avatar_icon: data.author_avatar_icon || authorProfile?.avatar_icon || 'person',
         author_avatar_icon_color: data.author_avatar_icon_color || authorProfile?.avatar_icon_color || '#FFFFFF',
@@ -630,7 +636,7 @@ export const useCreatePost = () => {
           image_url,
           user_id: user.id,
           community_id: communityId,
-          author_name: profile.nickname || profile.first_name || 'Anonymous',
+          author_name: profile.nickname || profile.display_name || 'Anonymous',
           author_avatar_icon: profile.avatar_icon,
           author_avatar_icon_color: profile.avatar_icon_color,
           author_avatar_background_color: profile.avatar_background_color,
@@ -651,7 +657,8 @@ export const useCreatePost = () => {
       queryClient.invalidateQueries({ queryKey: ['posts'] });
       Alert.alert('Success', 'Post created successfully!');
       
-      router.push('./(tabs)/');
+      // Navigate to the feed tab (index 1) after creating a post
+      router.push('./(tabs)/?initialTab=feed');
     },
     onError: (error: Error) => {
       console.error('Create post error:', error);
@@ -716,7 +723,7 @@ export const useComments = (postId: string) => {
           post_uid: postId,
           user_id: user.id,
           parent_comment_id: parentId,
-          author_name: profile.nickname || profile.first_name || 'Anonymous',
+          author_name: profile.nickname || profile.display_name || 'Anonymous',
           author_avatar_icon: profile.avatar_icon,
           author_avatar_icon_color: profile.avatar_icon_color,
           author_avatar_background_color: profile.avatar_background_color,

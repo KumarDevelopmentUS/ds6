@@ -82,7 +82,7 @@ export default function CreatePostScreen() {
 
   // Handle back navigation to feed
   const handleBackToFeed = () => {
-    router.push('/(tabs)/' as any);
+    router.push('/(tabs)/?initialTab=feed' as any);
   };
 
   // Check the noCommunities calculation

@@ -1,11 +1,11 @@
 // app/(tabs)/settings.tsx
 import { supabase } from '@/supabase';
+import { isUserInGeneralCommunity, joinGeneralCommunity } from '@/utils/profileSync';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Alert, SafeAreaView, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
-import { isUserInGeneralCommunity, joinGeneralCommunity } from '@/utils/profileSync';
 
 
 import { UserAvatar } from '../../components/social/UserAvatar';
@@ -26,7 +26,7 @@ export default function AccountScreen() {
   const { session } = useAuth();
   const [profile, setProfile] = useState<{
     id: string;
-    first_name: string;
+    display_name: string;
     nickname: string;
     school: string;
     avatar_icon: keyof typeof Ionicons.glyphMap;
@@ -59,7 +59,7 @@ export default function AccountScreen() {
     if (currentUser) {
       const { data: userProfile, error } = await supabase
         .from('user_profiles')
-        .select('id, first_name, nickname, school, avatar_icon, avatar_icon_color, avatar_background_color, avatar_url, username')
+        .select('id, display_name, nickname, school, avatar_icon, avatar_icon_color, avatar_background_color, avatar_url, username')
         .eq('id', currentUser.id)
         .single();
 
@@ -250,7 +250,7 @@ export default function AccountScreen() {
             size={40}
           />
           <ThemedText variant="subtitle" style={styles.userName}>
-            {profile.first_name || profile.nickname || 'Player'}
+            {profile.nickname || profile.display_name || 'Player'}
           </ThemedText>
           {/* Username under nickname */}
           {session.user.user_metadata?.username && (

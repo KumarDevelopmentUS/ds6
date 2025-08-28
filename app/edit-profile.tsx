@@ -271,7 +271,7 @@ export default function EditProfileScreen() {
                   // Invalidate queries to ensure UI updates properly across the app
                   await queryClient.invalidateQueries({ queryKey: ['userCommunities'] });
                   await queryClient.invalidateQueries({ queryKey: ['profile', profile.id] });
-                  await queryClient.invalidateQueries({ queryKey: ['profiles'] });
+                  await queryClient.invalidateQueries({ queryKey: ['profile', profile.id] });
                   
                   // Force a refetch of the current profile data
                   await queryClient.refetchQueries({ queryKey: ['profile', profile.id] });
