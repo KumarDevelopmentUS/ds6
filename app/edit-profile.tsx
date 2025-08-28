@@ -27,7 +27,7 @@ import { ThemedView } from '../components/themed/ThemedView';
 import { AVATAR_COLORS, FUN_AVATAR_ICONS } from '../constants/avatarIcons';
 import { getSchoolByValue, SCHOOLS, searchSchools } from '../constants/schools';
 import { useTheme } from '../contexts/ThemeContext';
-import { pickImage, takePhoto, updateUserProfilePicture, uploadProfilePicture } from '../utils/imageUpload';
+import { deleteProfilePicture, pickImage, takePhoto, updateUserProfilePicture, uploadProfilePicture } from '../utils/imageUpload';
 import { isPasswordVerified, markPasswordVerified, verifyProfilePicturePassword } from '../utils/profilePicturePassword';
 
 const { width } = Dimensions.get('window');
@@ -73,33 +73,28 @@ export default function EditProfileScreen() {
     const { data: { user } } = await supabase.auth.getUser();
 
     if (user) {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, nickname, school, avatar_icon, avatar_icon_color, avatar_background_color')
-        .eq('id', user.id)
-        .single();
-
-      const { data: userProfile, error: userProfileError } = await supabase
+      const { data: userProfile, error } = await supabase
         .from('user_profiles')
-        .select('username, display_name, avatar_url')
+        .select('id, username, display_name, nickname, school, avatar_icon, avatar_icon_color, avatar_background_color, avatar_url')
         .eq('id', user.id)
         .single();
 
-      if (error || userProfileError) {
-        console.error('Error loading profile for edit:', error?.message || userProfileError?.message);
+      if (error) {
+        console.error('Error loading profile for edit:', error?.message);
         Alert.alert('Error', 'Failed to load profile data.');
         router.back();
-      } else if (data && userProfile) {
-        const schoolObject = getSchoolByValue(data.school);
+      } else if (userProfile) {
+        const schoolObject = getSchoolByValue(userProfile.school);
         setProfile({
-          ...data,
+          id: userProfile.id,
           username: userProfile.username,
-          nickname: data.nickname || userProfile.display_name,
+          nickname: userProfile.nickname || userProfile.display_name,
+          school: userProfile.school,
           schoolName: schoolObject ? schoolObject.name : '',
           email: user.email || null,
-          avatar_icon: data.avatar_icon || 'person',
-          avatar_icon_color: data.avatar_icon_color || '#FFFFFF',
-          avatar_background_color: data.avatar_background_color || theme.colors.primary,
+          avatar_icon: userProfile.avatar_icon || 'person',
+          avatar_icon_color: userProfile.avatar_icon_color || '#FFFFFF',
+          avatar_background_color: userProfile.avatar_background_color || theme.colors.primary,
           avatar_url: userProfile.avatar_url,
         });
       }
@@ -236,7 +231,72 @@ export default function EditProfileScreen() {
     setLoading(false);
   };
 
-
+  const handleRemoveProfilePicture = async () => {
+    if (!profile || !profile.avatar_url) return;
+    
+    console.log('Starting profile picture removal...', { profileId: profile.id, avatarUrl: profile.avatar_url });
+    
+    Alert.alert(
+      'Remove Profile Picture',
+      'Are you sure you want to remove your profile picture? This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Remove', 
+          style: 'destructive',
+          onPress: async () => {
+            setLoading(true);
+            try {
+              console.log('Step 1: Deleting file from storage...');
+              // Delete the file from storage
+              const deleteSuccess = await deleteProfilePicture(profile.avatar_url!);
+              console.log('Storage deletion result:', deleteSuccess);
+              
+              if (deleteSuccess) {
+                console.log('Step 2: Updating user_profiles table...');
+                // Update the profile to remove the avatar_url
+                const updateSuccess = await updateUserProfilePicture(profile.id, null);
+                console.log('User profile update result:', updateSuccess);
+                
+                if (updateSuccess) {
+                  console.log('Step 3: Updating local state...');
+                  // Update local state immediately to reflect the change
+                  const newProfile = { ...profile, avatar_url: null };
+                  console.log('New profile state:', newProfile);
+                  setProfile(newProfile);
+                  
+                  console.log('Step 4: Profile data already updated in unified user_profiles table');
+                  
+                  console.log('Step 5: Invalidating queries...');
+                  // Invalidate queries to ensure UI updates properly across the app
+                  await queryClient.invalidateQueries({ queryKey: ['userCommunities'] });
+                  await queryClient.invalidateQueries({ queryKey: ['profile', profile.id] });
+                  await queryClient.invalidateQueries({ queryKey: ['profiles'] });
+                  
+                  // Force a refetch of the current profile data
+                  await queryClient.refetchQueries({ queryKey: ['profile', profile.id] });
+                  
+                  console.log('Profile picture removal completed successfully');
+                  Alert.alert('Success', 'Profile picture removed successfully!');
+                } else {
+                  console.error('Failed to update user profile');
+                  Alert.alert('Error', 'Failed to update profile after removing picture');
+                }
+              } else {
+                console.error('Failed to delete file from storage');
+                Alert.alert('Error', 'Failed to remove profile picture from storage');
+              }
+            } catch (error) {
+              console.error('Error removing profile picture:', error);
+              Alert.alert('Error', 'Failed to remove profile picture');
+            } finally {
+              setLoading(false);
+            }
+          }
+        }
+      ]
+    );
+  };
 
   const handleUpdateProfile = async () => {
     if (!profile) return;
@@ -244,23 +304,28 @@ export default function EditProfileScreen() {
     
     const { nickname, school, avatar_icon, avatar_icon_color, avatar_background_color } = profile;
 
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .update({ nickname, school, avatar_icon, avatar_icon_color, avatar_background_color })
-      .eq('id', profile.id);
-
-    const { error: userProfileError } = await supabase
+    // Update only user_profiles table now
+    const { error: updateError } = await supabase
       .from('user_profiles')
-      .update({ display_name: nickname })
+      .update({ 
+        nickname, 
+        school, 
+        avatar_icon, 
+        avatar_icon_color, 
+        avatar_background_color,
+        display_name: nickname,
+        updated_at: new Date().toISOString()
+      })
       .eq('id', profile.id);
 
     setLoading(false);
 
-    if (profileError || userProfileError) {
-      Alert.alert('Update Error', profileError?.message || userProfileError?.message);
+    if (updateError) {
+      Alert.alert('Update Error', updateError.message);
     } else {
-      // 3. Invalidate the userCommunities query to force a refetch on the feed screen
+      // Invalidate queries to ensure UI updates properly across the app
       await queryClient.invalidateQueries({ queryKey: ['userCommunities'] });
+      await queryClient.invalidateQueries({ queryKey: ['user_profiles'] });
 
       Alert.alert('Success', 'Profile updated successfully!');
       router.replace('/(tabs)/' as any);
@@ -337,8 +402,29 @@ export default function EditProfileScreen() {
               </View>
             )}
           </View>
+          
+          {/* Debug info - remove this later */}
+          <View style={{ padding: 10, backgroundColor: '#f0f0f0', borderRadius: 5, marginBottom: 10 }}>
+            <ThemedText style={{ fontSize: 12, color: '#666' }}>
+              Debug: avatar_url = {profile.avatar_url ? 'EXISTS' : 'NULL'}, 
+              icon = {profile.avatar_icon}, 
+              color = {profile.avatar_icon_color}, 
+              bg = {profile.avatar_background_color}
+            </ThemedText>
+          </View>
 
-
+          {/* Remove Profile Picture Button - only show when user has a profile picture */}
+          {profile.avatar_url && (
+            <TouchableOpacity 
+              style={[styles.removeProfilePictureButton, { borderColor: theme.colors.error }]} 
+              onPress={handleRemoveProfilePicture}
+            >
+              <Ionicons name="trash-outline" size={20} color={theme.colors.error} />
+              <ThemedText style={[styles.removeProfilePictureText, { color: theme.colors.error }]}>
+                Remove Profile Picture
+              </ThemedText>
+            </TouchableOpacity>
+          )}
           
           <ThemedText variant="body" style={styles.iconCustomizationTitle}>
             Icon Avatar
@@ -559,6 +645,24 @@ const styles = StyleSheet.create({
   avatarPreview: { width: 100, height: 100, borderRadius: 50, justifyContent: 'center', alignItems: 'center', marginBottom: 20, borderWidth: 2, borderColor: '#e5e7eb', overflow: 'hidden' },
   profileImage: { width: 100, height: 100, borderRadius: 50 },
   iconAvatarContainer: { width: 100, height: 100, borderRadius: 50, justifyContent: 'center', alignItems: 'center' },
+
+  removeProfilePictureButton: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'center',
+    width: '100%', 
+    paddingVertical: 12, 
+    paddingHorizontal: 16,
+    borderRadius: 8, 
+    borderWidth: 1,
+    marginBottom: 20,
+    gap: 8,
+    backgroundColor: 'rgba(255, 59, 48, 0.05)',
+  },
+  removeProfilePictureText: { 
+    fontSize: 16, 
+    fontWeight: '500' 
+  },
 
   iconCustomizationTitle: { marginBottom: 16, color: '#6b7280', textAlign: 'center' },
   selectionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: '100%', paddingVertical: 15, borderBottomWidth: 1 },

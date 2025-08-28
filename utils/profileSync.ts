@@ -740,7 +740,7 @@ export async function testDatabaseConnection() {
     // Test 1: Basic connection
     console.log('🔍 TEST 1: Testing basic connection...');
     const { data: connTest, error: connError } = await supabase
-      .from('profiles')
+      .from('user_profiles')
       .select('count')
       .limit(1);
     
@@ -758,10 +758,6 @@ export async function testDatabaseConnection() {
     
     // Test 3: Count existing records
     console.log('🔍 TEST 3: Counting existing records...');
-    const { count: profilesCount } = await supabase
-      .from('profiles')
-      .select('*', { count: 'exact', head: true });
-    
     const { count: userProfilesCount } = await supabase
       .from('user_profiles')
       .select('*', { count: 'exact', head: true });
@@ -771,7 +767,6 @@ export async function testDatabaseConnection() {
       .select('*', { count: 'exact', head: true });
     
     console.log('📊 Record counts:', {
-      profiles: profilesCount,
       user_profiles: userProfilesCount,
       communities: communitiesCount
     });
@@ -786,84 +781,44 @@ export async function testDatabaseConnection() {
 
 // Debug function to log profile sync status
 export async function debugProfileStatus(userId: string) {
-      // Get username for logging
-    const { data: userProfile } = await supabase
-      .from('user_profiles')
-      .select('username')
-      .eq('id', userId)
-      .single();
-    
-    const username = userProfile?.username || 'unknown';
-    console.log('🔍 Debug: Checking profile status for user:', username);
+  // Get username for logging
+  const { data: userProfile } = await supabase
+    .from('user_profiles')
+    .select('username')
+    .eq('id', userId)
+    .single();
   
+  const username = userProfile?.username || 'unknown';
+  console.log('🔍 Debug: Checking profile status for user:', username);
+
   try {
-    const { data: userProfile } = await supabase
+    const { data: fullUserProfile } = await supabase
       .from('user_profiles')
       .select('*')
       .eq('id', userId)
       .single();
     
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
-    
-    console.log('📊 user_profiles exists:', !!userProfile);
-    console.log('📊 profiles exists:', !!profile);
+    console.log('📊 user_profiles exists:', !!fullUserProfile);
+    console.log('📊 user_profiles data:', fullUserProfile);
   } catch (error) {
     console.error('❌ Debug profile status error:', error);
   }
 }
 
 export async function ensureUserProfilesExist(userId: string, userData?: ProfileData) {
-      // Get username for logging
-    const { data: userProfile } = await supabase
-      .from('user_profiles')
-      .select('username')
-      .eq('id', userId)
-      .single();
-    
-    const username = userProfile?.username || 'unknown';
-    console.log('🔄 PROFILE SYNC: Starting profile sync for user:', username);
+  // Get username for logging
+  const { data: userProfile } = await supabase
+    .from('user_profiles')
+    .select('username')
+    .eq('id', userId)
+    .single();
+  
+  const username = userProfile?.username || 'unknown';
+  console.log('🔄 PROFILE SYNC: Starting profile sync for user:', username);
   console.log('📋 PROFILE SYNC: Profile data:', userData);
 
   try {
-    // Step 1: Ensure profiles table record exists
-    const { data: existingProfile, error: profileFetchError } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('id', userId)
-      .single();
-
-    if (profileFetchError && profileFetchError.code === 'PGRST116') {
-      // Profile doesn't exist, create it
-      console.log('🔄 PROFILE SYNC: Creating profiles record...');
-      const { error: profileInsertError } = await supabase
-        .from('profiles')
-        .insert({
-          id: userId,
-          user_id: userId,
-          nickname: userData?.nickname || 'Player',
-          school: userData?.school || null,
-          avatar_icon: 'person',
-          avatar_icon_color: '#FFFFFF',
-          avatar_background_color: '#007AFF',
-        });
-
-      if (profileInsertError) {
-        console.error('❌ PROFILE SYNC: Error creating profiles record:', profileInsertError);
-        throw profileInsertError;
-      }
-      console.log('✅ PROFILE SYNC: Created profiles record');
-    } else if (profileFetchError) {
-      console.error('❌ PROFILE SYNC: Error fetching profiles record:', profileFetchError);
-      throw profileFetchError;
-    } else {
-      console.log('✅ PROFILE SYNC: Profiles record already exists');
-    }
-
-    // Step 2: Ensure user_profiles table record exists
+    // Check if user_profiles record exists
     const { data: existingUserProfile, error: userProfileFetchError } = await supabase
       .from('user_profiles')
       .select('id')
@@ -871,21 +826,26 @@ export async function ensureUserProfilesExist(userId: string, userData?: Profile
       .single();
 
     if (userProfileFetchError && userProfileFetchError.code === 'PGRST116') {
-      // User profile doesn't exist, create it
-      console.log('🔄 PROFILE SYNC: Creating user_profiles record...');
+      // User profile doesn't exist, create it with all fields
+      console.log('🔄 PROFILE SYNC: Creating unified user_profiles record...');
       const { error: userProfileInsertError } = await supabase
         .from('user_profiles')
         .insert({
           id: userId,
           username: userData?.username || 'user' + Date.now(),
           display_name: userData?.nickname || 'Player',
+          nickname: userData?.nickname || 'Player',
+          school: userData?.school || null,
+          avatar_icon: 'person',
+          avatar_icon_color: '#FFFFFF',
+          avatar_background_color: '#007AFF',
         });
 
       if (userProfileInsertError) {
         console.error('❌ PROFILE SYNC: Error creating user_profiles record:', userProfileInsertError);
         throw userProfileInsertError;
       }
-      console.log('✅ PROFILE SYNC: Created user_profiles record');
+      console.log('✅ PROFILE SYNC: Created unified user_profiles record');
     } else if (userProfileFetchError) {
       console.error('❌ PROFILE SYNC: Error fetching user_profiles record:', userProfileFetchError);
       throw userProfileFetchError;

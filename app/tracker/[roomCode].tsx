@@ -8,13 +8,13 @@ import * as Clipboard from 'expo-clipboard';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  Alert,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    Alert,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import QRCodeSVG from 'react-native-qrcode-svg';
 
@@ -443,7 +443,7 @@ const DieStatsTracker: React.FC = () => {
 
 
       const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
+        .from('user_profiles')
         .select('nickname')
         .eq('id', currentUser.id)
         .single();

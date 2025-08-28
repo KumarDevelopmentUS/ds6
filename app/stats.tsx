@@ -33,7 +33,6 @@ interface OverallStats {
   avgScore: number;
   totalGoals: number;
   totalSinks: number;
-  totalSpecialThrows: number;
   totalFifaSuccess: number;
   totalFifaAttempts: number;
   fifaRate: number;
@@ -45,22 +44,27 @@ interface OverallStats {
   favoriteArena: string;
   nemesisPlayer: string;
   bestPartner: string;
-  averageRanking: number; // New field for the combined ranking score
+  averageRanking: number;
 
-  // New granular counters
-  totalTableDie: number;
+  // Current Beer Die throw outcomes
   totalLine: number;
-  totalKnicker: number;
+  totalHit: number;
+  totalGoal: number;
   totalDink: number;
-  totalDrop: number;
+  totalSink: number;
+  totalInvalid: number;
+  
+  // Current Beer Die defense outcomes
   totalMiss: number;
-  totalLong: number;
-  totalCatchPlusAura: number;
-  totalBody: number; // Added for body catches
-  totalTwoHands: number; // Added for two hands catches
-  totalMissedCatches: number; // Sum of drop, miss, twoHands, body
-  totalGoodKick: number; // Added for good FIFA kicks
-  totalBadKick: number; // Added for bad FIFA kicks
+  
+  // Current FIFA outcomes
+  totalGoodKick: number;
+  totalBadKick: number;
+  
+  // Calculated stats
+  totalValidThrows: number;
+  totalSuccessfulCatches: number;
+  totalRedemptionShots: number;
 }
 
 // Define achievement tiers
@@ -178,7 +182,7 @@ export default function StatisticsScreen() {
 
   const calculateOverallStats = (matches: any[], userId: string): OverallStats => {
     let stats: OverallStats = {
-      totalMatches: 0, // Will be set after filtering matches
+      totalMatches: 0,
       totalWins: 0,
       totalLosses: 0,
       winRate: 0,
@@ -192,7 +196,6 @@ export default function StatisticsScreen() {
       avgScore: 0,
       totalGoals: 0,
       totalSinks: 0,
-      totalSpecialThrows: 0,
       totalFifaSuccess: 0,
       totalFifaAttempts: 0,
       fifaRate: 0,
@@ -204,21 +207,27 @@ export default function StatisticsScreen() {
       favoriteArena: '',
       nemesisPlayer: '',
       bestPartner: '',
-      averageRanking: 0, // Initialize new field
-      // Initialize new granular counters
-      totalTableDie: 0,
+      averageRanking: 0,
+      
+      // Current Beer Die throw outcomes
       totalLine: 0,
-      totalKnicker: 0,
+      totalHit: 0,
+      totalGoal: 0,
       totalDink: 0,
-      totalDrop: 0,
+      totalSink: 0,
+      totalInvalid: 0,
+      
+      // Current Beer Die defense outcomes
       totalMiss: 0,
-      totalLong: 0,
-      totalCatchPlusAura: 0,
-      totalBody: 0,
-      totalTwoHands: 0,
-      totalMissedCatches: 0,
+      
+      // Current FIFA outcomes
       totalGoodKick: 0,
       totalBadKick: 0,
+      
+      // Calculated stats
+      totalValidThrows: 0,
+      totalSuccessfulCatches: 0,
+      totalRedemptionShots: 0,
     };
 
     const arenaCount: { [key: string]: number } = {};
@@ -250,41 +259,39 @@ export default function StatisticsScreen() {
           stats.totalScore += userPlayerStats.score || 0;
           stats.totalGoals += userPlayerStats.goals || 0;
           stats.totalSinks += userPlayerStats.sink || 0;
-          stats.totalSpecialThrows += userPlayerStats.specialThrows || 0;
           stats.totalFifaSuccess += userPlayerStats.fifaSuccess || 0;
           stats.totalFifaAttempts += userPlayerStats.fifaAttempts || 0;
           stats.totalAura += userPlayerStats.aura || 0;
           stats.totalOnFireCount += userPlayerStats.onFireCount || 0;
           
-          // Granular Catch Attempts
-          stats.totalDrop += userPlayerStats.drop || 0;
+          // Current Beer Die throw outcomes
+          stats.totalLine += userPlayerStats.line || 0;
+          stats.totalHit += userPlayerStats.hit || 0;
+          stats.totalGoal += userPlayerStats.goal || 0;
+          stats.totalDink += userPlayerStats.dink || 0;
+          stats.totalSink += userPlayerStats.sink || 0;
+          stats.totalInvalid += userPlayerStats.invalid || 0;
+          
+          // Current Beer Die defense outcomes
           stats.totalMiss += userPlayerStats.miss || 0;
-          stats.totalTwoHands += userPlayerStats.twoHands || 0;
-          stats.totalBody += userPlayerStats.body || 0;
+          
+          // Current FIFA outcomes
+          stats.totalGoodKick += userPlayerStats.goodKick || 0;
+          stats.totalBadKick += userPlayerStats.badKick || 0;
 
-          // Sum of all ways a catch attempt could fail or succeed (for catchRate)
-          const catchAttempts = (userPlayerStats.catches || 0) + 
-                                (userPlayerStats.drop || 0) + 
-                                (userPlayerStats.miss || 0) + 
-                                (userPlayerStats.twoHands || 0) + 
-                                (userPlayerStats.body || 0);
+          // Calculate catch attempts (catches + misses)
+          const catchAttempts = (userPlayerStats.catches || 0) + (userPlayerStats.miss || 0);
           stats.totalCatchAttempts += catchAttempts;
-          stats.totalMissedCatches += (userPlayerStats.drop || 0) + (userPlayerStats.miss || 0) + (userPlayerStats.twoHands || 0) + (userPlayerStats.body || 0);
-
+          
+          // Calculate valid throws (line + hit + goal + dink + sink)
+          const validThrows = (userPlayerStats.line || 0) + (userPlayerStats.hit || 0) + 
+                             (userPlayerStats.goal || 0) + (userPlayerStats.dink || 0) + (userPlayerStats.sink || 0);
+          stats.totalValidThrows += validThrows;
+          
           // Track longest streak
           if (userPlayerStats.hitStreak > stats.longestStreak) {
             stats.longestStreak = userPlayerStats.hitStreak;
           }
-
-          // Granular counter tracking
-          stats.totalTableDie += userPlayerStats.tableDie || 0;
-          stats.totalLine += userPlayerStats.line || 0;
-          stats.totalKnicker += userPlayerStats.knicker || 0;
-          stats.totalDink += userPlayerStats.dink || 0;
-          stats.totalLong += userPlayerStats.long || 0;
-          stats.totalCatchPlusAura += (userPlayerStats.catches || 0) + (userPlayerStats.aura || 0);
-          stats.totalGoodKick += userPlayerStats.goodKick || 0;
-          stats.totalBadKick += userPlayerStats.badKick || 0;
         }
 
         // Track opponent and partner performance
@@ -331,6 +338,10 @@ export default function StatisticsScreen() {
     stats.avgScore = stats.totalMatches > 0 ? stats.totalScore / stats.totalMatches : 0;
     stats.fifaRate = stats.totalFifaAttempts > 0 ? (stats.totalFifaSuccess / stats.totalFifaAttempts) * 100 : 0;
     stats.avgMatchDuration = stats.totalMatches > 0 ? stats.totalMatchDuration / stats.totalMatches : 0;
+    
+    // Calculate additional stats
+    stats.totalSuccessfulCatches = stats.totalCatches;
+    stats.totalRedemptionShots = stats.totalInvalid; // Invalid throws become redemption shots
 
     // Calculate average ranking: 45% throw + 45% catch + 15% FIFA (max 105%)
     const hitRateDecimal = stats.hitRate / 100;
@@ -501,27 +512,21 @@ export default function StatisticsScreen() {
   };
 
   const calculateAchievements = (stats: OverallStats, matches: any[]): AchievementData[] => {
-    // Harder Tier Definitions (Adjust these values as needed for difficulty)
+    // Core achievement tiers
     const matchTiers = [5, 10, 20, 40, 80]; // Matches played
     const winTiers = [5, 10, 20, 40, 80]; // Wins
     const scoreTiers = [25, 50, 100, 200, 500]; // Score
-    const goalTiers = [5, 10, 20, 40, 80]; // Goals
-    const sinkTiers = [5, 10, 20, 40, 80]; // Sinks
     const onFireTiers = [5, 10, 20, 40, 80]; // Times on fire
     const durationTiers = [10, 30, 60, 120, 300]; // Minutes (10h, 40h, 100h, 200h, 400h converted to minutes)
 
-    // Granular stat tiers (Adjust these values for difficulty)
-    const tableDieTiers = [5, 10, 20, 40, 80];
+    // Current Beer Die stat tiers
     const lineTiers = [5, 10, 20, 40, 80];
-    const knickerTiers = [5, 10, 20, 40, 80];
+    const hitTiers = [5, 10, 20, 40, 80];
+    const goalTiers = [5, 10, 20, 40, 80];
     const dinkTiers = [5, 10, 20, 40, 80];
-    const dropTiers = [5, 10, 20, 40, 80]; // Negative stat
-    const missTiers = [5, 10, 20, 40, 80]; // Negative stat
-    const longTiers = [5, 10, 20, 40, 80];
-    const catchPlusAuraTiers = [5, 10, 20, 40, 80];
-    const bodyTiers = [5, 10, 20, 40, 80];
-    const twoHandsTiers = [5, 10, 20, 40, 80];
-    const missedCatchesTiers = [5, 10, 20, 40, 80];
+    const sinkTiers = [5, 10, 20, 40, 80];
+    const missTiers = [5, 10, 20, 40, 80]; // Defense stat
+    const goodKickTiers = [5, 10, 20, 40, 80]; // FIFA stat
 
 
     let achievements: AchievementData[] = [
@@ -633,17 +638,7 @@ export default function StatisticsScreen() {
         currentValue: Math.floor(stats.totalMatchDuration / 60), // Convert to minutes
         ...getAchievementTierProgress(Math.floor(stats.totalMatchDuration / 60), durationTiers), // Using durationTiers directly
       },
-      // New granular achievements
-      {
-        id: 'total_table_die',
-        title: 'Table Die Danny',
-        statName: 'Table Dies',
-        description: 'Total table dies.',
-        icon: 'cube',
-        color: '#d946b1',
-        currentValue: stats.totalTableDie,
-        ...getAchievementTierProgress(stats.totalTableDie, tableDieTiers),
-      },
+      // Current Beer Die achievements
       {
         id: 'total_line',
         title: 'Line Larry',
@@ -655,14 +650,24 @@ export default function StatisticsScreen() {
         ...getAchievementTierProgress(stats.totalLine, lineTiers),
       },
       {
-        id: 'total_knicker',
-        title: 'Knicker Knight',
-        statName: 'Knickers',
-        description: 'Total knickers.',
-        icon: 'bandage',
-        color: '#a855f7',
-        currentValue: stats.totalKnicker,
-        ...getAchievementTierProgress(stats.totalKnicker, knickerTiers),
+        id: 'total_hit',
+        title: 'Hit Master',
+        statName: 'Hits',
+        description: 'Total hits.',
+        icon: 'locate',
+        color: '#ef4444',
+        currentValue: stats.totalHit,
+        ...getAchievementTierProgress(stats.totalHit, hitTiers),
+      },
+      {
+        id: 'total_goal',
+        title: 'Goal Machine',
+        statName: 'Goals',
+        description: 'Total goals.',
+        icon: 'football',
+        color: '#3b82f6',
+        currentValue: stats.totalGoal,
+        ...getAchievementTierProgress(stats.totalGoal, goalTiers),
       },
       {
         id: 'total_dink',
@@ -675,74 +680,34 @@ export default function StatisticsScreen() {
         ...getAchievementTierProgress(stats.totalDink, dinkTiers),
       },
       {
-        id: 'total_drop',
-        title: 'Butterfingers',
-        statName: 'Drops',
-        description: 'Total drops.',
-        icon: 'sad',
-        color: '#6b7280',
-        currentValue: stats.totalDrop,
-        ...getAchievementTierProgress(stats.totalDrop, dropTiers),
+        id: 'total_sink',
+        title: 'Sink Master',
+        statName: 'Sinks',
+        description: 'Total sinks.',
+        icon: 'water',
+        color: '#06b6d4',
+        currentValue: stats.totalSink,
+        ...getAchievementTierProgress(stats.totalSink, sinkTiers),
       },
       {
         id: 'total_miss',
-        title: 'Miss Maestro',
+        title: 'Defensive Wall',
         statName: 'Misses',
-        description: 'Total misses.',
+        description: 'Total defensive misses.',
         icon: 'walk',
         color: '#be185f',
         currentValue: stats.totalMiss,
         ...getAchievementTierProgress(stats.totalMiss, missTiers),
       },
       {
-        id: 'total_long',
-        title: 'Long Shot Larry',
-        statName: 'Long Shots',
-        description: 'Total long shots.',
-        icon: 'chevron-forward-circle',
-        color: '#0ea5e9',
-        currentValue: stats.totalLong,
-        ...getAchievementTierProgress(stats.totalLong, longTiers),
-      },
-      {
-        id: 'total_catch_plus_aura',
-        title: 'Aura Catcher',
-        statName: 'Catches + Aura',
-        description: 'Total catches + aura gained.',
-        icon: 'sparkles',
-        color: '#7e22ce',
-        currentValue: stats.totalCatchPlusAura,
-        ...getAchievementTierProgress(stats.totalCatchPlusAura, catchPlusAuraTiers),
-      },
-      {
-        id: 'total_body_catch',
-        title: 'Body Brody',
-        statName: 'Body Catches',
-        description: 'Total body catches.',
-        icon: 'body',
-        color: '#2563eb',
-        currentValue: stats.totalBody,
-        ...getAchievementTierProgress(stats.totalBody, bodyTiers),
-      },
-      {
-        id: 'total_two_hands_catch',
-        title: 'Two Hand Harold',
-        statName: 'Two-Hand Catches',
-        description: 'Total two-hand catches.',
-        icon: 'hand-right',
-        color: '#0d9488',
-        currentValue: stats.totalTwoHands,
-        ...getAchievementTierProgress(stats.totalTwoHands, twoHandsTiers),
-      },
-      {
-        id: 'total_missed_catches',
-        title: 'Needs Practice',
-        statName: 'Missed Catches',
-        description: 'Total missed catch attempts (drops, misses, etc.).',
-        icon: 'sad-outline',
-        color: '#dc2626',
-        currentValue: stats.totalMissedCatches,
-        ...getAchievementTierProgress(stats.totalMissedCatches, missedCatchesTiers),
+        id: 'total_good_kick',
+        title: 'FIFA Pro',
+        statName: 'Good Kicks',
+        description: 'Total successful FIFA kicks.',
+        icon: 'footsteps',
+        color: '#f59e0b',
+        currentValue: stats.totalGoodKick,
+        ...getAchievementTierProgress(stats.totalGoodKick, goodKickTiers),
       },
     ];
 
@@ -1003,8 +968,23 @@ export default function StatisticsScreen() {
           </View>
           
           <View style={styles.detailRow}>
-            <ThemedText variant="body">Knicker</ThemedText>
-            <ThemedText variant="body" color="primary">{stats.totalKnicker}</ThemedText>
+            <ThemedText variant="body">Valid Throws</ThemedText>
+            <ThemedText variant="body" color="primary">{stats.totalValidThrows}</ThemedText>
+          </View>
+          
+          <View style={styles.detailRow}>
+            <ThemedText variant="body">Lines</ThemedText>
+            <ThemedText variant="body" color="primary">{stats.totalLine}</ThemedText>
+          </View>
+          
+          <View style={styles.detailRow}>
+            <ThemedText variant="body">Hits</ThemedText>
+            <ThemedText variant="body" color="primary">{stats.totalHit}</ThemedText>
+          </View>
+          
+          <View style={styles.detailRow}>
+            <ThemedText variant="body">Goals</ThemedText>
+            <ThemedText variant="body" color="primary">{stats.totalGoal}</ThemedText>
           </View>
           
           <View style={styles.detailRow}>
@@ -1013,33 +993,18 @@ export default function StatisticsScreen() {
           </View>
           
           <View style={styles.detailRow}>
-            <ThemedText variant="body">Goals</ThemedText>
-            <ThemedText variant="body" color="primary">{stats.totalGoals}</ThemedText>
-          </View>
-          
-          <View style={styles.detailRow}>
             <ThemedText variant="body">Sinks</ThemedText>
             <ThemedText variant="body" color="primary">{stats.totalSinks}</ThemedText>
           </View>
           
           <View style={styles.detailRow}>
+            <ThemedText variant="body">Invalid Throws</ThemedText>
+            <ThemedText variant="body" color="primary">{stats.totalInvalid}</ThemedText>
+          </View>
+          
+          <View style={styles.detailRow}>
             <ThemedText variant="body">Times On Fire</ThemedText>
             <ThemedText variant="body" color="primary">{stats.totalOnFireCount} 🔥</ThemedText>
-          </View>
-          
-          <View style={styles.detailRow}>
-            <ThemedText variant="body">Table Die</ThemedText>
-            <ThemedText variant="body" color="primary">{stats.totalTableDie}</ThemedText>
-          </View>
-          
-          <View style={styles.detailRow}>
-            <ThemedText variant="body">Line</ThemedText>
-            <ThemedText variant="body" color="primary">{stats.totalLine}</ThemedText>
-          </View>
-          
-          <View style={styles.detailRow}>
-            <ThemedText variant="body">Long</ThemedText>
-            <ThemedText variant="body" color="primary">{stats.totalLong}</ThemedText>
           </View>
         </ThemedView>
 
@@ -1065,18 +1030,13 @@ export default function StatisticsScreen() {
           </View>
           
           <View style={styles.detailRow}>
-            <ThemedText variant="body">Body Catches</ThemedText>
-            <ThemedText variant="body" color="primary">{stats.totalBody}</ThemedText>
+            <ThemedText variant="body">Defensive Misses</ThemedText>
+            <ThemedText variant="body" color="primary">{stats.totalMiss}</ThemedText>
           </View>
           
           <View style={styles.detailRow}>
-            <ThemedText variant="body">Two-Hand Catches</ThemedText>
-            <ThemedText variant="body" color="primary">{stats.totalTwoHands}</ThemedText>
-          </View>
-          
-          <View style={styles.detailRow}>
-            <ThemedText variant="body">Drops</ThemedText>
-            <ThemedText variant="body" color="primary">{stats.totalDrop}</ThemedText>
+            <ThemedText variant="body">Redemption Shots</ThemedText>
+            <ThemedText variant="body" color="primary">{stats.totalRedemptionShots}</ThemedText>
           </View>
           
           <View style={styles.detailRow}>
@@ -1085,25 +1045,35 @@ export default function StatisticsScreen() {
           </View>
         </ThemedView>
 
-        {/* Extra */}
+        {/* FIFA Statistics */}
         <ThemedView variant="card" style={styles.detailsCard}>
           <ThemedText variant="subtitle" style={styles.sectionTitle}>
-            Extra
+            FIFA Statistics
           </ThemedText>
           
           <View style={styles.detailRow}>
-            <ThemedText variant="body">FIFA Attempts</ThemedText>
+            <ThemedText variant="body">FIFA Success Rate</ThemedText>
+            <ThemedText variant="body" color="primary">{stats.fifaRate.toFixed(1)}%</ThemedText>
+          </View>
+          
+          <View style={styles.detailRow}>
+            <ThemedText variant="body">Total FIFA Attempts</ThemedText>
             <ThemedText variant="body" color="primary">{stats.totalFifaAttempts}</ThemedText>
           </View>
           
           <View style={styles.detailRow}>
-            <ThemedText variant="body">Good FIFA Kicks</ThemedText>
+            <ThemedText variant="body">Successful FIFA Kicks</ThemedText>
+            <ThemedText variant="body" color="primary">{stats.totalFifaSuccess}</ThemedText>
+          </View>
+          
+          <View style={styles.detailRow}>
+            <ThemedText variant="body">Good Kicks</ThemedText>
             <ThemedText variant="body" color="primary">{stats.totalGoodKick}</ThemedText>
           </View>
           
           <View style={styles.detailRow}>
-            <ThemedText variant="body">Redemption Catches</ThemedText>
-            <ThemedText variant="body" color="primary">{stats.totalCatchPlusAura}</ThemedText>
+            <ThemedText variant="body">Bad Kicks</ThemedText>
+            <ThemedText variant="body" color="primary">{stats.totalBadKick}</ThemedText>
           </View>
         </ThemedView>
 

@@ -54,15 +54,9 @@ export default function AccountScreen() {
     const currentUser = session?.user || null;
 
     if (currentUser) {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, first_name, nickname, school, avatar_icon, avatar_icon_color, avatar_background_color')
-        .eq('id', currentUser.id)
-        .single();
-      
-      const { data: userProfile, error: userProfileError } = await supabase
+      const { data: userProfile, error } = await supabase
         .from('user_profiles')
-        .select('avatar_url, username')
+        .select('id, first_name, nickname, school, avatar_icon, avatar_icon_color, avatar_background_color, avatar_url, username')
         .eq('id', currentUser.id)
         .single();
 
@@ -70,16 +64,16 @@ export default function AccountScreen() {
       const username = userProfile?.username || 'unknown';
       console.log('🔍 Loading profile for user:', username);
 
-      if (error || userProfileError) {
-        console.error('Error loading profile:', error?.message || userProfileError?.message);
+      if (error) {
+        console.error('Error loading profile:', error?.message);
         Alert.alert('Error', 'Failed to load profile data.');
-      } else if (data) {
+      } else if (userProfile) {
         setProfile({
-          ...data,
-          avatar_icon: data.avatar_icon || 'person',
-          avatar_icon_color: data.avatar_icon_color || '#FFFFFF',
-          avatar_background_color: data.avatar_background_color || theme.colors.primary,
-          avatar_url: userProfile?.avatar_url || null,
+          ...userProfile,
+          avatar_icon: userProfile.avatar_icon || 'person',
+          avatar_icon_color: userProfile.avatar_icon_color || '#FFFFFF',
+          avatar_background_color: userProfile.avatar_background_color || theme.colors.primary,
+          avatar_url: userProfile.avatar_url || null,
         });
       }
     } else {

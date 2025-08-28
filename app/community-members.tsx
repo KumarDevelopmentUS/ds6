@@ -8,14 +8,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  FlatList,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
+    ActivityIndicator,
+    Alert,
+    FlatList,
+    SafeAreaView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from 'react-native';
 
 type UserProfile = {
@@ -143,34 +143,24 @@ export default function CommunityMembersScreen() {
         return;
       }
 
-      // Fetch user profiles
-      const { data: userProfiles, error: userError } = await supabase
+      // Fetch user profiles with all needed data
+      const { data: userProfiles, error } = await supabase
         .from('user_profiles')
-        .select('id, username, display_name')
+        .select('id, username, display_name, nickname, school, avatar_icon, avatar_icon_color, avatar_background_color')
         .in('id', memberIds);
 
-      if (userError) throw userError;
+      if (error) throw error;
 
-      // Fetch profile details
-      const { data: profiles, error: profileError } = await supabase
-        .from('profiles')
-        .select('id, nickname, school, avatar_icon, avatar_icon_color, avatar_background_color')
-        .in('id', memberIds);
-
-      if (profileError) throw profileError;
-
-      // Combine the data
-      const profileMap = new Map(profiles.map(p => [p.id, p]));
+      // Map the data directly from unified user_profiles
       const combinedMembers = userProfiles.map(up => {
-        const profile = profileMap.get(up.id);
         return {
           id: up.id,
           username: up.username,
-          nickname: profile?.nickname || up.display_name || up.username,
-          school: getSchoolByValue(profile?.school)?.name || 'N/A',
-          avatar_icon: profile?.avatar_icon || 'person',
-          avatar_icon_color: profile?.avatar_icon_color || '#FFFFFF',
-          avatar_background_color: profile?.avatar_background_color || '#007AFF',
+          nickname: up.nickname || up.display_name || up.username,
+          school: getSchoolByValue(up.school)?.name || 'N/A',
+          avatar_icon: up.avatar_icon || 'person',
+          avatar_icon_color: up.avatar_icon_color || '#FFFFFF',
+          avatar_background_color: up.avatar_background_color || '#007AFF',
         };
       });
 

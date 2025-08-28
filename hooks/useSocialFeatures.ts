@@ -18,9 +18,9 @@ export const useUserProfile = () => {
     queryFn: async () => {
       if (!user) return null;
 
-      // Try to get profile from profiles table
+      // Get profile from unified user_profiles table
       const { data: profile, error } = await supabase
-        .from('profiles')
+        .from('user_profiles')
         .select('*')
         .eq('id', user.id)
         .single();
@@ -34,8 +34,9 @@ export const useUserProfile = () => {
           
           const defaultProfile = {
             id: user.id,
-            user_id: user.id,
+            username: user.email?.split('@')[0] || 'user' + Date.now(),
             nickname: user.user_metadata?.nickname || user.email?.split('@')[0] || 'Player',
+            display_name: user.user_metadata?.nickname || user.email?.split('@')[0] || 'Player',
             school: user.user_metadata?.school || null,
             avatar_icon: 'person',
             avatar_icon_color: '#FFFFFF',
@@ -43,7 +44,7 @@ export const useUserProfile = () => {
           };
 
           const { data: newProfile, error: createError } = await supabase
-            .from('profiles')
+            .from('user_profiles')
             .insert(defaultProfile)
             .select()
             .single();
@@ -192,12 +193,7 @@ export const usePosts = (communityId?: number) => {
       // Fetch both user_profiles (for avatar_url and username) and profiles (for fallback avatar data)
       const { data: userProfiles, error: userProfileError } = await supabase
         .from('user_profiles')
-        .select('id, avatar_url, username')
-        .in('id', userIds);
-
-      const { data: fallbackProfiles, error: fallbackProfileError } = await supabase
-        .from('profiles')
-        .select('id, avatar_icon, avatar_icon_color, avatar_background_color')
+        .select('id, avatar_url, username, avatar_icon, avatar_icon_color, avatar_background_color')
         .in('id', userIds);
 
       // Log usernames instead of user IDs for better debugging
@@ -208,33 +204,16 @@ export const usePosts = (communityId?: number) => {
 
 
 
-      // Create profile map for quick lookup, merging both data sources
+      // Create profile map for quick lookup from unified data
       const profileMap = (userProfiles || []).reduce((acc: any, profile: any) => {
-        acc[profile.id] = profile;
+        acc[profile.id] = {
+          ...profile,
+          avatar_icon: profile.avatar_icon || 'person',
+          avatar_icon_color: profile.avatar_icon_color || '#FFFFFF',
+          avatar_background_color: profile.avatar_background_color || '#007AFF',
+        };
         return acc;
       }, {});
-
-      // Merge fallback avatar data
-      (fallbackProfiles || []).forEach((fallbackProfile: any) => {
-        if (profileMap[fallbackProfile.id]) {
-          profileMap[fallbackProfile.id] = {
-            ...profileMap[fallbackProfile.id],
-            avatar_icon: fallbackProfile.avatar_icon || 'person',
-            avatar_icon_color: fallbackProfile.avatar_icon_color || '#FFFFFF',
-            avatar_background_color: fallbackProfile.avatar_background_color || '#007AFF',
-          };
-        } else {
-          // Create entry if user_profiles doesn't exist
-          profileMap[fallbackProfile.id] = {
-            id: fallbackProfile.id,
-            avatar_url: null,
-            username: null,
-            avatar_icon: fallbackProfile.avatar_icon || 'person',
-            avatar_icon_color: fallbackProfile.avatar_icon_color || '#FFFFFF',
-            avatar_background_color: fallbackProfile.avatar_background_color || '#007AFF',
-          };
-        }
-      });
 
 
 
@@ -425,17 +404,10 @@ export const usePost = (postId: string) => {
         .select('id')
         .eq('post_uid', postId);
 
-      // Get author profile picture and fallback avatar data
+      // Get author profile from unified user_profiles table
       const { data: authorProfile } = await supabase
         .from('user_profiles')
-        .select('avatar_url, username')
-        .eq('id', data.user_id)
-        .single();
-
-      // Get fallback avatar data from profiles table
-      const { data: fallbackProfile } = await supabase
-        .from('profiles')
-        .select('avatar_icon, avatar_icon_color, avatar_background_color')
+        .select('avatar_url, username, avatar_icon, avatar_icon_color, avatar_background_color')
         .eq('id', data.user_id)
         .single();
 
@@ -470,10 +442,10 @@ export const usePost = (postId: string) => {
         image_url: data.image_url,
         community_id: data.community_id,
         author_name: data.author_name,
-        // Use fallback avatar data if posts table doesn't have it
-        author_avatar_icon: data.author_avatar_icon || fallbackProfile?.avatar_icon || 'person',
-        author_avatar_icon_color: data.author_avatar_icon_color || fallbackProfile?.avatar_icon_color || '#FFFFFF',
-        author_avatar_background_color: data.author_avatar_background_color || fallbackProfile?.avatar_background_color || '#007AFF',
+        // Use author profile data if posts table doesn't have it
+        author_avatar_icon: data.author_avatar_icon || authorProfile?.avatar_icon || 'person',
+        author_avatar_icon_color: data.author_avatar_icon_color || authorProfile?.avatar_icon_color || '#FFFFFF',
+        author_avatar_background_color: data.author_avatar_background_color || authorProfile?.avatar_background_color || '#007AFF',
         author_profile_picture_url: authorProfile?.avatar_url || null,
         user_id: data.user_id,
         like_count: voteCounts?.length || 0,

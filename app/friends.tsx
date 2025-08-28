@@ -98,15 +98,15 @@ export default function FriendsScreen() {
     return () => clearTimeout(searchTimeout);
   }, [searchQuery, currentTab, currentUser]);
 
-  const combineProfileData = (userProfile: any, secondaryProfile?: any): UserProfile => {
+  const combineProfileData = (userProfile: any): UserProfile => {
     return {
       id: userProfile.id,
       username: userProfile.username,
-      nickname: secondaryProfile?.nickname || userProfile.display_name,
-      school: getSchoolByValue(secondaryProfile?.school)?.name || 'N/A',
-      avatar_icon: secondaryProfile?.avatar_icon || 'person',
-      avatar_icon_color: secondaryProfile?.avatar_icon_color || '#FFFFFF',
-      avatar_background_color: secondaryProfile?.avatar_background_color || theme.colors.primary,
+      nickname: userProfile.nickname || userProfile.display_name,
+      school: getSchoolByValue(userProfile.school)?.name || 'N/A',
+      avatar_icon: userProfile.avatar_icon || 'person',
+      avatar_icon_color: userProfile.avatar_icon_color || '#FFFFFF',
+      avatar_background_color: userProfile.avatar_background_color || theme.colors.primary,
     };
   };
 
@@ -114,27 +114,19 @@ export default function FriendsScreen() {
     const fullProfileMap = new Map<string, UserProfile>();
     if (ids.length === 0) return fullProfileMap;
 
-    const { data: userProfiles, error: userProfilesError } = await supabase
+    const { data: userProfiles, error } = await supabase
       .from('user_profiles')
-      .select('id, username, display_name')
+      .select('id, username, display_name, nickname, school, avatar_icon, avatar_icon_color, avatar_background_color')
       .in('id', ids);
 
-    const { data: secondaryProfiles, error: secondaryProfilesError } = await supabase
-      .from('profiles')
-      .select('id, nickname, school, avatar_icon, avatar_icon_color, avatar_background_color')
-      .in('id', ids);
-
-    if (userProfilesError || secondaryProfilesError) {
-      console.error("Profile loading error:", userProfilesError || secondaryProfilesError);
+    if (error) {
+      console.error("Profile loading error:", error);
       Alert.alert('Error', 'Could not load profile data.');
       return fullProfileMap;
     }
 
-    const secondaryProfilesMap = new Map(secondaryProfiles.map(p => [p.id, p]));
-    
     userProfiles.forEach(up => {
-      const sp = secondaryProfilesMap.get(up.id);
-      fullProfileMap.set(up.id, combineProfileData(up, sp));
+      fullProfileMap.set(up.id, combineProfileData(up));
     });
 
     return fullProfileMap;

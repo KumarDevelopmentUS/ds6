@@ -241,7 +241,7 @@ export default function JoinMatchScreen() {
     try {
       // Get user profile for nickname
       const { data: profileData } = await supabase
-        .from('profiles')
+        .from('user_profiles')
         .select('nickname')
         .eq('id', session.user.id)
         .single();

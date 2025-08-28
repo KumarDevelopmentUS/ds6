@@ -33,7 +33,7 @@ export const DebugPanel = () => {
 
       // Step 3: Test database connection
       const { data: connTest, error: connError } = await supabase
-        .from('profiles')
+        .from('user_profiles')
         .select('count')
         .limit(1);
       

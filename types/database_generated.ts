@@ -344,14 +344,20 @@ export type Database = {
       user_profiles: {
         Row: {
           achievements: string[] | null
+          avatar_background_color: string | null
+          avatar_icon: string | null
+          avatar_icon_color: string | null
           avatar_url: string | null
           average_rating: number | null
           best_rating: number | null
           created_at: string | null
           display_name: string | null
+          first_name: string | null
           id: string
+          nickname: string | null
           notification_settings: Json | null
           preferred_theme: string | null
+          school: string | null
           total_hits: number | null
           total_matches_played: number | null
           total_throws: number | null
@@ -361,14 +367,20 @@ export type Database = {
         }
         Insert: {
           achievements?: string[] | null
+          avatar_background_color?: string | null
+          avatar_icon?: string | null
+          avatar_icon_color?: string | null
           avatar_url?: string | null
           average_rating?: number | null
           best_rating?: number | null
           created_at?: string | null
           display_name?: string | null
+          first_name?: string | null
           id: string
+          nickname?: string | null
           notification_settings?: Json | null
           preferred_theme?: string | null
+          school?: string | null
           total_hits?: number | null
           total_matches_played?: number | null
           total_throws?: number | null
@@ -378,14 +390,20 @@ export type Database = {
         }
         Update: {
           achievements?: string[] | null
+          avatar_background_color?: string | null
+          avatar_icon?: string | null
+          avatar_icon_color?: string | null
           avatar_url?: string | null
           average_rating?: number | null
           best_rating?: number | null
           created_at?: string | null
           display_name?: string | null
+          first_name?: string | null
           id?: string
+          nickname?: string | null
           notification_settings?: Json | null
           preferred_theme?: string | null
+          school?: string | null
           total_hits?: number | null
           total_matches_played?: number | null
           total_throws?: number | null

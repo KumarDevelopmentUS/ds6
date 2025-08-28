@@ -79,32 +79,26 @@ export default function UserProfileScreen() {
     if (!userId || typeof userId !== 'string') return;
 
     try {
-      // Fetch user profile from both tables
-      const { data: userProfile, error: userError } = await supabase
+      // Fetch user profile from unified user_profiles table
+      const { data: userProfile, error } = await supabase
         .from('user_profiles')
-        .select('id, username, display_name, avatar_url')
+        .select('id, username, display_name, nickname, school, avatar_icon, avatar_icon_color, avatar_background_color, avatar_url')
         .eq('id', userId)
         .single();
 
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('id, nickname, school, avatar_icon, avatar_icon_color, avatar_background_color')
-        .eq('id', userId)
-        .single();
-
-      if (userError && profileError) {
+      if (error) {
         throw new Error('User not found');
       }
 
       const combinedProfile: UserProfile = {
         id: userId,
-        username: userProfile?.username || 'unknown',
-        nickname: profile?.nickname || userProfile?.display_name || 'Player',
-        school: profile?.school ? getSchoolByValue(profile.school)?.name || 'N/A' : 'N/A',
-        avatar_icon: profile?.avatar_icon || 'person',
-        avatar_icon_color: profile?.avatar_icon_color || '#FFFFFF',
-        avatar_background_color: profile?.avatar_background_color || theme.colors.primary,
-        avatar_url: userProfile?.avatar_url,
+        username: userProfile.username || 'unknown',
+        nickname: userProfile.nickname || userProfile.display_name || 'Player',
+        school: userProfile.school ? getSchoolByValue(userProfile.school)?.name || 'N/A' : 'N/A',
+        avatar_icon: userProfile.avatar_icon || 'person',
+        avatar_icon_color: userProfile.avatar_icon_color || '#FFFFFF',
+        avatar_background_color: userProfile.avatar_background_color || theme.colors.primary,
+        avatar_url: userProfile.avatar_url,
       };
 
       setProfile(combinedProfile);
