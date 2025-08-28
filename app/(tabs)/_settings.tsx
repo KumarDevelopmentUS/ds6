@@ -22,7 +22,7 @@ export default function AccountScreen() {
   const router = useRouter();
   const { theme } = useTheme();
   const { vibrationEnabled, setVibrationEnabled } = useHaptics();
-  const { communities: userCommunities, isLoading: communitiesLoading } = useFeed();
+  const { communities: userCommunities, isLoading: communitiesLoading, refetch } = useFeed();
   const { session } = useAuth();
   const [profile, setProfile] = useState<{
     id: string;
@@ -100,10 +100,7 @@ export default function AccountScreen() {
         setIsInGeneralCommunity(true);
         Alert.alert('Success', 'You have joined the General community!');
         // Refresh communities list
-        if (userCommunities) {
-          // Trigger a refetch of communities
-          useFeed().refetch();
-        }
+        refetch();
       } else {
         Alert.alert('Error', result.error || 'Failed to join General community');
       }
@@ -150,7 +147,7 @@ export default function AccountScreen() {
         },
       ]
     );
-    } catch (error) {
+    } catch (alertError) {
       clearTimeout(alertTimeout);
       performLogout();
     }
@@ -170,7 +167,7 @@ export default function AccountScreen() {
         return;
       }
       
-      const { data: { session } } = await supabase.auth.getSession();
+      await supabase.auth.getSession();
       
       router.replace('/(tabs)/' as any);
       
