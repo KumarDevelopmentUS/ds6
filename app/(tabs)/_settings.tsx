@@ -5,6 +5,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Alert, SafeAreaView, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
+import { isUserInGeneralCommunity, joinGeneralCommunity } from '@/utils/profileSync';
 
 
 import { UserAvatar } from '../../components/social/UserAvatar';
@@ -35,6 +36,8 @@ export default function AccountScreen() {
   } | null>(null);
   const [loading, setLoading] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isInGeneralCommunity, setIsInGeneralCommunity] = useState<boolean | null>(null);
+  const [joiningGeneral, setJoiningGeneral] = useState(false);
 
   useEffect(() => {
     loadUserAndProfile();
@@ -76,10 +79,40 @@ export default function AccountScreen() {
           avatar_url: userProfile.avatar_url || null,
         });
       }
+
+      // Check General community membership
+      const inGeneral = await isUserInGeneralCommunity(currentUser.id);
+      setIsInGeneralCommunity(inGeneral);
     } else {
       setProfile(null);
+      setIsInGeneralCommunity(null);
     }
     setLoading(false);
+  };
+
+  const handleJoinGeneralCommunity = async () => {
+    if (joiningGeneral || !session?.user) return;
+    
+    setJoiningGeneral(true);
+    try {
+      const result = await joinGeneralCommunity(session.user.id);
+      if (result.success) {
+        setIsInGeneralCommunity(true);
+        Alert.alert('Success', 'You have joined the General community!');
+        // Refresh communities list
+        if (userCommunities) {
+          // Trigger a refetch of communities
+          useFeed().refetch();
+        }
+      } else {
+        Alert.alert('Error', result.error || 'Failed to join General community');
+      }
+    } catch (error) {
+      console.error('Error joining General community:', error);
+      Alert.alert('Error', 'Failed to join General community');
+    } finally {
+      setJoiningGeneral(false);
+    }
   };
 
   const handleLogout = async () => {
@@ -336,6 +369,33 @@ export default function AccountScreen() {
                 </ThemedText>
               </View>
             )}
+
+            {/* Join General Community Button */}
+            {isInGeneralCommunity === false && (
+              <View style={styles.joinGeneralContainer}>
+                <View style={styles.joinGeneralInfo}>
+                  <View style={[styles.communityIcon, { backgroundColor: theme.colors.info }]}>
+                    <Ionicons name="globe-outline" size={20} color="#FFFFFF" />
+                  </View>
+                  <View style={styles.communityText}>
+                    <ThemedText variant="body" style={styles.communityName}>
+                      General Community
+                    </ThemedText>
+                    <ThemedText variant="caption" style={styles.communityType}>
+                      Join the main community for all users
+                    </ThemedText>
+                  </View>
+                </View>
+                <ThemedButton
+                  title={joiningGeneral ? "Joining..." : "Join"}
+                  onPress={handleJoinGeneralCommunity}
+                  loading={joiningGeneral}
+                  size="small"
+                  variant="primary"
+                  style={styles.joinButton}
+                />
+              </View>
+            )}
           </ThemedView>
         </ThemedView>
       )}
@@ -564,6 +624,24 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     opacity: 0.7,
     lineHeight: 18,
+  },
+  joinGeneralContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#e5e5e5',
+  },
+  joinGeneralInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  joinButton: {
+    marginLeft: 12,
   },
   loginCard: {
     alignItems: 'center',
