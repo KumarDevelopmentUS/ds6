@@ -106,33 +106,36 @@ User has ${info.step5?.count || 0} memberships
     try {
       setIsLoading(true);
       
-      // Get first available community
-      const { data: communities } = await supabase
-        .from('communities')
-        .select('*')
-        .limit(1);
-
-      if (!communities || communities.length === 0) {
-        Alert.alert('No communities exist');
-        return;
+      // Import the function from profileSync
+      const { fixUserCommunityMembership } = await import('../utils/profileSync');
+      const result = await fixUserCommunityMembership();
+      
+      if (result?.success) {
+        Alert.alert('Success', result.message || 'Added to community! Please refresh the app.');
+      } else {
+        Alert.alert('Error', result?.error || 'Failed to add to community');
       }
 
-      // Add user to first community
-      const { error } = await supabase
-        .from('user_communities')
-        .insert({
-          user_id: session.user.id,
-          community_id: communities[0].id
-        });
+    } catch (error) {
+      Alert.alert('Error', error instanceof Error ? error.message : 'Unknown error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-      if (error) {
-        if (error.code === '23505') {
-          Alert.alert('Already a member', 'You are already a member of this community');
-        } else {
-          Alert.alert('Error', error.message);
-        }
+  const fixAllUsersCommunities = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Import the function from profileSync
+      const { fixAllUsersCommunityMembership } = await import('../utils/profileSync');
+      const result = await fixAllUsersCommunityMembership();
+      
+      if (result?.success) {
+        Alert.alert('Bulk Fix Complete', result.message || 'Bulk fix completed successfully!');
+        console.log('Bulk fix results:', result);
       } else {
-        Alert.alert('Success', 'Added to community! Please refresh the app.');
+        Alert.alert('Bulk Fix Failed', result?.error || 'Failed to complete bulk fix');
       }
 
     } catch (error) {
@@ -210,6 +213,14 @@ User has ${info.step5?.count || 0} memberships
       >
         <Text style={styles.buttonText}>🔧 Fix Communities</Text>
       </TouchableOpacity>
+      
+      <TouchableOpacity 
+        style={[styles.button, styles.bulkFixButton, isLoading && styles.buttonDisabled]} 
+        onPress={fixAllUsersCommunities}
+        disabled={isLoading}
+      >
+        <Text style={styles.buttonText}>🏘️ Fix All Users Communities</Text>
+      </TouchableOpacity>
 
       <TouchableOpacity 
         style={[styles.button, styles.refreshButton, isLoading && styles.buttonDisabled]} 
@@ -259,6 +270,9 @@ const styles = StyleSheet.create({
   },
   fixButton: {
     backgroundColor: '#28a745',
+  },
+  bulkFixButton: {
+    backgroundColor: '#6f42c1',
   },
   refreshButton: {
     backgroundColor: '#ffc107',

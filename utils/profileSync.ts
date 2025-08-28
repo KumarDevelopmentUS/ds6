@@ -888,15 +888,19 @@ export async function joinDefaultCommunity(userId: string) {
       return { success: true, message: 'User already in a community' };
     }
 
-    // Use the specific General community (ID 1) instead of searching by name
-    const defaultCommunityId = 1; // This is the original "General" community
-    
-    console.log('🔄 COMMUNITY DEBUG: Adding user to General community (ID 1)...');
+    // Ensure the General community exists, create it if it doesn't
+    let generalCommunity = await ensureGeneralCommunityExists();
+    if (!generalCommunity) {
+      console.error('❌ COMMUNITY DEBUG: Failed to ensure General community exists');
+      return { success: false, error: 'Failed to create General community' };
+    }
+
+    console.log('🔄 COMMUNITY DEBUG: Adding user to General community (ID:', generalCommunity.id, ')...');
     const { error: joinError } = await supabase
       .from('user_communities')
       .insert({
         user_id: userId,
-        community_id: defaultCommunityId,
+        community_id: generalCommunity.id,
       });
 
     if (joinError) {
@@ -909,12 +913,56 @@ export async function joinDefaultCommunity(userId: string) {
       throw joinError;
     }
 
-    console.log('🎉 COMMUNITY DEBUG: Successfully joined General community (ID 1)!');
+    console.log('🎉 COMMUNITY DEBUG: Successfully joined General community (ID:', generalCommunity.id, ')!');
     return { success: true, message: 'Joined General community' };
 
   } catch (error) {
     console.error('💥 COMMUNITY DEBUG: Unexpected error:', error);
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+}
+
+// Ensure the General community exists, create it if it doesn't
+export async function ensureGeneralCommunityExists() {
+  try {
+    // First try to find the General community
+    let { data: community, error: findError } = await supabase
+      .from('communities')
+      .select('*')
+      .eq('name', 'General')
+      .eq('type', 'general')
+      .single();
+
+    if (findError && findError.code === 'PGRST116') {
+      // Community doesn't exist, create it
+      console.log('📝 Creating General community...');
+      const { data: newCommunity, error: createError } = await supabase
+        .from('communities')
+        .insert({
+          name: 'General',
+          type: 'general',
+          description: 'General community for all users'
+        })
+        .select()
+        .single();
+      
+      if (createError) {
+        console.error('❌ Failed to create General community:', createError);
+        return null;
+      }
+      
+      console.log('✅ General community created with ID:', newCommunity.id);
+      return newCommunity;
+    } else if (findError) {
+      console.error('❌ Error finding General community:', findError);
+      return null;
+    } else {
+      console.log('✅ Found existing General community with ID:', community.id);
+      return community;
+    }
+  } catch (error) {
+    console.error('💥 Error ensuring General community exists:', error);
+    return null;
   }
 }
 
@@ -930,4 +978,79 @@ export const fixUserCommunityMembership = async () => {
   const result = await joinDefaultCommunity(user.id);
   console.log('Fix result:', result);
   return result;
+};
+
+// Function to automatically fix all users without community membership
+export const fixAllUsersCommunityMembership = async () => {
+  try {
+    console.log('🔧 Starting bulk fix for all users without community membership...');
+    
+    // Ensure General community exists
+    const generalCommunity = await ensureGeneralCommunityExists();
+    if (!generalCommunity) {
+      console.error('❌ Failed to ensure General community exists');
+      return { success: false, error: 'Failed to create General community' };
+    }
+
+    // Find all users who don't have community membership
+    const { data: usersWithoutCommunities, error: queryError } = await supabase
+      .from('user_profiles')
+      .select('id, username')
+      .not('id', 'in', `(
+        SELECT DISTINCT user_id 
+        FROM user_communities
+      )`);
+
+    if (queryError) {
+      console.error('❌ Error querying users without communities:', queryError);
+      return { success: false, error: queryError.message };
+    }
+
+    if (!usersWithoutCommunities || usersWithoutCommunities.length === 0) {
+      console.log('✅ All users already have community membership');
+      return { success: true, message: 'All users already have community membership' };
+    }
+
+    console.log(`🔄 Found ${usersWithoutCommunities.length} users without community membership`);
+
+    // Add each user to the General community
+    const results = [];
+    for (const user of usersWithoutCommunities) {
+      try {
+        const { error: joinError } = await supabase
+          .from('user_communities')
+          .insert({
+            user_id: user.id,
+            community_id: generalCommunity.id,
+          });
+
+        if (joinError && joinError.code !== '23505') { // Ignore duplicate key errors
+          console.error(`❌ Failed to add user ${user.username} (${user.id}):`, joinError);
+          results.push({ userId: user.id, username: user.username, success: false, error: joinError.message });
+        } else {
+          console.log(`✅ Added user ${user.username} (${user.id}) to General community`);
+          results.push({ userId: user.id, username: user.username, success: true });
+        }
+      } catch (error) {
+        console.error(`💥 Error adding user ${user.username} (${user.id}):`, error);
+        results.push({ userId: user.id, username: user.username, success: false, error: 'Unexpected error' });
+      }
+    }
+
+    const successCount = results.filter(r => r.success).length;
+    const failureCount = results.filter(r => !r.success).length;
+
+    console.log(`🎉 Bulk fix completed: ${successCount} successful, ${failureCount} failed`);
+    
+    return {
+      success: true,
+      message: `Fixed ${successCount} users, ${failureCount} failed`,
+      results,
+      summary: { total: usersWithoutCommunities.length, success: successCount, failure: failureCount }
+    };
+
+  } catch (error) {
+    console.error('💥 Unexpected error during bulk fix:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
 };
