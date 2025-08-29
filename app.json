@@ -2,7 +2,7 @@
   "expo": {
     "name": "DieStats6",
     "slug": "DieStats6",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "diestats",
