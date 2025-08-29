@@ -84,7 +84,7 @@ interface LiveMatch {
   id: string;
   roomCode: string;
   hostId: string | null; // HostId can be null for guest matches
-  status: 'waiting' | 'active' | 'finished';
+  status: 'active' | 'finished';
   createdAt: string;
   matchSetup: MatchSetup;
   participants: string[];
@@ -251,7 +251,7 @@ const DieStatsTracker: React.FC = () => {
           .from('live_matches')
           .select('*')
           .eq('roomCode', roomCodeString)
-          .in('status', ['waiting', 'active'])
+          .in('status', ['active'])
           .single();
 
         if (error) {

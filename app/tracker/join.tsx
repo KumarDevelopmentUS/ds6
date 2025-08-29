@@ -24,7 +24,7 @@ interface LiveMatch {
   id: string;
   roomCode: string;
   hostId: string;
-  status: 'waiting' | 'active' | 'finished';
+  status: 'active' | 'finished';
   matchSetup: {
     title: string;
     arena: string;
@@ -71,7 +71,7 @@ export default function JoinMatchScreen() {
         .from('live_matches')
         .select('*')
         .eq('roomCode', roomCode)
-        .in('status', ['waiting', 'active'])
+        .in('status', ['active'])
         .single();
 
       if (error) {
@@ -377,7 +377,7 @@ export default function JoinMatchScreen() {
             <ThemedText variant="caption">Room Code: {roomCode}</ThemedText>
             <View style={styles.statusRow}>
               <ThemedText variant="caption">
-                Status: {liveMatch.status === 'waiting' ? 'Waiting to Start' : 'In Progress'}
+                Status: {liveMatch.status === 'active' ? 'In Progress' : 'Finished'}
               </ThemedText>
               {liveMatch.status === 'active' && (
                 <View style={styles.activeIndicator}>

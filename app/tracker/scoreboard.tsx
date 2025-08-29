@@ -59,7 +59,7 @@ interface PlayerStats {
 interface LiveMatch {
   id: string;
   roomCode: string;
-  status: 'waiting' | 'active' | 'finished';
+  status: 'active' | 'finished';
   matchSetup: {
     title: string;
     arena: string;
@@ -119,7 +119,7 @@ export default function ScoreboardScreen() {
         .from('live_matches')
         .select('*')
         .eq('roomCode', roomCode)
-        .in('status', ['waiting', 'active', 'finished'])
+        .in('status', ['active', 'finished'])
         .single();
 
       if (error) {
@@ -241,8 +241,7 @@ export default function ScoreboardScreen() {
           <ThemedText variant="subtitle">{liveMatch.matchSetup.arena}</ThemedText>
           <ThemedText variant="caption">Room: {roomCode}</ThemedText>
           <ThemedText variant="caption">
-            Status: {liveMatch.status === 'waiting' ? 'Waiting to Start' : 
-                    liveMatch.status === 'active' ? 'In Progress' : 'Finished'}
+                    Status: {liveMatch.status === 'active' ? 'In Progress' : 'Finished'}
           </ThemedText>
         </ThemedView>
 
