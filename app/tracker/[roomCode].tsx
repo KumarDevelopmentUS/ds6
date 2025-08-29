@@ -8,13 +8,13 @@ import * as Clipboard from 'expo-clipboard';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-    Alert,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import QRCodeSVG from 'react-native-qrcode-svg';
 
@@ -149,6 +149,7 @@ const DieStatsTracker: React.FC = () => {
   const [showSetup, setShowSetup] = useState(false);
   const [showSettingsPanel, setShowSettingsPanel] = useState(false);
   const [showHomeConfirmation, setShowHomeConfirmation] = useState(false);
+  const [showFinishConfirmation, setShowFinishConfirmation] = useState(false);
 
   // NEW: Helper function to get initial empty player stats - Beer Die ruleset
   const getInitialPlayerStats = (): PlayerStats => ({
@@ -818,54 +819,47 @@ const DieStatsTracker: React.FC = () => {
   };
 
   // Handles finishing the match, determining the winner and updating live session status
-  const handleFinishMatch = async () => {
-    Alert.alert(
-      'Finish Match',
-      'Are you sure you want to finish this match? This action cannot be undone.',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Finish Match',
-          style: 'destructive',
-          onPress: async () => {
-            console.log('Attempting to finish match...');
-            const team1Score = calculateTeamScore(1);
-            const team2Score = calculateTeamScore(2);
+  const handleFinishMatch = () => {
+    setShowFinishConfirmation(true);
+  };
 
-            let winner = 0;
-            if (team1Score > team2Score) {
-              winner = 1;
-            } else if (team2Score > team1Score) {
-              winner = 2;
-            }
+  const confirmFinishMatch = async () => {
+    setShowFinishConfirmation(false);
+    console.log('Attempting to finish match...');
+    const team1Score = calculateTeamScore(1);
+    const team2Score = calculateTeamScore(2);
 
-            setWinnerTeam(winner);
-            setMatchFinished(true);
+    let winner = 0;
+    if (team1Score > team2Score) {
+      winner = 1;
+    } else if (team2Score > team1Score) {
+      winner = 2;
+    }
 
-            if (liveSessionId) {
-              try {
-                const { error } = await supabase
-                  .from('live_matches')
-                  .update({
-                    status: 'finished',
-                    winnerTeam: winner,
-                  })
-                  .eq('id', liveSessionId);
+    setWinnerTeam(winner);
+    setMatchFinished(true);
 
-                if (error) {
-                  console.error('Error finishing live match record:', error);
-                }
-              } catch (error) {
-                console.error('Error updating match status:', error);
-              }
-            }
-          },
-        },
-      ]
-    );
+    if (liveSessionId) {
+      try {
+        const { error } = await supabase
+          .from('live_matches')
+          .update({
+            status: 'finished',
+            winnerTeam: winner,
+          })
+          .eq('id', liveSessionId);
+
+        if (error) {
+          console.error('Error finishing live match record:', error);
+        }
+      } catch (error) {
+        console.error('Error updating match status:', error);
+      }
+    }
+  };
+
+  const cancelFinishMatch = () => {
+    setShowFinishConfirmation(false);
   };
 
   // Handles saving match statistics to the 'saved_matches' table
@@ -2058,6 +2052,40 @@ const DieStatsTracker: React.FC = () => {
                 onPress={confirmGoHome}
               >
                 <Text style={styles.modalConfirmText}>Go Home</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
+
+      {/* Finish Match Confirmation Modal */}
+      {showFinishConfirmation && (
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity 
+            style={styles.modalBackdrop}
+            onPress={cancelFinishMatch}
+          />
+          <View style={styles.confirmationModal}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Finish Match</Text>
+            </View>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalMessage}>
+                Are you sure you want to finish this match? This action cannot be undone.
+              </Text>
+            </View>
+            <View style={styles.modalActions}>
+              <TouchableOpacity 
+                style={styles.modalCancelButton}
+                onPress={cancelFinishMatch}
+              >
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.modalConfirmButton}
+                onPress={confirmFinishMatch}
+              >
+                <Text style={styles.modalConfirmText}>Finish Match</Text>
               </TouchableOpacity>
             </View>
           </View>
