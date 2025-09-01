@@ -55,10 +55,16 @@ export function CustomTabLayout({ initialTab }: CustomTabLayoutProps) {
 
   const handleTabPress = (index: number) => {
     setActiveTab(index);
+    // Log tab changes for tracking
+    const tabName = tabs[index]?.title || 'Unknown';
+    console.log('Current Page:', tabName);
   };
 
   const handleTabChange = (tabIndex: number) => {
     setActiveTab(tabIndex);
+    // Log tab changes for tracking (via swipe)
+    const tabName = tabs[tabIndex]?.title || 'Unknown';
+    console.log('Current Page:', tabName);
   };
 
   // Render tab content components

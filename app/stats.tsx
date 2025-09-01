@@ -48,6 +48,7 @@ interface OverallStats {
 
   // Current Beer Die throw outcomes
   totalLine: number;
+  totalTable: number;
   totalHit: number;
   totalGoal: number;
   totalDink: number;
@@ -211,6 +212,7 @@ export default function StatisticsScreen() {
       
       // Current Beer Die throw outcomes
       totalLine: 0,
+      totalTable: 0,
       totalHit: 0,
       totalGoal: 0,
       totalDink: 0,
@@ -266,6 +268,7 @@ export default function StatisticsScreen() {
           
           // Current Beer Die throw outcomes
           stats.totalLine += userPlayerStats.line || 0;
+          stats.totalTable += userPlayerStats.table || 0;
           stats.totalHit += userPlayerStats.hit || 0;
           stats.totalGoal += userPlayerStats.goal || 0;
           stats.totalDink += userPlayerStats.dink || 0;
@@ -283,8 +286,8 @@ export default function StatisticsScreen() {
           const catchAttempts = (userPlayerStats.catches || 0) + (userPlayerStats.miss || 0);
           stats.totalCatchAttempts += catchAttempts;
           
-          // Calculate valid throws (line + hit + goal + dink + sink)
-          const validThrows = (userPlayerStats.line || 0) + (userPlayerStats.hit || 0) + 
+          // Calculate valid throws (line + table + hit + goal + dink + sink)
+          const validThrows = (userPlayerStats.line || 0) + (userPlayerStats.table || 0) + (userPlayerStats.hit || 0) + 
                              (userPlayerStats.goal || 0) + (userPlayerStats.dink || 0) + (userPlayerStats.sink || 0);
           stats.totalValidThrows += validThrows;
           
@@ -521,6 +524,7 @@ export default function StatisticsScreen() {
 
     // Current Beer Die stat tiers
     const lineTiers = [5, 10, 20, 40, 80];
+    const tableTiers = [5, 10, 20, 40, 80];
     const hitTiers = [5, 10, 20, 40, 80];
     const goalTiers = [5, 10, 20, 40, 80];
     const dinkTiers = [5, 10, 20, 40, 80];
@@ -648,6 +652,16 @@ export default function StatisticsScreen() {
         color: '#14b8a6',
         currentValue: stats.totalLine,
         ...getAchievementTierProgress(stats.totalLine, lineTiers),
+      },
+      {
+        id: 'total_table',
+        title: 'Table Master',
+        statName: 'Tables',
+        description: 'Total table shots.',
+        icon: 'grid',
+        color: '#8b5cf6',
+        currentValue: stats.totalTable,
+        ...getAchievementTierProgress(stats.totalTable, tableTiers),
       },
       {
         id: 'total_hit',
@@ -978,6 +992,11 @@ export default function StatisticsScreen() {
           </View>
           
           <View style={styles.detailRow}>
+            <ThemedText variant="body">Tables</ThemedText>
+            <ThemedText variant="body" color="primary">{stats.totalTable}</ThemedText>
+          </View>
+          
+          <View style={styles.detailRow}>
             <ThemedText variant="body">Hits</ThemedText>
             <ThemedText variant="body" color="primary">{stats.totalHit}</ThemedText>
           </View>
@@ -1185,6 +1204,23 @@ export default function StatisticsScreen() {
             ))}
           </View>
         </ThemedView>
+
+        {/* Schlevins Button */}
+        <ThemedView variant="card" style={styles.schlevinsCard}>
+          <TouchableOpacity
+            style={styles.schlevinsButton}
+            onPress={() => router.push('/schlevins')}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="dice" size={24} color={theme.colors.primary} />
+            <ThemedText variant="subtitle" style={styles.schlevinsTitle}>
+              Schlevins
+            </ThemedText>
+            <ThemedText variant="caption" style={styles.schlevinsDescription}>
+              Play the classic dice game
+            </ThemedText>
+          </TouchableOpacity>
+        </ThemedView>
       </ScrollView>
     </>
   );
@@ -1381,5 +1417,23 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
+  },
+  schlevinsCard: {
+    marginBottom: 20,
+  },
+  schlevinsButton: {
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+  },
+  schlevinsTitle: {
+    marginTop: 8,
+    marginBottom: 2,
+    textAlign: 'center',
+  },
+  schlevinsDescription: {
+    textAlign: 'center',
+    opacity: 0.7,
+    fontSize: 12,
   },
 });

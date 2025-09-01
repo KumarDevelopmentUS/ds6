@@ -474,10 +474,12 @@ const styles = StyleSheet.create({
   },
   secretButton: {
     opacity: 0.01, // barely visible but clickable
-    padding: 10,
+    padding: 20,
     marginBottom: 10,
     width: '100%',
+    height: 60,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   scrollView: {
     flex: 1,
@@ -492,9 +494,9 @@ const styles = StyleSheet.create({
     paddingTop: 20,
   },
   title: {
-    fontSize: 56,
+    fontSize: 42,
     fontWeight: '900',
-    letterSpacing: 6,
+    letterSpacing: 4,
     textAlign: 'center',
     marginBottom: 16,
   },

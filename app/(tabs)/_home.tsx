@@ -375,21 +375,17 @@ export default function MainMenuScreen() {
                   <ThemedText variant="caption" style={styles.featureSubtitle}>Connect with other players</ThemedText>
                 </View>
               </View>
+              
+              <View style={styles.featureItem}>
+                <Ionicons name="trophy-outline" size={24} color={theme.colors.success} />
+                <View style={styles.featureText}>
+                  <ThemedText variant="body" style={styles.featureTitle}>Leaderboard</ThemedText>
+                  <ThemedText variant="caption" style={styles.featureSubtitle}>Compete with players globally or at your school</ThemedText>
+                </View>
+              </View>
             </View>
           </ThemedView>
 
-          {/* Fun Fact Section */}
-          <ThemedView variant="card" style={styles.funFactCard}>
-            <View style={styles.funFactHeader}>
-              <Ionicons name="dice" size={24} color={theme.colors.primary} />
-              <ThemedText variant="subtitle" style={styles.funFactTitle}>
-                Fun Fact
-              </ThemedText>
-            </View>
-            <ThemedText variant="body" style={styles.funFactText}>
-              {randomFact}
-            </ThemedText>
-          </ThemedView>
         </View>
       ) : (
         // Logged in users - original layout
@@ -461,9 +457,8 @@ export default function MainMenuScreen() {
         )}
       </View>
 
-      {/* Menu Options - Different for authenticated vs unauthenticated users */}
-      {session ? (
-        <View style={styles.menuGrid}>
+      {/* Menu Options */}
+      <View style={styles.menuGrid}>
           <MenuCard
             title="Game History"
             icon="time-outline"
@@ -499,55 +494,15 @@ export default function MainMenuScreen() {
             }}
           />
           <MenuCard
-            title="Schlevins"
-            icon="dice"
-            color={theme.colors.info}
-            onPress={() => router.push('/schlevins')}
+            title="Leaderboard"
+            icon="trophy"
+            color={theme.colors.success}
+            onPress={() => {
+              router.push('/leaderboard');
+            }}
           />
         </View>
-      ) : (
-        <ThemedView variant="card" style={styles.featuresOverviewCard}>
-          <ThemedText variant="subtitle" style={styles.featuresTitle}>
-            What You Can Do
-          </ThemedText>
-          <ThemedText variant="body" style={styles.featuresDescription}>
-            Explore the app and see what DieStats has to offer! Sign in to save your progress and unlock all features.
-          </ThemedText>
-          
-          <View style={styles.featuresList}>
-            <View style={styles.featureItem}>
-              <Ionicons name="enter-outline" size={24} color={theme.colors.info} />
-              <View style={styles.featureText}>
-                <ThemedText variant="body" style={styles.featureTitle}>Join Rooms</ThemedText>
-                <ThemedText variant="caption" style={styles.featureSubtitle}>Track games with friends in real-time</ThemedText>
-              </View>
-            </View>
-            
-            <View style={styles.featureItem}>
-              <Ionicons name="time-outline" size={24} color={theme.colors.info} />
-              <View style={styles.featureText}>
-                <ThemedText variant="body" style={styles.featureTitle}>Game History</ThemedText>
-                <ThemedText variant="caption" style={styles.featureSubtitle}>View your past matches and results</ThemedText>
-              </View>
-            </View>
-            
-            <View style={styles.featureItem}>
-              <Ionicons name="stats-chart" size={24} color={theme.colors.success} />
-              <View style={styles.featureText}>
-                <ThemedText variant="body" style={styles.featureTitle}>Statistics</ThemedText>
-                <ThemedText variant="caption" style={styles.featureSubtitle}>Track your performance and progress</ThemedText>
-              </View>
-            </View>
-            
-            <View style={styles.featureItem}>
-              <Ionicons name="people-outline" size={24} color={theme.colors.warning} />
-              <View style={styles.featureText}>
-                <ThemedText variant="body" style={styles.featureTitle}>Friends</ThemedText>
-                <ThemedText variant="caption" style={styles.featureSubtitle}>Connect with other players</ThemedText>
-              </View>
-            </View>
-          </View>
-        </ThemedView>
+        </>
       )}
 
       {/* Fun Fact Section */}
@@ -631,8 +586,6 @@ export default function MainMenuScreen() {
             />
           </View>
         </ThemedView>
-      )}
-      </>
       )}
       </ScrollView>
 
@@ -768,15 +721,18 @@ const styles = StyleSheet.create({
     gap: Platform.OS === 'web' ? 20 : 12,
     marginBottom: 24,
     justifyContent: 'center',
+    width: '100%',
+    maxWidth: Platform.OS === 'web' ? 500 : '100%',
+    paddingHorizontal: 16,
   },
   quickStartButton: {
     flex: 1,
-    maxWidth: Platform.OS === 'web' ? 200 : 150,
-    minWidth: Platform.OS === 'web' ? 180 : 140,
+    maxWidth: Platform.OS === 'web' ? 240 : 180,
+    minWidth: Platform.OS === 'web' ? 220 : 160,
   },
   quickStartButtonFull: {
-    minWidth: Platform.OS === 'web' ? 200 : 150,
-    maxWidth: Platform.OS === 'web' ? 250 : 200,
+    minWidth: Platform.OS === 'web' ? 240 : 180,
+    maxWidth: Platform.OS === 'web' ? 280 : 220,
   },
   quickStartDescription: {
     textAlign: 'center',
@@ -785,8 +741,8 @@ const styles = StyleSheet.create({
   },
   joinButton: {
     flex: 1,
-    maxWidth: Platform.OS === 'web' ? 200 : 150,
-    minWidth: Platform.OS === 'web' ? 180 : 140,
+    maxWidth: Platform.OS === 'web' ? 240 : 180,
+    minWidth: Platform.OS === 'web' ? 220 : 160,
   },
   joinDescription: {
     textAlign: 'center',

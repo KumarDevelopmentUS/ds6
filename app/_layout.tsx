@@ -99,6 +99,75 @@ function useProtectedRoute(session: Session | null, isReady: boolean) {
 
 function RootLayoutNav() {
   const { session, isReady } = useAuth();
+  const segments = useSegments();
+
+  // Track page navigation
+  useEffect(() => {
+    if (isReady) {
+      // Format segments into readable page names
+      const formatPageName = (segments: string[]): string => {
+        if (segments.length === 0) return 'Root/Home';
+        
+        // Handle different route patterns
+        const route = segments.join('/');
+        
+        // Map common routes to readable names
+        const pageMap: { [key: string]: string } = {
+          '(tabs)': 'Home (Tabs)',
+          '(tabs)/_home': 'Home',
+          '(tabs)/_feed': 'Feed',
+          '(tabs)/_settings': 'Settings',
+          '(auth)': 'Auth',
+          '(auth)/login': 'Login',
+          '(auth)/register': 'Register',
+          'tracker': 'Game Tracker',
+          'history': 'Match History',
+          'stats': 'Player Statistics',
+          'friends': 'Friends',
+          'leaderboard': 'Leaderboard',
+          'schlevins': 'Schlevins Game',
+          'camera': 'Camera',
+          'dual-camera': 'Dual Camera',
+          'create-post': 'Create Post',
+          'edit-profile': 'Edit Profile',
+        };
+        
+        // Check for exact matches first
+        if (pageMap[route]) {
+          return pageMap[route];
+        }
+        
+        // Handle dynamic routes (e.g., user-profile/[userId])
+        if (route.includes('user-profile/')) {
+          return `User Profile (${segments[segments.length - 1]})`;
+        }
+        
+        if (route.includes('tracker/')) {
+          return `Game Tracker (${segments[segments.length - 1]})`;
+        }
+        
+        if (route.includes('community-members')) {
+          return 'Community Members';
+        }
+        
+        // Default: capitalize and clean up the route
+        return route
+          .split('/')
+          .map(segment => 
+            segment
+              .replace(/[\(\)_]/g, '') // Remove parentheses and underscores
+              .split('-')
+              .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+              .join(' ')
+          )
+          .filter(segment => segment.length > 0)
+          .join(' > ');
+      };
+      
+      const currentPage = formatPageName(segments);
+      console.log('Current Page:', currentPage);
+    }
+  }, [segments, isReady]);
 
   useEffect(() => {
     // Listen for auth state changes for profile sync

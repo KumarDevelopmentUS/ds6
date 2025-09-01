@@ -262,7 +262,9 @@ export default function EditProfileScreen() {
                   console.log('Step 3: Updating local state...');
                   // Update local state immediately to reflect the change
                   const newProfile = { ...profile, avatar_url: null };
-                  console.log('New profile state:', newProfile);
+                  // Log profile state without sensitive info
+                  const { id, email, ...profileForLog } = newProfile;
+                  console.log('New profile state:', profileForLog);
                   setProfile(newProfile);
                   
                   console.log('Step 4: Profile data already updated in unified user_profiles table');
