@@ -56,17 +56,7 @@ export default function FeedScreen() {
   // Enable real-time updates for the selected community
   useRealtimeUpdates(selectedCommunityId || undefined);
 
-  // Auto-select first community when communities load and none is selected
-  useEffect(() => {
-    if (communities && communities.length > 0 && selectedCommunityId === null) {
-      // Find General community first, otherwise select the first available community
-      const generalCommunity = communities.find(m => m.communities?.id === 1);
-      const firstCommunity = generalCommunity || communities[0];
-      if (firstCommunity?.communities?.id) {
-        setSelectedCommunityId(firstCommunity.communities.id);
-      }
-    }
-  }, [communities, selectedCommunityId]);
+
 
   // Fetch join date when component mounts and a community is already selected
   useEffect(() => {
