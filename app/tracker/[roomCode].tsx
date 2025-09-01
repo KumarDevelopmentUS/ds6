@@ -574,8 +574,8 @@ const DieStatsTracker: React.FC = () => {
     }
 
     // Additional Beer Die validation
-    if ((throwResult === 'line' || throwResult === 'table') && (!defendingPlayer || defendingPlayer === 0)) {
-      setErrorMessage('Line and table throws require a defending player');
+    if (throwResult === 'line' && (!defendingPlayer || defendingPlayer === 0)) {
+      setErrorMessage('Line throws require a defending player');
       return;
     }
 
@@ -746,10 +746,10 @@ const DieStatsTracker: React.FC = () => {
     await updateLiveMatchData();
 
     // NEW: Beer Die form reset logic
-    const allowRetoss = throwResult === 'line' || throwResult === 'table';
+    const allowRetoss = throwResult === 'line';
     
     if (allowRetoss) {
-      // Only reset defense fields for line and table throws
+      // Only reset defense fields for line throws
       setDefendingPlayer(null);
       setDefendingResult('');
     } else if (throwResult !== 'successfulRedemption') {
