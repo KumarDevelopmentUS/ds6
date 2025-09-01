@@ -42,6 +42,7 @@ interface PlayerStats {
   hitStreak: number;
   specialThrows: number;
   lineThrows: number;
+  tableThrows: number;
   goals: number;
   onFireCount: number;
   currentlyOnFire: boolean;
@@ -165,6 +166,7 @@ const DieStatsTracker: React.FC = () => {
     hitStreak: 0,
     specialThrows: 0,
     lineThrows: 0,
+    tableThrows: 0,
     goals: 0,
     onFireCount: 0,
     currentlyOnFire: false,
@@ -572,8 +574,8 @@ const DieStatsTracker: React.FC = () => {
     }
 
     // Additional Beer Die validation
-    if (throwResult === 'line' && (!defendingPlayer || defendingPlayer === 0)) {
-      setErrorMessage('Line throws require a defending player');
+    if ((throwResult === 'line' || throwResult === 'table') && (!defendingPlayer || defendingPlayer === 0)) {
+      setErrorMessage('Line and table throws require a defending player');
       return;
     }
 
@@ -589,7 +591,7 @@ const DieStatsTracker: React.FC = () => {
     const updatedPenalties = { ...teamPenalties };
 
     // NEW: Beer Die throw result arrays
-    const validThrows = ['line', 'hit', 'goal', 'dink', 'sink'];
+    const validThrows = ['line', 'table', 'hit', 'goal', 'dink', 'sink'];
     const scoringThrows = ['hit', 'goal', 'dink', 'sink'];
     
     const isScoringThrow = scoringThrows.includes(throwResult);
@@ -629,6 +631,11 @@ const DieStatsTracker: React.FC = () => {
     if (throwResult === 'line') {
       updatedStats[throwingPlayer].lineThrows++;
     }
+    
+    // Track table throws
+    if (throwResult === 'table') {
+      updatedStats[throwingPlayer].tableThrows++;
+    }
 
     // Update on fire status
     updatedStats[throwingPlayer].currentlyOnFire = updatedStats[throwingPlayer].hitStreak >= 3;
@@ -641,6 +648,7 @@ const DieStatsTracker: React.FC = () => {
     // NEW: Beer Die scoring system
     const scoreMap: { [key: string]: number } = {
       'line': 0,
+      'table': 0,
       'hit': 1,
       'goal': 2,
       'dink': 2,
@@ -738,10 +746,10 @@ const DieStatsTracker: React.FC = () => {
     await updateLiveMatchData();
 
     // NEW: Beer Die form reset logic
-    const allowRetoss = throwResult === 'line';
+    const allowRetoss = throwResult === 'line' || throwResult === 'table';
     
     if (allowRetoss) {
-      // Only reset defense fields for line throws
+      // Only reset defense fields for line and table throws
       setDefendingPlayer(null);
       setDefendingResult('');
     } else if (throwResult !== 'successfulRedemption') {
@@ -1349,7 +1357,7 @@ const DieStatsTracker: React.FC = () => {
               <Text style={styles.sectionHeader}>Throw Result:</Text>
               <View style={styles.buttonRow}>
                 {/* NEW: Beer Die ruleset throw results */}
-                {['line', 'hit', 'goal', 'dink', 'sink'].map((result) => (
+                {['line', 'table', 'hit', 'goal', 'dink', 'sink'].map((result) => (
                   <TouchableOpacity
                     key={result}
                     style={[

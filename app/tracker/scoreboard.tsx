@@ -30,6 +30,7 @@ interface PlayerStats {
   hitStreak: number;
   specialThrows: number;
   lineThrows: number;
+  tableThrows: number;
   goals: number;
   onFireCount: number;
   currentlyOnFire: boolean;
