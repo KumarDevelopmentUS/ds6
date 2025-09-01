@@ -53,8 +53,34 @@ export default function FeedScreen() {
 
   const { posts, isLoading, refetch: refetchPosts, handleVote, userVotes } = usePosts(selectedCommunityId || undefined);
 
-  // Enable real-time updates for the selected community
-  useRealtimeUpdates(selectedCommunityId || undefined);
+  // State to control when realtime subscriptions are active
+  const [realtimeEnabled, setRealtimeEnabled] = useState(false);
+  const [isAppLoaded, setIsAppLoaded] = useState(false);
+
+  // Enable real-time updates only after app is loaded and user is on feed
+  useRealtimeUpdates(selectedCommunityId || undefined, realtimeEnabled);
+
+  // Track when app is fully loaded
+  useEffect(() => {
+    if (session?.user && !isAppLoaded) {
+      // Small delay to ensure everything is initialized
+      const timer = setTimeout(() => {
+        setIsAppLoaded(true);
+        setRealtimeEnabled(true);
+        console.log('Feed: App loaded, enabling realtime subscriptions');
+      }, 1000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [session?.user, isAppLoaded]);
+
+  // Cleanup subscriptions when component unmounts
+  useEffect(() => {
+    return () => {
+      console.log('Feed: Component unmounting, disabling realtime subscriptions');
+      setRealtimeEnabled(false);
+    };
+  }, []);
 
 
 
@@ -461,7 +487,11 @@ export default function FeedScreen() {
         refreshControl={
           <RefreshControl
             refreshing={isLoading}
-            onRefresh={refetchPosts}
+            onRefresh={() => {
+              console.log('Feed: Manual refresh triggered, re-enabling realtime');
+              setRealtimeEnabled(true);
+              refetchPosts();
+            }}
             tintColor="#007AFF"
           />
         }

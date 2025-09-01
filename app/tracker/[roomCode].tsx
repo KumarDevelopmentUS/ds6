@@ -287,12 +287,57 @@ const DieStatsTracker: React.FC = () => {
   }, [roomCodeString, currentUser, loadingAuth]); // Depend on roomCodeString, currentUser, and loadingAuth
 
   // Supabase Realtime listener for live match updates
+  // Smart subscription management for game updates
+  const [subscriptionEnabled, setSubscriptionEnabled] = useState(false);
+  const [lastUpdateTime, setLastUpdateTime] = useState(Date.now());
+
+  // Enable subscription only when game is active and user is participating
   useEffect(() => {
-    if (!liveSessionId) {
+    if (liveSessionId && !matchFinished) {
+      console.log('Game tracker: Enabling smart subscription');
+      setSubscriptionEnabled(true);
+    } else {
+      console.log('Game tracker: Disabling subscription - game finished or no session');
+      setSubscriptionEnabled(false);
+    }
+  }, [liveSessionId, matchFinished]);
+
+  // Live Match Data Synchronization with smart batching
+  useEffect(() => {
+    if (!liveSessionId || !subscriptionEnabled) {
+      console.log('No live session ID or subscription disabled, skipping subscription setup.');
       return;
     }
 
-    console.log(`Setting up live subscription`);
+    console.log(`Setting up smart live subscription for ${liveSessionId}`);
+
+    // Batch updates to avoid excessive re-renders
+    let updateBuffer: any = null;
+    let timeoutId: number | null = null;
+
+    const applyBufferedUpdate = () => {
+      if (updateBuffer) {
+        console.log('Game tracker: Applying batched update');
+        const updatedMatch = updateBuffer;
+
+        // Update local state with live data
+        setPlayerStats(updatedMatch.livePlayerStats);
+        setTeamPenalties(updatedMatch.liveTeamPenalties as { 1: number; 2: number });
+        setMatchSetup(prev => ({
+          ...prev,
+          playerNames: updatedMatch.matchSetup.playerNames
+        }));
+        setUserSlotMap(updatedMatch.userSlotMap || {});
+
+        if (updatedMatch.status === 'finished') {
+          setMatchFinished(true);
+          setWinnerTeam(updatedMatch.winnerTeam);
+        }
+
+        setLastUpdateTime(Date.now());
+        updateBuffer = null;
+      }
+    };
 
     const subscription = supabase
       .channel(`live_match:${liveSessionId}`)
@@ -304,31 +349,33 @@ const DieStatsTracker: React.FC = () => {
           filter: `id=eq.${liveSessionId}`
         },
         (payload) => {
-          console.log('Applying live update');
-          const updatedMatch = payload.new as LiveMatch;
+          const now = Date.now();
+          const timeSinceLastUpdate = now - lastUpdateTime;
 
-          // Update local state with live data
-          setPlayerStats(updatedMatch.livePlayerStats);
-          setTeamPenalties(updatedMatch.liveTeamPenalties as { 1: number; 2: number });
-          setMatchSetup(prev => ({
-            ...prev,
-            playerNames: updatedMatch.matchSetup.playerNames
-          }));
-          setUserSlotMap(updatedMatch.userSlotMap || {});
+          // Buffer updates and apply them in batches (minimum 500ms between updates)
+          updateBuffer = payload.new as LiveMatch;
 
-          if (updatedMatch.status === 'finished') {
-            setMatchFinished(true);
-            setWinnerTeam(updatedMatch.winnerTeam);
+          if (timeoutId) clearTimeout(timeoutId as any);
+
+          if (timeSinceLastUpdate >= 500) {
+            // Apply immediately if enough time has passed
+            applyBufferedUpdate();
+          } else {
+            // Delay update to avoid spam
+            timeoutId = setTimeout(applyBufferedUpdate, 500 - timeSinceLastUpdate);
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Game tracker subscription status:', status);
+      });
 
     return () => {
-      console.log('DieStatsTracker: Unsubscribing from live match updates.');
+      console.log('Game tracker: Cleaning up smart subscription');
+      if (timeoutId) clearTimeout(timeoutId as any);
       subscription.unsubscribe();
     };
-  }, [liveSessionId]); // Depend on liveSessionId to re-subscribe if it changes
+  }, [liveSessionId, subscriptionEnabled, lastUpdateTime]); // Depend on smart subscription state
 
   // Helper to sanitize text inputs to prevent script injection or unwanted characters
   const sanitizeInput = (input: string): string => {

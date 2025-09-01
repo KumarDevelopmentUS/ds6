@@ -66,7 +66,7 @@ export const useUserProfile = () => {
   });
 };
 
-export const useUserCommunities = () => {
+export const useUserCommunities = (enabled: boolean = true) => {
   const { session } = useAuth();
   const user = session?.user;
   const queryClient = useQueryClient();
@@ -90,11 +90,15 @@ export const useUserCommunities = () => {
     retryDelay: 1000,
   });
 
-  // --- THIS useEffect IS NOW MORE ROBUST ---
+  // --- Smart subscription with conditional enabling ---
   useEffect(() => {
-    // Only proceed if we have a stable user ID.
-    if (!user?.id) return;
+    // Only proceed if we have a stable user ID and subscriptions are enabled
+    if (!user?.id || !enabled) {
+      console.log('User communities: Subscription disabled or no user');
+      return;
+    }
 
+    console.log('User communities: Setting up subscription');
     const channel = supabase.channel(`user-communities-${user.id}`);
 
     // Define the subscription logic
@@ -124,10 +128,11 @@ export const useUserCommunities = () => {
 
     // The cleanup function is critical.
     return () => {
+      console.log('User communities: Cleaning up subscription');
       // It's good practice to unsubscribe before removing the channel.
       supabase.removeChannel(channel);
     };
-  }, [user?.id, queryClient]); // Depend on the stable user.id string.
+  }, [user?.id, queryClient, enabled]); // Depend on enabled flag
 
   return queryInfo;
 };
@@ -740,10 +745,15 @@ export const useComments = (postId: string) => {
   return { comments, isLoading, addComment, isAddingComment: addCommentMutation.isPending };
 };
 
-export const useRealtimeUpdates = (communityId?: number) => {
+export const useRealtimeUpdates = (communityId?: number, enabled: boolean = true) => {
   const queryClient = useQueryClient();
 
   useEffect(() => {
+    // Only subscribe if explicitly enabled
+    if (!enabled) {
+      return;
+    }
+
     // Use more specific channel names to prevent conflicts
     const channelId = `public-posts-and-votes-for-community-${communityId || 'all'}`;
     const channel = supabase.channel(channelId);
@@ -754,20 +764,29 @@ export const useRealtimeUpdates = (communityId?: number) => {
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'posts', filter: communityId ? `community_id=eq.${communityId}` : undefined },
-          () => queryClient.invalidateQueries({ queryKey: ['posts', communityId] })
+          () => {
+            console.log('Realtime: Posts updated for community', communityId || 'all');
+            queryClient.invalidateQueries({ queryKey: ['posts', communityId] });
+          }
         )
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'votes' },
-          () => queryClient.invalidateQueries({ queryKey: ['posts'] }) // Invalidate all posts on any vote
+          () => {
+            console.log('Realtime: Votes updated');
+            queryClient.invalidateQueries({ queryKey: ['posts'] }); // Invalidate all posts on any vote
+          }
         )
-        .subscribe();
+        .subscribe((status) => {
+          console.log('Realtime subscription status:', status);
+        });
     }
 
     return () => {
+      console.log('Cleaning up realtime subscription for community', communityId || 'all');
       supabase.removeChannel(channel);
     };
-  }, [communityId, queryClient]);
+  }, [communityId, queryClient, enabled]);
 };
 
 export const useUserStats = (userId: string) => {

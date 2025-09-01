@@ -110,11 +110,48 @@ export default function JoinMatchScreen() {
     }
   }, [roomCode]);
 
-  // Real-time subscription for live match updates
+  // Smart real-time subscription for join screen (only when waiting)
   useEffect(() => {
-    if (!liveMatch?.id) return;
+    if (!liveMatch?.id || liveMatch.status === 'active' || liveMatch.status === 'finished') {
+      console.log('Join screen: Skipping subscription - game not in waiting state');
+      return;
+    }
 
-    console.log('Setting up real-time subscription for join screen');
+    console.log('Join screen: Setting up subscription for waiting room');
+
+    // Only update every 2 seconds for join screen (less frequent than game tracker)
+    let lastUpdateTime = 0;
+    let updateBuffer: any = null;
+    let timeoutId: number | null = null;
+
+    const applyUpdate = () => {
+      if (updateBuffer) {
+        console.log('Join screen: Applying batched update');
+        const updatedMatch = updateBuffer;
+
+        // Update local state with live data
+        setLiveMatch(prev => prev ? {
+          ...prev,
+          status: updatedMatch.status,
+          participants: updatedMatch.participants || [],
+          userSlotMap: updatedMatch.userSlotMap || {},
+          matchSetup: {
+            ...prev.matchSetup,
+            playerNames: updatedMatch.matchSetup?.playerNames || prev.matchSetup.playerNames
+          },
+          livePlayerStats: updatedMatch.livePlayerStats || {},
+          matchStartTime: updatedMatch.matchStartTime,
+        } : null);
+
+        // Clear any error messages when data updates successfully
+        if (errorMessage) {
+          setErrorMessage('');
+        }
+
+        lastUpdateTime = Date.now();
+        updateBuffer = null;
+      }
+    };
 
     const subscription = supabase
       .channel(`join_screen:${liveMatch.id}`)
@@ -126,26 +163,19 @@ export default function JoinMatchScreen() {
           filter: `id=eq.${liveMatch.id}`
         },
         (payload) => {
-          console.log('Join screen received live update:', payload);
-          const updatedMatch = payload.new as LiveMatch;
+          const now = Date.now();
+          const timeSinceLastUpdate = now - lastUpdateTime;
 
-          // Update local state with live data
-          setLiveMatch(prev => prev ? {
-            ...prev,
-            status: updatedMatch.status,
-            participants: updatedMatch.participants || [],
-            userSlotMap: updatedMatch.userSlotMap || {},
-            matchSetup: {
-              ...prev.matchSetup,
-              playerNames: updatedMatch.matchSetup?.playerNames || prev.matchSetup.playerNames
-            },
-            livePlayerStats: updatedMatch.livePlayerStats || {},
-            matchStartTime: updatedMatch.matchStartTime,
-          } : null);
+          updateBuffer = payload.new as LiveMatch;
 
-          // Clear any error messages when data updates successfully
-          if (errorMessage) {
-            setErrorMessage('');
+          if (timeoutId) clearTimeout(timeoutId as any);
+
+          if (timeSinceLastUpdate >= 2000) {
+            // Apply immediately if 2 seconds have passed
+            applyUpdate();
+          } else {
+            // Schedule update for 2-second mark
+            timeoutId = setTimeout(applyUpdate, 2000 - timeSinceLastUpdate);
           }
         }
       )
@@ -160,10 +190,11 @@ export default function JoinMatchScreen() {
       });
 
     return () => {
-      console.log('Join screen: Unsubscribing from live match updates');
+      console.log('Join screen: Cleaning up smart subscription');
+      if (timeoutId) clearTimeout(timeoutId as any);
       subscription.unsubscribe();
     };
-  }, [liveMatch?.id, errorMessage]);
+  }, [liveMatch?.id, liveMatch?.status, errorMessage]);
 
   useEffect(() => {
     loadLiveMatch();

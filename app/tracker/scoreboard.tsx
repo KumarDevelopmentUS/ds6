@@ -154,9 +154,33 @@ export default function ScoreboardScreen() {
     loadMatchData().finally(() => setIsLoading(false));
   }, [loadMatchData]);
 
-  // Set up real-time subscription
+  // Set up smart real-time subscription with 3-second intervals
   useEffect(() => {
     if (!liveMatch?.id) return;
+
+    console.log('Scoreboard: Setting up 3-second update subscription');
+    
+    // Track last update time to enforce 3-second minimum intervals
+    let lastUpdateTime = 0;
+    let updateBuffer: any = null;
+    let timeoutId: number | null = null;
+
+    const applyUpdate = () => {
+      if (updateBuffer) {
+        console.log('Scoreboard: Applying 3-second interval update');
+        const updatedMatch = updateBuffer;
+        setLiveMatch(prev => prev ? {
+          ...prev,
+          livePlayerStats: updatedMatch.livePlayerStats,
+          liveTeamPenalties: updatedMatch.liveTeamPenalties,
+          status: updatedMatch.status,
+          winnerTeam: updatedMatch.winnerTeam,
+        } : null);
+        
+        lastUpdateTime = Date.now();
+        updateBuffer = null;
+      }
+    };
 
     const subscription = supabase
       .channel(`scoreboard:${liveMatch.id}`)
@@ -168,19 +192,30 @@ export default function ScoreboardScreen() {
           filter: `id=eq.${liveMatch.id}`
         },
         (payload) => {
-          const updatedMatch = payload.new as any;
-          setLiveMatch(prev => prev ? {
-            ...prev,
-            livePlayerStats: updatedMatch.livePlayerStats,
-            liveTeamPenalties: updatedMatch.liveTeamPenalties,
-            status: updatedMatch.status,
-            winnerTeam: updatedMatch.winnerTeam,
-          } : null);
+          const now = Date.now();
+          const timeSinceLastUpdate = now - lastUpdateTime;
+
+          // Buffer the update
+          updateBuffer = payload.new as any;
+
+          if (timeoutId) clearTimeout(timeoutId as any);
+
+          if (timeSinceLastUpdate >= 3000) {
+            // Apply immediately if 3 seconds have passed
+            applyUpdate();
+          } else {
+            // Schedule update for 3-second mark
+            timeoutId = setTimeout(applyUpdate, 3000 - timeSinceLastUpdate);
+          }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Scoreboard subscription status:', status);
+      });
 
     return () => {
+      console.log('Scoreboard: Cleaning up 3-second subscription');
+      if (timeoutId) clearTimeout(timeoutId as any);
       subscription.unsubscribe();
     };
   }, [liveMatch?.id]);
