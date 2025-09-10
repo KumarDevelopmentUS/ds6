@@ -52,7 +52,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     storage: createStorageAdapter(), // Use our custom platform-specific storage adapter
     autoRefreshToken: true,
     persistSession: true,
-    detectSessionInUrl: false,
+    detectSessionInUrl: true, // Enable URL detection for magic links
     // Additional settings for maximum session persistence
     flowType: 'pkce',
     debug: false,

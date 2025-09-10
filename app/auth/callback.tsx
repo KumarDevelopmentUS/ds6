@@ -17,17 +17,22 @@ export default function AuthCallbackScreen() {
   useEffect(() => {
     const handleAuthCallback = async () => {
       try {
-        // Get the current session
+        console.log('🔄 Processing auth callback...');
+        
+        // First, try to get the session from the URL hash/fragment
         const { data: { session }, error } = await supabase.auth.getSession();
         
+        console.log('📋 Session check result:', { session: !!session, error });
+        
         if (error) {
-          console.error('Auth callback error:', error);
+          console.error('❌ Auth callback error:', error);
           setStatus('error');
           setMessage('Authentication failed. Please try again.');
           return;
         }
 
         if (session) {
+          console.log('✅ Session found, user authenticated');
           setStatus('success');
           setMessage('Successfully authenticated! Redirecting...');
           
@@ -36,11 +41,47 @@ export default function AuthCallbackScreen() {
             router.replace('/(tabs)/' as any);
           }, 2000);
         } else {
-          setStatus('error');
-          setMessage('No session found. Please try signing in again.');
+          console.log('⚠️ No session found, trying to handle URL parameters...');
+          
+          // If no session, try to handle the auth code from URL parameters
+          const urlParams = new URLSearchParams(window.location.search);
+          const code = urlParams.get('code');
+          
+          if (code) {
+            console.log('🔑 Found auth code in URL, attempting to exchange...');
+            
+            // Exchange the code for a session
+            const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+            
+            if (exchangeError) {
+              console.error('❌ Code exchange error:', exchangeError);
+              setStatus('error');
+              setMessage('Authentication failed. Please try again.');
+              return;
+            }
+            
+            if (data.session) {
+              console.log('✅ Code exchanged successfully, user authenticated');
+              setStatus('success');
+              setMessage('Successfully authenticated! Redirecting...');
+              
+              // Redirect to home after a short delay
+              setTimeout(() => {
+                router.replace('/(tabs)/' as any);
+              }, 2000);
+            } else {
+              console.log('❌ No session after code exchange');
+              setStatus('error');
+              setMessage('Authentication failed. Please try again.');
+            }
+          } else {
+            console.log('❌ No auth code found in URL');
+            setStatus('error');
+            setMessage('No session found. Please try signing in again.');
+          }
         }
       } catch (error: any) {
-        console.error('Unexpected error in auth callback:', error);
+        console.error('❌ Unexpected error in auth callback:', error);
         setStatus('error');
         setMessage('An unexpected error occurred. Please try again.');
       }
