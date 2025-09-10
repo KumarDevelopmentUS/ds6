@@ -111,7 +111,7 @@ export default function PostDetailScreen() {
             icon={post.author_avatar_icon}
             iconColor={post.author_avatar_icon_color}
             backgroundColor={post.author_avatar_background_color}
-            size={48}
+            size={Platform.OS === 'web' ? 56 : 48}
           />
           <View style={styles.headerText}>
             <Text style={styles.authorName}>{post.author_name}</Text>
@@ -255,10 +255,25 @@ const styles = StyleSheet.create({
         marginBottom: 16,
       },
       headerText: { marginLeft: 12, flex: 1 },
-      authorName: { fontSize: 16, fontWeight: '600' },
-      timestamp: { fontSize: 14, color: '#666', marginTop: 2 },
-      title: { fontSize: 22, fontWeight: 'bold', marginBottom: 12 },
-      content: { fontSize: 16, lineHeight: 24, marginBottom: 16 },
+      authorName: { 
+        fontSize: Platform.OS === 'web' ? 18 : 16, 
+        fontWeight: '600' 
+      },
+      timestamp: { 
+        fontSize: Platform.OS === 'web' ? 16 : 14, 
+        color: '#666', 
+        marginTop: 2 
+      },
+      title: { 
+        fontSize: Platform.OS === 'web' ? 26 : 22, 
+        fontWeight: 'bold', 
+        marginBottom: 12 
+      },
+      content: { 
+        fontSize: Platform.OS === 'web' ? 18 : 16, 
+        lineHeight: Platform.OS === 'web' ? 28 : 24, 
+        marginBottom: 16 
+      },
       image: { 
         width: '100%', 
         aspectRatio: 1.3,

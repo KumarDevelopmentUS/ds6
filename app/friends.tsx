@@ -236,15 +236,109 @@ export default function FriendsScreen() {
 
   const fetchExpandNetworkData = async (userId: string) => {
     setLoadingExpand(true);
-    const [schoolResponse, fofResponse] = await Promise.all([
-      supabase.rpc('get_schoolmates', { user_id: userId }),
-      supabase.rpc('get_friends_of_friends', { p_user_id: userId })
-    ]);
-    setLoadingExpand(false);
-    if (schoolResponse.error) console.error("Error fetching schoolmates:", schoolResponse.error);
-    else setSchoolmates(schoolResponse.data?.map(mapRpcProfileData).filter(Boolean) as UserProfile[] || []);
-    if (fofResponse.error) console.error("Error fetching friends of friends:", fofResponse.error);
-    else setFriendsOfFriends(fofResponse.data?.map(mapRpcProfileData).filter(Boolean) as UserProfile[] || []);
+    
+    try {
+      // First, get the current user's school
+      const { data: currentUserProfile, error: userError } = await supabase
+        .from('user_profiles')
+        .select('school')
+        .eq('id', userId)
+        .single();
+      
+      if (userError) {
+        console.error("Error fetching current user profile:", userError);
+        setLoadingExpand(false);
+        return;
+      }
+      
+      console.log("Current user's school:", currentUserProfile?.school);
+      
+      // Try the RPC functions first
+      const [schoolResponse, fofResponse] = await Promise.all([
+        supabase.rpc('get_schoolmates', { user_id: userId }),
+        supabase.rpc('get_friends_of_friends', { p_user_id: userId })
+      ]);
+      
+      console.log("Schoolmates RPC response:", schoolResponse);
+      console.log("Friends of friends RPC response:", fofResponse);
+      
+      if (schoolResponse.error) {
+        console.error("Error fetching schoolmates via RPC:", schoolResponse.error);
+        
+        // Fallback: Direct query for schoolmates
+        if (currentUserProfile?.school) {
+          console.log("Falling back to direct query for schoolmates...");
+          const { data: directSchoolmates, error: directError } = await supabase
+            .from('user_profiles')
+            .select('id, username, nickname, school, avatar_icon, avatar_icon_color, avatar_background_color')
+            .eq('school', currentUserProfile.school)
+            .neq('id', userId); // Exclude current user
+          
+          if (directError) {
+            console.error("Error with direct schoolmates query:", directError);
+            setSchoolmates([]);
+          } else {
+            console.log("Direct schoolmates query result:", directSchoolmates);
+            setSchoolmates(directSchoolmates?.map(mapRpcProfileData).filter(Boolean) as UserProfile[] || []);
+          }
+        } else {
+          setSchoolmates([]);
+        }
+      } else {
+        setSchoolmates(schoolResponse.data?.map(mapRpcProfileData).filter(Boolean) as UserProfile[] || []);
+      }
+      
+      if (fofResponse.error) {
+        console.error("Error fetching friends of friends via RPC:", fofResponse.error);
+        
+        // Fallback: Direct query for friends of friends
+        console.log("Falling back to direct query for friends of friends...");
+        const { data: directFriendsOfFriends, error: directFofError } = await supabase
+          .from('user_profiles')
+          .select(`
+            id, username, nickname, school, avatar_icon, avatar_icon_color, avatar_background_color,
+            friends!friends_user_id_2_fkey(id)
+          `)
+          .neq('id', userId); // Exclude current user
+        
+        if (directFofError) {
+          console.error("Error with direct friends of friends query:", directFofError);
+          setFriendsOfFriends([]);
+        } else {
+          console.log("Direct friends of friends query result:", directFriendsOfFriends);
+          // Filter to only show users who are friends with the current user's friends
+          const { data: userFriends } = await supabase
+            .from('friends')
+            .select('user_id_1, user_id_2')
+            .or(`user_id_1.eq.${userId},user_id_2.eq.${userId}`)
+            .eq('status', 'accepted');
+          
+          if (userFriends) {
+            const friendIds = new Set(userFriends.map(f => 
+              f.user_id_1 === userId ? f.user_id_2 : f.user_id_1
+            ));
+            
+            const friendsOfFriends = directFriendsOfFriends?.filter(user => {
+              // Check if this user is friends with any of the current user's friends
+              return user.friends?.some((friend: any) => friendIds.has(friend.id));
+            }) || [];
+            
+            setFriendsOfFriends(friendsOfFriends.map(mapRpcProfileData).filter(Boolean) as UserProfile[]);
+          } else {
+            setFriendsOfFriends([]);
+          }
+        }
+      } else {
+        setFriendsOfFriends(fofResponse.data?.map(mapRpcProfileData).filter(Boolean) as UserProfile[] || []);
+      }
+      
+    } catch (error) {
+      console.error("Unexpected error in fetchExpandNetworkData:", error);
+      setSchoolmates([]);
+      setFriendsOfFriends([]);
+    } finally {
+      setLoadingExpand(false);
+    }
   };
 
   const handleViewProfile = async (friend: UserProfile) => {

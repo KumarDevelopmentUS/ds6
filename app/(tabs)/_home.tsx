@@ -7,6 +7,7 @@ import { ThemedText } from '@/components/themed/ThemedText';
 import { ThemedView } from '@/components/themed/ThemedView';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useUserProfile } from '@/hooks/useSocialFeatures';
 import { supabase } from '@/supabase';
 import { debugFeedProvider, debugRLSPolicies, debugUserCommunities, forceFeedRefetch, joinCommunityManually, refreshFeedCache, testDatabaseConnection } from '@/utils/profileSync';
 import { testStorageSecurity } from '@/utils/storageSecurityTest';
@@ -78,6 +79,7 @@ export default function MainMenuScreen() {
   const router = useRouter();
   const { theme } = useTheme();
   const { session } = useAuth();
+  const { data: userProfile } = useUserProfile();
   const [userName, setUserName] = useState('');
   const [stats, setStats] = useState({
     totalGames: 0,
@@ -392,12 +394,39 @@ export default function MainMenuScreen() {
         <>
           {/* Header */}
           <ThemedView variant="card" style={styles.header}>
-            <ThemedText variant="title" style={styles.headerTitle}>
-              Hello, {userName}! 👋
-            </ThemedText>
-            <ThemedText variant="caption" style={styles.headerSubtext}>
-              Ready to play?
-            </ThemedText>
+            <View style={styles.headerContent}>
+              <View style={styles.headerText}>
+                <ThemedText variant="title" style={styles.headerTitle}>
+                  Hello, {userName}! 👋
+                </ThemedText>
+                <ThemedText variant="caption" style={styles.headerSubtext}>
+                  Ready to play?
+                </ThemedText>
+              </View>
+              {userProfile && (
+                <View style={[
+                  styles.userAvatar,
+                  { backgroundColor: userProfile.avatar_background_color || theme.colors.primary }
+                ]}>
+                  {userProfile.avatar_url ? (
+                    <View style={styles.avatarImageContainer}>
+                      {/* Note: For now, we'll use the icon. In a real app, you'd use Image component for avatar_url */}
+                      <Ionicons 
+                        name={userProfile.avatar_icon as any || 'person'} 
+                        size={32} 
+                        color={userProfile.avatar_icon_color || '#FFFFFF'} 
+                      />
+                    </View>
+                  ) : (
+                    <Ionicons 
+                      name={userProfile.avatar_icon as any || 'person'} 
+                      size={32} 
+                      color={userProfile.avatar_icon_color || '#FFFFFF'} 
+                    />
+                  )}
+                </View>
+              )}
+            </View>
           </ThemedView>
 
       {/* Quick Stats - Show login prompt for guests */}
@@ -460,25 +489,11 @@ export default function MainMenuScreen() {
       {/* Menu Options */}
       <View style={styles.menuGrid}>
           <MenuCard
-            title="Game History"
-            icon="time-outline"
-            color={theme.colors.info}
+            title="Leaderboard"
+            icon="trophy"
+            color="#FFD700"
             onPress={() => {
-              if (handleAuthRequired('view game history')) {
-                // CORRECTED: Use absolute path
-                router.push('/history');
-              }
-            }}
-          />
-          <MenuCard
-            title="Statistics"
-            icon="stats-chart"
-            color={theme.colors.success}
-            onPress={() => {
-              if (handleAuthRequired('view statistics')) {
-                // CORRECTED: Use absolute path
-                router.push('/stats');
-              }
+              router.push('/leaderboard');
             }}
           />
           <MenuCard
@@ -494,11 +509,25 @@ export default function MainMenuScreen() {
             }}
           />
           <MenuCard
-            title="Leaderboard"
-            icon="trophy"
+            title="Statistics"
+            icon="stats-chart"
             color={theme.colors.success}
             onPress={() => {
-              router.push('/leaderboard');
+              if (handleAuthRequired('view statistics')) {
+                // CORRECTED: Use absolute path
+                router.push('/stats');
+              }
+            }}
+          />
+          <MenuCard
+            title="Game History"
+            icon="time-outline"
+            color={theme.colors.info}
+            onPress={() => {
+              if (handleAuthRequired('view game history')) {
+                // CORRECTED: Use absolute path
+                router.push('/history');
+              }
             }}
           />
         </View>
@@ -658,9 +687,9 @@ const styles = StyleSheet.create({
   content: {
     flexGrow: 1,
     justifyContent: 'center',
-    paddingHorizontal: Platform.OS === 'web' ? 60 : 20,
+    paddingHorizontal: 20,
     paddingBottom: 40,
-    maxWidth: Platform.OS === 'web' ? 800 : '100%',
+    maxWidth: 800,
     alignSelf: 'center',
     width: '100%',
   },
@@ -668,14 +697,45 @@ const styles = StyleSheet.create({
     marginTop: 40,
     marginBottom: 24,
     padding: 20,
+  },
+  headerContent: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  headerText: {
+    flex: 1,
   },
   headerTitle: {
-    textAlign: 'center',
+    textAlign: 'left',
   },
   headerSubtext: {
     marginTop: 4,
-    textAlign: 'center',
+    textAlign: 'left',
+  },
+  userAvatar: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 16,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  avatarImageContainer: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 30,
+    overflow: 'hidden',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerActions: {
     marginTop: 20,
@@ -686,18 +746,19 @@ const styles = StyleSheet.create({
   centeredContainer: {
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: Platform.OS === 'web' ? 60 : 20,
+    paddingHorizontal: 20,
     paddingTop: 40,
-    maxWidth: Platform.OS === 'web' ? 800 : '100%',
+    maxWidth: 800,
     alignSelf: 'center',
     width: '100%',
   },
   loginCard: {
     alignItems: 'center',
     marginBottom: 32,
-    padding: Platform.OS === 'web' ? 32 : 24,
+    padding: 24,
     width: '100%',
-    maxWidth: Platform.OS === 'web' ? 500 : 400,
+    maxWidth: 600, // Slightly larger but still focused for login
+    alignSelf: 'center', // Center the card
   },
   statsCard: {
     marginBottom: 24,
@@ -718,21 +779,24 @@ const styles = StyleSheet.create({
   },
   quickActions: {
     flexDirection: 'row',
-    gap: Platform.OS === 'web' ? 20 : 12,
+    gap: 16,
     marginBottom: 24,
     justifyContent: 'center',
+    alignItems: 'center',
     width: '100%',
-    maxWidth: Platform.OS === 'web' ? 500 : '100%',
-    paddingHorizontal: 16,
+    maxWidth: 600,
+    paddingHorizontal: 20,
+    alignSelf: 'center',
   },
   quickStartButton: {
     flex: 1,
-    maxWidth: Platform.OS === 'web' ? 240 : 180,
-    minWidth: Platform.OS === 'web' ? 220 : 160,
+    minWidth: 160,
+    maxWidth: 280,
   },
   quickStartButtonFull: {
-    minWidth: Platform.OS === 'web' ? 240 : 180,
-    maxWidth: Platform.OS === 'web' ? 280 : 220,
+    minWidth: 200,
+    maxWidth: 300,
+    alignSelf: 'center',
   },
   quickStartDescription: {
     textAlign: 'center',
@@ -741,8 +805,8 @@ const styles = StyleSheet.create({
   },
   joinButton: {
     flex: 1,
-    maxWidth: Platform.OS === 'web' ? 240 : 180,
-    minWidth: Platform.OS === 'web' ? 220 : 160,
+    minWidth: 160,
+    maxWidth: 280,
   },
   joinDescription: {
     textAlign: 'center',
@@ -758,7 +822,8 @@ const styles = StyleSheet.create({
     marginTop: 24,
     marginBottom: 20,
     width: '100%',
-    maxWidth: Platform.OS === 'web' ? 500 : '100%',
+    maxWidth: 800, // Match the parent container maxWidth
+    alignSelf: 'center', // Center the card
     padding: Platform.OS === 'web' ? 24 : 20,
   },
   funFactHeader: {
@@ -850,7 +915,8 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     padding: Platform.OS === 'web' ? 32 : 24,
     width: '100%',
-    maxWidth: Platform.OS === 'web' ? 500 : '100%',
+    maxWidth: 800, // Match the parent container maxWidth
+    alignSelf: 'center', // Center the card
   },
   featuresTitle: {
     textAlign: 'center',

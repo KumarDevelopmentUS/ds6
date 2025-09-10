@@ -537,8 +537,19 @@ export const useCreatePost = () => {
         throw new Error('A valid community ID is required to create a post.');
       }
 
-      if (!user || !profile) {
-        throw new Error('Not authenticated or profile not loaded');
+      if (!user) {
+        throw new Error('Not authenticated');
+      }
+
+      // Fetch fresh profile data to ensure we have the latest avatar information
+      const { data: freshProfile, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError || !freshProfile) {
+        throw new Error('Profile not found or error loading profile');
       }
 
       let image_url = null;
@@ -637,10 +648,10 @@ export const useCreatePost = () => {
           image_url,
           user_id: user.id,
           community_id: communityId,
-          author_name: profile.nickname || profile.display_name || 'Anonymous',
-          author_avatar_icon: profile.avatar_icon,
-          author_avatar_icon_color: profile.avatar_icon_color,
-          author_avatar_background_color: profile.avatar_background_color,
+          author_name: freshProfile.nickname || freshProfile.display_name || 'Anonymous',
+          author_avatar_icon: freshProfile.avatar_icon,
+          author_avatar_icon_color: freshProfile.avatar_icon_color,
+          author_avatar_background_color: freshProfile.avatar_background_color,
           linked_match_id: linkedMatchId,
         })
         .select()
@@ -717,17 +728,28 @@ export const useComments = (postId: string) => {
 
   const addCommentMutation = useMutation({
     mutationFn: async ({ content, parentId }: { content: string; parentId?: number }) => {
-      if (!user || !profile) throw new Error('Not authenticated or profile not loaded');
+      if (!user) throw new Error('Not authenticated');
+
+      // Fetch fresh profile data to ensure we have the latest avatar information
+      const { data: freshProfile, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError || !freshProfile) {
+        throw new Error('Profile not found or error loading profile');
+      }
 
       const { error } = await supabase.from('comments').insert({
           content,
           post_uid: postId,
           user_id: user.id,
           parent_comment_id: parentId,
-          author_name: profile.nickname || profile.display_name || 'Anonymous',
-          author_avatar_icon: profile.avatar_icon,
-          author_avatar_icon_color: profile.avatar_icon_color,
-          author_avatar_background_color: profile.avatar_background_color,
+          author_name: freshProfile.nickname || freshProfile.display_name || 'Anonymous',
+          author_avatar_icon: freshProfile.avatar_icon,
+          author_avatar_icon_color: freshProfile.avatar_icon_color,
+          author_avatar_background_color: freshProfile.avatar_background_color,
         });
       if (error) throw error;
     },

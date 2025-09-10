@@ -1,12 +1,14 @@
 // components/SmoothTabContainer.tsx
+import { useHaptics } from '@/contexts/HapticsContext';
+import * as Haptics from 'expo-haptics';
 import React, { useEffect, useState } from 'react';
 import { Dimensions, Platform } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
-  runOnJS,
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring
+    runOnJS,
+    useAnimatedStyle,
+    useSharedValue,
+    withSpring
 } from 'react-native-reanimated';
 
 interface SmoothTabContainerProps {
@@ -18,10 +20,18 @@ interface SmoothTabContainerProps {
 const { width: screenWidth } = Dimensions.get('window');
 
 export function SmoothTabContainer({ children, activeTab, onTabChange }: SmoothTabContainerProps) {
+  const { vibrationEnabled } = useHaptics();
   const translateX = useSharedValue(-activeTab * screenWidth);
   const gestureTranslateX = useSharedValue(0);
   const isGestureActive = useSharedValue(false);
   const [preloadedTabs, setPreloadedTabs] = useState<Set<number>>(new Set([activeTab]));
+
+  // Haptic feedback function
+  const triggerHapticFeedback = () => {
+    if (Platform.OS === 'ios' && vibrationEnabled) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+  };
 
   // Preload adjacent tabs for smooth transitions
   useEffect(() => {
@@ -50,6 +60,8 @@ export function SmoothTabContainer({ children, activeTab, onTabChange }: SmoothT
 
   const handleTabChange = (newTabIndex: number) => {
     if (newTabIndex >= 0 && newTabIndex < children.length && newTabIndex !== activeTab) {
+      // Trigger haptic feedback when tab changes
+      triggerHapticFeedback();
       onTabChange(newTabIndex);
     }
   };

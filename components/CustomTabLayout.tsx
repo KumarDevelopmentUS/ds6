@@ -1,6 +1,8 @@
 // components/CustomTabLayout.tsx
 import { SmoothTabContainer } from '@/components/SmoothTabContainer';
+import { useHaptics } from '@/contexts/HapticsContext';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import React, { useState } from 'react';
 import { Platform, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
@@ -42,6 +44,8 @@ interface CustomTabLayoutProps {
 }
 
 export function CustomTabLayout({ initialTab }: CustomTabLayoutProps) {
+  const { vibrationEnabled } = useHaptics();
+  
   // Determine initial tab index based on initialTab prop
   const getInitialTabIndex = () => {
     if (initialTab) {
@@ -54,6 +58,12 @@ export function CustomTabLayout({ initialTab }: CustomTabLayoutProps) {
   const [activeTab, setActiveTab] = useState(getInitialTabIndex());
 
   const handleTabPress = (index: number) => {
+    if (index !== activeTab) {
+      // Trigger haptic feedback when tab changes
+      if (Platform.OS === 'ios' && vibrationEnabled) {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }
+    }
     setActiveTab(index);
     // Log tab changes for tracking
     const tabName = tabs[index]?.title || 'Unknown';
@@ -132,14 +142,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderTopWidth: 1,
     borderTopColor: '#E5E5EA',
-    paddingBottom: Platform.OS === 'ios' ? 20 : 10,
-    paddingTop: 8,
+    paddingBottom: Platform.OS === 'ios' ? 12 : 6,
+    paddingTop: 6,
   },
   tabItem: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 6,
+    paddingVertical: 4,
   },
   activeTabItem: {
     // Add any active tab styling here if needed

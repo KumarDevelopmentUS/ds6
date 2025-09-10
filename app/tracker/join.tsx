@@ -732,7 +732,9 @@ const styles = StyleSheet.create({
   },
   authButtons: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   input: {
     marginBottom: 10,
@@ -847,6 +849,8 @@ const styles = StyleSheet.create({
   },
   button: {
     flex: 1,
+    minWidth: 120,
+    maxWidth: 200,
   },
   overlay: {
     position: 'absolute',

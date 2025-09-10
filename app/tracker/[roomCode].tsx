@@ -8,13 +8,13 @@ import * as Clipboard from 'expo-clipboard';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  Alert,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    Alert,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import QRCodeSVG from 'react-native-qrcode-svg';
 
@@ -270,7 +270,19 @@ const DieStatsTracker: React.FC = () => {
           setMatchSetup(data.matchSetup);
           setPlayerStats(data.livePlayerStats);
           setTeamPenalties(data.liveTeamPenalties as { 1: number; 2: number });
-          setMatchStartTime(data.matchStartTime ? new Date(data.matchStartTime) : null);
+          // Ensure matchStartTime is properly set - if it's null or invalid, set to current time
+          if (data.matchStartTime) {
+            const startTime = new Date(data.matchStartTime);
+            // If the start time is in the future (more than 1 minute), it's likely a timezone issue
+            if (startTime.getTime() > Date.now() + 60000) {
+              console.log('Match start time appears to be in the future, using current time instead');
+              setMatchStartTime(new Date());
+            } else {
+              setMatchStartTime(startTime);
+            }
+          } else {
+            setMatchStartTime(new Date());
+          }
           setUserSlotMap(data.userSlotMap || {});
           setIsSetupVisible(false);
           
@@ -547,7 +559,7 @@ const DieStatsTracker: React.FC = () => {
   };
 
   // Function to update live match data in Supabase
-  const updateLiveMatchData = useCallback(async () => {
+  const updateLiveMatchData = useCallback(async (updatedPlayerStats?: any, updatedTeamPenalties?: any) => {
     if (!liveSessionId) {
       return;
     }
@@ -556,8 +568,8 @@ const DieStatsTracker: React.FC = () => {
       const { error } = await supabase
         .from('live_matches')
         .update({
-          livePlayerStats: playerStats,
-          liveTeamPenalties: teamPenalties,
+          livePlayerStats: updatedPlayerStats || playerStats,
+          liveTeamPenalties: updatedTeamPenalties || teamPenalties,
           userSlotMap: userSlotMap,
         })
         .eq('id', liveSessionId);
@@ -638,7 +650,7 @@ const DieStatsTracker: React.FC = () => {
     const updatedPenalties = { ...teamPenalties };
 
     // NEW: Beer Die throw result arrays
-    const validThrows = ['line', 'table', 'hit', 'goal', 'dink', 'sink'];
+    const validThrows = ['line', 'table', 'hit', 'goal', 'dink', 'sink', 'successfulRedemption'];
     const scoringThrows = ['hit', 'goal', 'dink', 'sink'];
     
     const isScoringThrow = scoringThrows.includes(throwResult);
@@ -670,6 +682,10 @@ const DieStatsTracker: React.FC = () => {
       if (throwResult === 'goal') {
         updatedStats[throwingPlayer].goals++;
       }
+    } else if (throwResult === 'successfulRedemption') {
+      // Successful redemption counts as a good throw for hit streak purposes
+      updatedStats[throwingPlayer].hits++;
+      updatedStats[throwingPlayer].hitStreak++;
     } else {
       updatedStats[throwingPlayer].hitStreak = 0;
     }
@@ -728,12 +744,17 @@ const DieStatsTracker: React.FC = () => {
       
       const redeemingTeam = getPlayerTeam(throwingPlayer);
       const opposingTeam = redeemingTeam === 1 ? 2 : 1;
-      const opposingTeamScore = calculateTeamScore(opposingTeam);
+      
+      console.log(`Redemption Debug: Redeeming team ${redeemingTeam}, Opposing team ${opposingTeam}`);
+      console.log(`Redemption Debug: Before - Team ${opposingTeam} penalty: ${updatedPenalties[opposingTeam as 1 | 2]}`);
       
       if (!isCaught) {
         // Reduce opponent score by 1 (teams can go negative per Beer Die rules)
         updatedPenalties[opposingTeam as 1 | 2]++;
+        console.log(`Redemption Debug: After - Team ${opposingTeam} penalty: ${updatedPenalties[opposingTeam as 1 | 2]}`);
         console.log('Rule Applied: Successful redemption - opponents lose 1 point');
+      } else {
+        console.log('Redemption Debug: Caught - no penalty applied');
       }
       // Thrower gets 0 points regardless
       pointsToAdd = 0;
@@ -790,7 +811,7 @@ const DieStatsTracker: React.FC = () => {
     // Save updated data
     setPlayerStats(updatedStats);
     setTeamPenalties(updatedPenalties);
-    await updateLiveMatchData();
+    await updateLiveMatchData(updatedStats, updatedPenalties);
 
     // NEW: Beer Die form reset logic
     const allowRetoss = throwResult === 'line';
@@ -799,8 +820,8 @@ const DieStatsTracker: React.FC = () => {
       // Only reset defense fields for line throws
       setDefendingPlayer(null);
       setDefendingResult('');
-    } else if (throwResult !== 'successfulRedemption') {
-      // Full reset for non-redemption throws
+    } else {
+      // Full reset for all other throws (including successful redemption)
       setThrowingPlayer(null);
       setThrowResult('');
       setDefendingPlayer(null);
@@ -959,7 +980,7 @@ const DieStatsTracker: React.FC = () => {
         matchStartTime: matchStartTime?.toISOString(),
         winnerTeam: winnerTeam,
         matchDuration: matchStartTime
-          ? Math.floor((Date.now() - matchStartTime.getTime()) / 1000)
+          ? Math.max(0, Math.floor((Date.now() - matchStartTime.getTime()) / 1000))
           : 0,
         userSlotMap: userSlotMap,
       };
@@ -1077,9 +1098,13 @@ const DieStatsTracker: React.FC = () => {
               {matchStartTime && (
                 <Text style={styles.elapsedTimeText}>
                   Elapsed:{' '}
-                  {`${Math.floor((Date.now() - matchStartTime.getTime()) / 1000 / 60)}:${String(
-                    Math.floor(((Date.now() - matchStartTime.getTime()) / 1000) % 60)
-                  ).padStart(2, '0')}`}
+                  {(() => {
+                    const elapsedSeconds = Math.floor((Date.now() - matchStartTime.getTime()) / 1000);
+                    const minutes = Math.floor(Math.abs(elapsedSeconds) / 60);
+                    const seconds = Math.abs(elapsedSeconds) % 60;
+                    const sign = elapsedSeconds < 0 ? '-' : '';
+                    return `${sign}${minutes}:${String(seconds).padStart(2, '0')}`;
+                  })()}
                 </Text>
               )}
             </View>
@@ -1315,6 +1340,7 @@ const DieStatsTracker: React.FC = () => {
             )}
           </View>
 
+
           {/* Scoreboard Section */}
           <View style={styles.card}>
             <View style={styles.scoreboardContainer}>
@@ -1378,7 +1404,7 @@ const DieStatsTracker: React.FC = () => {
 
               {/* Throwing Player Selection */}
               <Text style={styles.sectionHeader}>Throwing Player:</Text>
-              <View style={styles.buttonRow}>
+              <View style={styles.playerRow}>
                 {[1, 2, 3, 4].map((playerId) => (
                   <TouchableOpacity
                     key={playerId}
@@ -1393,6 +1419,8 @@ const DieStatsTracker: React.FC = () => {
                         styles.buttonText,
                         throwingPlayer === playerId && styles.selectedButtonText,
                       ]}
+                      numberOfLines={1}
+                      ellipsizeMode="tail"
                     >
                       {matchSetup.playerNames[playerId - 1]}
                     </Text>
@@ -1402,9 +1430,44 @@ const DieStatsTracker: React.FC = () => {
 
               {/* Throw Result Selection (Combined) */}
               <Text style={styles.sectionHeader}>Throw Result:</Text>
-              <View style={styles.buttonRow}>
-                {/* NEW: Beer Die ruleset throw results */}
-                {['line', 'table', 'hit', 'goal', 'dink', 'sink'].map((result) => (
+              
+              {/* Row 1: Hit, Bad Throw */}
+              <View style={styles.throwResultRow}>
+                <TouchableOpacity
+                  style={[
+                    styles.throwResultButton,
+                    styles.goodResultOutline,
+                    throwResult === 'hit' && styles.goodResultSelected,
+                  ]}
+                  onPress={() => setThrowResult('hit')}
+                >
+                  <Text style={[
+                    styles.throwResultButtonText,
+                    throwResult === 'hit' && styles.selectedThrowText
+                  ]}>
+                    Hit
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.throwResultButton,
+                    styles.badResultOutline,
+                    throwResult === 'invalid' && styles.badResultSelected,
+                  ]}
+                  onPress={() => setThrowResult('invalid')}
+                >
+                  <Text style={[
+                    styles.throwResultButtonText,
+                    throwResult === 'invalid' && styles.selectedThrowText
+                  ]}>
+                    Bad Throw
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Row 2: Line, Table, Dink */}
+              <View style={styles.throwResultRow}>
+                {['line', 'table', 'dink'].map((result) => (
                   <TouchableOpacity
                     key={result}
                     style={[
@@ -1422,23 +1485,28 @@ const DieStatsTracker: React.FC = () => {
                     </Text>
                   </TouchableOpacity>
                 ))}
-                {/* Invalid throw - bad result styling */}
-                <TouchableOpacity
-                  style={[
-                    styles.throwResultButton,
-                    styles.badResultOutline,
-                    throwResult === 'invalid' && styles.badResultSelected,
-                  ]}
-                  onPress={() => setThrowResult('invalid')}
-                >
-                  <Text style={[
-                    styles.throwResultButtonText,
-                    throwResult === 'invalid' && styles.selectedThrowText
-                  ]}>
-                    Bad Throw
-                  </Text>
-                </TouchableOpacity>
-                {/* Successful Redemption - special styling */}
+              </View>
+
+              {/* Row 3: Goal, Sink, Successful Redemption */}
+              <View style={styles.throwResultRow}>
+                {['goal', 'sink'].map((result) => (
+                  <TouchableOpacity
+                    key={result}
+                    style={[
+                      styles.throwResultButton,
+                      styles.goodResultOutline,
+                      throwResult === result && styles.goodResultSelected,
+                    ]}
+                    onPress={() => setThrowResult(result)}
+                  >
+                    <Text style={[
+                      styles.throwResultButtonText,
+                      throwResult === result && styles.selectedThrowText
+                    ]}>
+                      {result.charAt(0).toUpperCase() + result.slice(1)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
                 <TouchableOpacity
                   style={[
                     styles.throwResultButton,
@@ -1458,7 +1526,9 @@ const DieStatsTracker: React.FC = () => {
 
               {/* Defending Player Selection */}
               <Text style={styles.sectionHeader}>Defending Player:</Text>
-              <View style={styles.buttonRow}>
+              
+              {/* Player Row */}
+              <View style={styles.playerRow}>
                 {[1, 2, 3, 4].map((playerId) => (
                   <TouchableOpacity
                     key={playerId}
@@ -1473,12 +1543,17 @@ const DieStatsTracker: React.FC = () => {
                         styles.buttonText,
                         defendingPlayer === playerId && styles.selectedButtonText,
                       ]}
+                      numberOfLines={1}
+                      ellipsizeMode="tail"
                     >
                       {matchSetup.playerNames[playerId - 1]}
                     </Text>
                   </TouchableOpacity>
                 ))}
-                {/* Options for Team or Not Applicable */}
+              </View>
+
+              {/* Team/N/A Row */}
+              <View style={styles.teamNARow}>
                 <TouchableOpacity
                   style={[
                     styles.playerButton,
@@ -1632,28 +1707,29 @@ const DieStatsTracker: React.FC = () => {
 
               {/* NEW: Redemption Section removed - redemption is now a throw result (Successful Redemption) */}
 
-              {/* Submit Play Button */}
-              <TouchableOpacity style={styles.submitButton} onPress={handleSubmitPlay}>
-                <Text style={styles.buttonText}>Submit Play</Text>
-              </TouchableOpacity>
-
-              {/* Clear Selection Button */}
-              <TouchableOpacity 
-                style={styles.clearSelectionButton} 
-                onPress={() => {
-                  setThrowingPlayer(null);
-                  setThrowResult('');
-                  setDefendingPlayer(null);
-                  setDefendingResult('');
-                  setFifaKicker(null);
-                  setFifaAction('');
-                  // NEW: redemptionAction and showRedemption removed - redemption is now a throw result
-                  setShowFifa(false);
-                  setErrorMessage('');
-                }}
-              >
-                <Text style={styles.clearSelectionButtonText}>Clear Selection</Text>
-              </TouchableOpacity>
+              {/* Action Buttons Row */}
+              <View style={styles.actionButtonsRow}>
+                <TouchableOpacity 
+                  style={styles.clearSelectionButton} 
+                  onPress={() => {
+                    setThrowingPlayer(null);
+                    setThrowResult('');
+                    setDefendingPlayer(null);
+                    setDefendingResult('');
+                    setFifaKicker(null);
+                    setFifaAction('');
+                    // NEW: redemptionAction and showRedemption removed - redemption is now a throw result
+                    setShowFifa(false);
+                    setErrorMessage('');
+                  }}
+                >
+                  <Text style={styles.clearSelectionButtonText}>Clear Selection</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity style={styles.submitButton} onPress={handleSubmitPlay}>
+                  <Text style={styles.buttonText}>Submit Play</Text>
+                </TouchableOpacity>
+              </View>
 
               {errorMessage && <Text style={styles.errorMessage}>{errorMessage}</Text>}
             </View>
@@ -1708,55 +1784,126 @@ const DieStatsTracker: React.FC = () => {
           {showStats && (
             <View style={styles.card}>
               <Text style={styles.cardTitle}>Player Statistics</Text>
-              {[1, 2, 3, 4].map((playerId) => {
-                const player = playerStats[playerId];
-                if (!player) return null;
+              
+              {/* Debug Info - Team Scores and Penalties */}
+              <View style={styles.debugContainer}>
+                <View style={styles.debugTeam}>
+                  <Text style={styles.debugTitle}>Team 1</Text>
+                  <Text style={styles.debugText}>Player 1 Score: {playerStats[1]?.score || 0}</Text>
+                  <Text style={styles.debugText}>Player 2 Score: {playerStats[2]?.score || 0}</Text>
+                  <Text style={styles.debugText}>Team Penalty: {teamPenalties[1] || 0}</Text>
+                  <Text style={styles.debugText}>Total Score: {calculateTeamScore(1)}</Text>
+                </View>
+                <View style={styles.debugTeam}>
+                  <Text style={styles.debugTitle}>Team 2</Text>
+                  <Text style={styles.debugText}>Player 3 Score: {playerStats[3]?.score || 0}</Text>
+                  <Text style={styles.debugText}>Player 4 Score: {playerStats[4]?.score || 0}</Text>
+                  <Text style={styles.debugText}>Team Penalty: {teamPenalties[2] || 0}</Text>
+                  <Text style={styles.debugText}>Total Score: {calculateTeamScore(2)}</Text>
+                </View>
+              </View>
+              
+              <View style={styles.statsContainer}>
+                {/* Team 1 Column (Players 1 & 2) */}
+                <View style={styles.teamStatsColumn}>
+                  {[1, 2].map((playerId) => {
+                    const player = playerStats[playerId];
+                    if (!player) return null;
 
-                const hitPct = player.throws > 0 ? ((player.hits / player.throws) * 100).toFixed(1) : '0.0';
-                
-                // Corrected catch percentage calculation per rulebook
-                const totalDefensivePlays = player.catches + player.blunders;
-                const catchPct = totalDefensivePlays > 0 ? ((player.catches / totalDefensivePlays) * 100).toFixed(1) : '0.0';
+                    const hitPct = player.throws > 0 ? ((player.hits / player.throws) * 100).toFixed(1) : '0.0';
+                    
+                    // Corrected catch percentage calculation per rulebook
+                    const totalDefensivePlays = player.catches + player.blunders;
+                    const catchPct = totalDefensivePlays > 0 ? ((player.catches / totalDefensivePlays) * 100).toFixed(1) : '0.0';
 
-                const rating = calculatePlayerRating(playerId).toFixed(1);
+                    const rating = calculatePlayerRating(playerId).toFixed(1);
 
-                return (
-                  <View key={playerId} style={styles.playerStatsCard}>
-                    <Text style={styles.playerStatsName}>
-                      {matchSetup.playerNames[playerId - 1]} {player.currentlyOnFire ? '🔥' : ''}
-                      {userSlotMap[playerId.toString()] !== null && userSlotMap[playerId.toString()] !== undefined
-                        ? ` (User: ${userSlotMap[playerId.toString()]!.substring(0, 8)}...)`
-                        : ''}
-                    </Text>
-                    <View style={styles.statsRow}>
-                      <Text style={styles.statText}>Throws: {player.throws}</Text>
-                      <Text style={styles.statText}>Hits: {player.hits}</Text>
-                      <Text style={styles.statText}>Hit%: {hitPct}%</Text>
-                    </View>
-                    <View style={styles.statsRow}>
-                      <Text style={styles.statText}>Catches: {player.catches}</Text>
-                      <Text style={styles.statText}>Catch%: {catchPct}%</Text>
-                      <Text style={styles.statText}>Rating: {rating}%</Text>
-                    </View>
-                     <View style={styles.statsRow}>
-                      <Text style={styles.statText}>Blunders: {player.blunders}</Text>
-                      <Text style={styles.statText}>Score: {player.score}</Text>
-                      <Text style={styles.statText}>Aura: {player.aura}</Text>
-                    </View>
-                    <View style={styles.statsRow}>
-                      <Text style={styles.statText}>Goals: {player.goals}</Text>
-                      <Text style={styles.statText}>Streak: {player.hitStreak}</Text>
-                      <Text style={styles.statText}>On Fire Throws: {player.onFireCount}</Text>
-                    </View>
-                    <View style={styles.statsRow}>
-                      <Text style={styles.statText}>
-                        FIFA: {player.fifaSuccess}/{player.fifaAttempts}
-                      </Text>
-                      <Text style={styles.statText}>Special: {player.specialThrows}</Text>
-                    </View>
-                  </View>
-                );
-              })}
+                    return (
+                      <View key={playerId} style={styles.playerStatsCard}>
+                        <Text style={styles.playerStatsName}>
+                          {matchSetup.playerNames[playerId - 1]} {player.currentlyOnFire ? '🔥' : ''}
+                        </Text>
+                        <View style={styles.statsRow}>
+                          <Text style={styles.statText}>Throws: {player.throws}</Text>
+                          <Text style={styles.statText}>Hits: {player.hits}</Text>
+                          <Text style={styles.statText}>Hit%: {hitPct}%</Text>
+                        </View>
+                        <View style={styles.statsRow}>
+                          <Text style={styles.statText}>Catches: {player.catches}</Text>
+                          <Text style={styles.statText}>Catch%: {catchPct}%</Text>
+                          <Text style={styles.statText}>Rating: {rating}%</Text>
+                        </View>
+                         <View style={styles.statsRow}>
+                          <Text style={styles.statText}>Blunders: {player.blunders}</Text>
+                          <Text style={styles.statText}>Score: {player.score}</Text>
+                          <Text style={styles.statText}>Aura: {player.aura}</Text>
+                        </View>
+                        <View style={styles.statsRow}>
+                          <Text style={styles.statText}>Goals: {player.goals}</Text>
+                          <Text style={styles.statText}>Streak: {player.hitStreak}</Text>
+                          <Text style={styles.statText}>On Fire Throws: {player.onFireCount}</Text>
+                        </View>
+                        <View style={styles.statsRow}>
+                          <Text style={styles.statText}>
+                            FIFA: {player.fifaSuccess}/{player.fifaAttempts}
+                          </Text>
+                          <Text style={styles.statText}>Special: {player.specialThrows}</Text>
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+
+                {/* Team 2 Column (Players 3 & 4) */}
+                <View style={styles.teamStatsColumn}>
+                  {[3, 4].map((playerId) => {
+                    const player = playerStats[playerId];
+                    if (!player) return null;
+
+                    const hitPct = player.throws > 0 ? ((player.hits / player.throws) * 100).toFixed(1) : '0.0';
+                    
+                    // Corrected catch percentage calculation per rulebook
+                    const totalDefensivePlays = player.catches + player.blunders;
+                    const catchPct = totalDefensivePlays > 0 ? ((player.catches / totalDefensivePlays) * 100).toFixed(1) : '0.0';
+
+                    const rating = calculatePlayerRating(playerId).toFixed(1);
+
+                    return (
+                      <View key={playerId} style={styles.playerStatsCard}>
+                        <Text style={styles.playerStatsName}>
+                          {matchSetup.playerNames[playerId - 1]} {player.currentlyOnFire ? '🔥' : ''}
+                        </Text>
+                        <View style={styles.statsRow}>
+                          <Text style={styles.statText}>Throws: {player.throws}</Text>
+                          <Text style={styles.statText}>Hits: {player.hits}</Text>
+                          <Text style={styles.statText}>Hit%: {hitPct}%</Text>
+                        </View>
+                        <View style={styles.statsRow}>
+                          <Text style={styles.statText}>Catches: {player.catches}</Text>
+                          <Text style={styles.statText}>Catch%: {catchPct}%</Text>
+                          <Text style={styles.statText}>Rating: {rating}%</Text>
+                        </View>
+                         <View style={styles.statsRow}>
+                          <Text style={styles.statText}>Blunders: {player.blunders}</Text>
+                          <Text style={styles.statText}>Score: {player.score}</Text>
+                          <Text style={styles.statText}>Aura: {player.aura}</Text>
+                        </View>
+                        <View style={styles.statsRow}>
+                          <Text style={styles.statText}>Goals: {player.goals}</Text>
+                          <Text style={styles.statText}>Streak: {player.hitStreak}</Text>
+                          <Text style={styles.statText}>On Fire Throws: {player.onFireCount}</Text>
+                        </View>
+                        <View style={styles.statsRow}>
+                          <Text style={styles.statText}>
+                            FIFA: {player.fifaSuccess}/{player.fifaAttempts}
+                          </Text>
+                          <Text style={styles.statText}>Special: {player.specialThrows}</Text>
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+              </View>
             </View>
           )}
         </>
@@ -2590,13 +2737,33 @@ const styles = StyleSheet.create({
     gap: 8, // Spacing between buttons
     marginBottom: 16,
   },
+  playerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 8,
+    marginBottom: 12,
+  },
+  teamNARow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 16,
+    marginBottom: 16,
+  },
+  throwResultRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 8,
+    marginBottom: 12,
+  },
   playerButton: {
+    flex: 1,
     paddingVertical: 10,
-    paddingHorizontal: 12,
+    paddingHorizontal: 8,
     borderRadius: 4,
     backgroundColor: '#ffffff',
     borderWidth: 2,
     borderColor: '#6b7280',
+    minWidth: 0, // Allow flex to work properly
   },
   playerButtonSelected: {
     backgroundColor: '#3b82f6',
@@ -2614,10 +2781,12 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   throwResultButton: {
+    flex: 1,
     paddingVertical: 8,
-    paddingHorizontal: 10,
+    paddingHorizontal: 6,
     borderRadius: 4,
     backgroundColor: '#e5e7eb',
+    minWidth: 0, // Allow flex to work properly
   },
   throwResultButtonText: {
     fontSize: 12,
@@ -2706,6 +2875,11 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 16,
   },
+  actionButtonsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 16,
+  },
   submitButton: {
     backgroundColor: '#22c55e', // Green for submit/confirm actions
     paddingVertical: 16,
@@ -2713,7 +2887,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 16,
+    flex: 0.65, // 65% width
   },
   errorMessage: {
     color: '#ef4444', // Red for error messages
@@ -2852,12 +3026,45 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 16,
+    flex: 0.35, // 35% width
   },
   clearSelectionButtonText: {
     color: '#ffffff',
     fontWeight: 'bold',
     fontSize: 14,
+  },
+  debugContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 16,
+    marginBottom: 20,
+  },
+  debugTeam: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+  },
+  debugTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#495057',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  debugText: {
+    fontSize: 12,
+    color: '#6c757d',
+    marginBottom: 4,
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  teamStatsColumn: {
+    flex: 1,
   },
 
 });

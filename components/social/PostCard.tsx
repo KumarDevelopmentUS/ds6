@@ -153,7 +153,7 @@ const PostCardComponent: React.FC<PostCardProps> = ({
             icon={post.author_avatar_icon}
             iconColor={post.author_avatar_icon_color}
             backgroundColor={post.author_avatar_background_color}
-            size={36}
+            size={Platform.OS === 'web' ? 48 : 36}
             onPress={() => router.push(`/user-profile/${post.user_id}`)}
           />
           <View style={styles.headerText}>
@@ -283,13 +283,13 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   authorName: {
-    fontSize: 14,
+    fontSize: Platform.OS === 'web' ? 16 : 14,
     fontWeight: '600',
     color: '#333',
   },
   username: {
     // New style for the @username
-    fontSize: 13,
+    fontSize: Platform.OS === 'web' ? 14 : 13,
     color: '#555',
   },
   communityBadge: {
@@ -300,12 +300,12 @@ const styles = StyleSheet.create({
     marginTop: 2, // Align with author name
   },
   communityName: {
-    fontSize: 12,
+    fontSize: Platform.OS === 'web' ? 13 : 12,
     color: '#007AFF',
     fontWeight: '500',
   },
   postDate: {
-    fontSize: 11,
+    fontSize: Platform.OS === 'web' ? 12 : 11,
     color: '#666',
     marginTop: 2,
     textAlign: 'center',
@@ -316,7 +316,7 @@ const styles = StyleSheet.create({
     marginTop: 4, // Adjusted margin
   },
   title: {
-    fontSize: 16,
+    fontSize: Platform.OS === 'web' ? 18 : 16,
     fontWeight: 'bold',
     color: '#000',
     marginBottom: 8,
