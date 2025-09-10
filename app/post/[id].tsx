@@ -7,6 +7,7 @@ import {
     ActivityIndicator,
     FlatList,
     Modal,
+    Platform,
     Pressable,
     SafeAreaView,
     StyleSheet,

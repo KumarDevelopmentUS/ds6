@@ -2,10 +2,11 @@
 import { HapticBackButton } from '@/components/HapticBackButton';
 import { SCHOOLS, searchSchools } from '@/constants/schools';
 import { supabase } from '@/supabase';
+import { sendMagicLinkSignup } from '@/utils/magicLinkAuth';
 import { ensureUserProfilesExist, joinDefaultCommunity } from '@/utils/profileSync';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     Alert,
     FlatList,
@@ -37,9 +38,11 @@ export default function SignUpScreen() {
     schoolName: '',
   });
   const [loading, setLoading] = useState(false);
+  const [magicLinkLoading, setMagicLinkLoading] = useState(false);
   const [showSchoolPicker, setShowSchoolPicker] = useState(false);
   const [schoolSearch, setSchoolSearch] = useState('');
   const [filteredSchools, setFilteredSchools] = useState(SCHOOLS);
+  const [showMagicLink, setShowMagicLink] = useState(false);
   const [errors, setErrors] = useState({
     username: '',
     nickname: '',
@@ -335,6 +338,74 @@ export default function SignUpScreen() {
     }
   };
 
+  const handleMagicLinkSignup = async () => {
+    const { email, username, nickname, school } = formData;
+
+    if (!email || !username || !nickname) {
+      Alert.alert('Missing Information', 'Please fill in email, username, and nickname for magic link signup.');
+      return;
+    }
+
+    if (username.length < 5) {
+      Alert.alert('Username Too Short', 'Username must be at least 5 characters long.');
+      return;
+    }
+
+    if (!/^[a-zA-Z0-9._]+$/.test(username)) {
+      Alert.alert('Invalid Username', 'Username can only contain letters, numbers, dots (.), and underscores (_).');
+      return;
+    }
+
+    if (!/^[a-zA-Z0-9._]+$/.test(nickname)) {
+      Alert.alert('Invalid Nickname', 'Nickname can only contain letters, numbers, dots (.), and underscores (_).');
+      return;
+    }
+
+    // Check if username is available
+    if (usernameAvailable === false) {
+      Alert.alert('Username Taken', 'This username is already taken. Please choose a different username.');
+      return;
+    }
+
+    // If username availability hasn't been checked yet, check it now
+    if (usernameAvailable === null) {
+      setMagicLinkLoading(true);
+      const isAvailable = await checkUsernameAvailability(username);
+      setMagicLinkLoading(false);
+      
+      if (!isAvailable) {
+        Alert.alert('Username Taken', 'This username is already taken. Please choose a different username.');
+        return;
+      }
+    }
+
+    const lowerEmail = email.toLowerCase();
+    if (lowerEmail.endsWith('.edu') || lowerEmail.endsWith('.gov') || lowerEmail.endsWith('.mil') || lowerEmail.endsWith('.int')) {
+      Alert.alert('Email Not Allowed', 'Educational, government, military, or international organization email addresses are not permitted for registration.');
+      return;
+    }
+
+    setMagicLinkLoading(true);
+    
+    try {
+      const result = await sendMagicLinkSignup(email);
+      
+      if (result.success) {
+        Alert.alert(
+          'Magic Link Sent!', 
+          result.message + '\n\nAfter clicking the magic link, you\'ll be able to complete your profile setup.',
+          [{ text: 'OK', onPress: () => setShowMagicLink(false) }]
+        );
+      } else {
+        Alert.alert('Error', result.message);
+      }
+    } catch (error: any) {
+      Alert.alert('Error', 'Failed to send magic link. Please try again.');
+    } finally {
+      setMagicLinkLoading(false);
+    }
+  };
+
   const handleBack = () => {
     router.back();
   };
@@ -442,36 +513,40 @@ export default function SignUpScreen() {
                 </ThemedText>
               ) : null}
             </View>
-            <View style={{ marginBottom: 20 }}>
-              <ThemedInput
-                placeholder="Password"
-                value={formData.password}
-                onChangeText={(text) => handleInputChange('password', text)}
-                secureTextEntry
-                icon={<Ionicons name="lock-closed-outline" size={24} color={theme.colors.textSecondary} />}
-                style={{ marginBottom: errors.password ? 5 : 0 }}
-              />
-              {errors.password ? (
-                <ThemedText variant="caption" style={[styles.errorText, { color: theme.colors.error }]}>
-                  {errors.password}
-                </ThemedText>
-              ) : null}
-            </View>
-            <View style={{ marginBottom: 20 }}>
-              <ThemedInput
-                placeholder="Confirm Password"
-                value={formData.confirmPassword}
-                onChangeText={(text) => handleInputChange('confirmPassword', text)}
-                secureTextEntry
-                icon={<Ionicons name="lock-closed-outline" size={24} color={theme.colors.textSecondary} />}
-                style={{ marginBottom: errors.confirmPassword ? 5 : 0 }}
-              />
-              {errors.confirmPassword ? (
-                <ThemedText variant="caption" style={[styles.errorText, { color: theme.colors.error }]}>
-                  {errors.confirmPassword}
-                </ThemedText>
-              ) : null}
-            </View>
+            {!showMagicLink && (
+              <>
+                <View style={{ marginBottom: 20 }}>
+                  <ThemedInput
+                    placeholder="Password"
+                    value={formData.password}
+                    onChangeText={(text) => handleInputChange('password', text)}
+                    secureTextEntry
+                    icon={<Ionicons name="lock-closed-outline" size={24} color={theme.colors.textSecondary} />}
+                    style={{ marginBottom: errors.password ? 5 : 0 }}
+                  />
+                  {errors.password ? (
+                    <ThemedText variant="caption" style={[styles.errorText, { color: theme.colors.error }]}>
+                      {errors.password}
+                    </ThemedText>
+                  ) : null}
+                </View>
+                <View style={{ marginBottom: 20 }}>
+                  <ThemedInput
+                    placeholder="Confirm Password"
+                    value={formData.confirmPassword}
+                    onChangeText={(text) => handleInputChange('confirmPassword', text)}
+                    secureTextEntry
+                    icon={<Ionicons name="lock-closed-outline" size={24} color={theme.colors.textSecondary} />}
+                    style={{ marginBottom: errors.confirmPassword ? 5 : 0 }}
+                  />
+                  {errors.confirmPassword ? (
+                    <ThemedText variant="caption" style={[styles.errorText, { color: theme.colors.error }]}>
+                      {errors.confirmPassword}
+                    </ThemedText>
+                  ) : null}
+                </View>
+              </>
+            )}
 
             {/* School Selector */}
             <TouchableOpacity
@@ -489,13 +564,42 @@ export default function SignUpScreen() {
               <Ionicons name="chevron-down" size={20} color={theme.colors.textSecondary} />
             </TouchableOpacity>
 
-            <ThemedButton
-              title="Create Account"
-              onPress={handleSignUp}
-              loading={loading}
-              disabled={usernameAvailable === false || checkingUsername}
-              style={{ marginTop: theme.spacing.lg }}
-            />
+            {showMagicLink ? (
+              <ThemedButton
+                title="Send Magic Link"
+                onPress={handleMagicLinkSignup}
+                loading={magicLinkLoading}
+                disabled={usernameAvailable === false || checkingUsername}
+                style={{ marginTop: theme.spacing.lg }}
+              />
+            ) : (
+              <ThemedButton
+                title="Create Account"
+                onPress={handleSignUp}
+                loading={loading}
+                disabled={usernameAvailable === false || checkingUsername}
+                style={{ marginTop: theme.spacing.lg }}
+              />
+            )}
+
+            {/* Toggle between password and magic link */}
+            <View style={[styles.authToggleContainer, { marginTop: theme.spacing.sm }]}>
+              <ThemedButton
+                title={showMagicLink ? "Use Password Instead" : "Use Magic Link Instead"}
+                variant="ghost"
+                onPress={() => {
+                  setShowMagicLink(!showMagicLink);
+                  setErrors({
+                    username: '',
+                    nickname: '',
+                    email: '',
+                    password: '',
+                    confirmPassword: '',
+                  });
+                }}
+                size="small"
+              />
+            </View>
             
             {/* Helpful message when username is taken */}
             {usernameAvailable === false && (
@@ -705,5 +809,8 @@ const styles = StyleSheet.create({
   helpText: {
     fontSize: 12,
     fontWeight: '400',
+  },
+  authToggleContainer: {
+    alignItems: 'center',
   },
 });

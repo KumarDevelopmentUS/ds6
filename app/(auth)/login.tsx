@@ -6,6 +6,7 @@ import { ThemedText } from '@/components/themed/ThemedText';
 import { ThemedView } from '@/components/themed/ThemedView';
 import { useTheme } from '@/contexts/ThemeContext';
 import { supabase } from '@/supabase';
+import { sendMagicLinkSignin } from '@/utils/magicLinkAuth';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
@@ -24,7 +25,9 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [magicLinkLoading, setMagicLinkLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showMagicLink, setShowMagicLink] = useState(false);
 
   const handleLogin = async () => {
     // Clear any previous errors
@@ -85,6 +88,42 @@ export default function LoginScreen() {
     if (error) setError(null);
   };
 
+  const handleMagicLinkSignin = async () => {
+    setError(null);
+    
+    if (!email) {
+      setError('Please enter your email address');
+      return;
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError('Please enter a valid email address');
+      return;
+    }
+
+    setMagicLinkLoading(true);
+    
+    try {
+      const result = await sendMagicLinkSignin(email);
+      
+      if (result.success) {
+        Alert.alert(
+          'Magic Link Sent!', 
+          result.message,
+          [{ text: 'OK', onPress: () => setShowMagicLink(false) }]
+        );
+      } else {
+        setError(result.message);
+      }
+    } catch (error: any) {
+      setError('Failed to send magic link. Please try again.');
+    } finally {
+      setMagicLinkLoading(false);
+    }
+  };
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -139,20 +178,22 @@ export default function LoginScreen() {
               style={{ marginBottom: error ? 5 : 0 }}
             />
 
-            <ThemedInput
-              placeholder="Password"
-              value={password}
-              onChangeText={handlePasswordChange}
-              secureTextEntry
-              icon={
-                <Ionicons
-                  name="lock-closed-outline"
-                  size={20}
-                  color={theme.colors.textSecondary}
-                />
-              }
-              style={{ marginTop: theme.spacing.md, marginBottom: error ? 5 : 0 }}
-            />
+            {!showMagicLink && (
+              <ThemedInput
+                placeholder="Password"
+                value={password}
+                onChangeText={handlePasswordChange}
+                secureTextEntry
+                icon={
+                  <Ionicons
+                    name="lock-closed-outline"
+                    size={20}
+                    color={theme.colors.textSecondary}
+                  />
+                }
+                style={{ marginTop: theme.spacing.md, marginBottom: error ? 5 : 0 }}
+              />
+            )}
 
             {/* Error Display */}
             {error && (
@@ -164,13 +205,36 @@ export default function LoginScreen() {
               </View>
             )}
 
-            <ThemedButton
-              title="Sign In"
-              onPress={handleLogin}
-              loading={loading}
-              disabled={!email.trim() || !password.trim()}
-              style={{ marginTop: theme.spacing.lg }}
-            />
+            {showMagicLink ? (
+              <ThemedButton
+                title="Send Magic Link"
+                onPress={handleMagicLinkSignin}
+                loading={magicLinkLoading}
+                disabled={!email.trim()}
+                style={{ marginTop: theme.spacing.lg }}
+              />
+            ) : (
+              <ThemedButton
+                title="Sign In"
+                onPress={handleLogin}
+                loading={loading}
+                disabled={!email.trim() || !password.trim()}
+                style={{ marginTop: theme.spacing.lg }}
+              />
+            )}
+
+            {/* Toggle between password and magic link */}
+            <View style={[styles.authToggleContainer, { marginTop: theme.spacing.sm }]}>
+              <ThemedButton
+                title={showMagicLink ? "Use Password Instead" : "Use Magic Link Instead"}
+                variant="ghost"
+                onPress={() => {
+                  setShowMagicLink(!showMagicLink);
+                  setError(null);
+                }}
+                size="small"
+              />
+            </View>
           </ThemedView>
 
           {/* Links */}
@@ -263,5 +327,8 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
     flex: 1,
+  },
+  authToggleContainer: {
+    alignItems: 'center',
   },
 });
