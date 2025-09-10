@@ -83,10 +83,12 @@ function useProtectedRoute(session: Session | null, isReady: boolean) {
     }
 
     const inAuthGroup = segments[0] === '(auth)';
+    const isPasswordReset = segments[1] === 'new-password';
 
     // If the user is signed in and is in the auth group,
     // redirect them to the main app (home screen).
-    if (session && inAuthGroup) {
+    // EXCEPTION: Allow password reset screens for authenticated users
+    if (session && inAuthGroup && !isPasswordReset) {
       console.log('🔒 ROUTE PROTECTION: Redirecting authenticated user to home');
       router.replace('/(tabs)/' as any);
     }

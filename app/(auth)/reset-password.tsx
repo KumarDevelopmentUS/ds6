@@ -1,12 +1,11 @@
-// app/(auth)/login.tsx
+// app/(auth)/reset-password.tsx
 import { HapticBackButton } from '@/components/HapticBackButton';
 import { ThemedButton } from '@/components/themed/ThemedButton';
 import { ThemedInput } from '@/components/themed/ThemedInput';
 import { ThemedText } from '@/components/themed/ThemedText';
 import { ThemedView } from '@/components/themed/ThemedView';
 import { useTheme } from '@/contexts/ThemeContext';
-import { supabase } from '@/supabase';
-import { sendMagicLinkSignin } from '@/utils/magicLinkAuth';
+import { sendPasswordResetEmail } from '@/utils/passwordReset';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -15,20 +14,18 @@ import {
     Platform,
     ScrollView,
     StyleSheet,
-    TouchableOpacity,
     View
 } from 'react-native';
 
-export default function LoginScreen() {
+export default function ResetPasswordScreen() {
   const router = useRouter();
   const { theme } = useTheme();
+  
+  console.log('📧 ResetPasswordScreen loaded');
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [emailLinkLoading, setEmailLinkLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showEmailLink, setShowEmailLink] = useState(true);
-  const [emailLinkSent, setEmailLinkSent] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
   const [cooldownTimer, setCooldownTimer] = useState(0);
 
   // Cooldown timer effect
@@ -51,66 +48,7 @@ export default function LoginScreen() {
     };
   }, [cooldownTimer]);
 
-  const handleLogin = async () => {
-    // Clear any previous errors
-    setError(null);
-    
-    if (!email || !password) {
-      setError('Please fill in all fields');
-      return;
-    }
-
-    // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      setError('Please enter a valid email address');
-      return;
-    }
-
-    setLoading(true);
-    const { error: authError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    setLoading(false);
-
-    if (authError) {
-      // Provide user-friendly error messages
-      let userFriendlyMessage = 'Login failed. Please try again.';
-      
-      if (authError.message.includes('Invalid login credentials')) {
-        userFriendlyMessage = 'Invalid email or password. Please check your credentials and try again.';
-      } else if (authError.message.includes('Email not confirmed')) {
-        userFriendlyMessage = 'Please verify your email address before signing in.';
-      } else if (authError.message.includes('Too many requests')) {
-        userFriendlyMessage = 'Too many login attempts. Please wait a moment before trying again.';
-      } else if (authError.message.includes('User not found')) {
-        userFriendlyMessage = 'No account found with this email address.';
-      }
-      
-      setError(userFriendlyMessage);
-    } else {
-      router.replace('/(tabs)/' as any);
-    }
-  };
-
-  const handleBack = () => {
-    console.log('🏠 LOGIN: Home button pressed, navigating to home');
-    router.push('/(tabs)/' as any);
-  };
-
-  const handleEmailChange = (text: string) => {
-    setEmail(text);
-    if (error) setError(null);
-  };
-
-  const handlePasswordChange = (text: string) => {
-    setPassword(text);
-    if (error) setError(null);
-  };
-
-  const handleEmailLinkSignin = async () => {
+  const handlePasswordReset = async () => {
     setError(null);
     
     if (!email) {
@@ -127,29 +65,37 @@ export default function LoginScreen() {
 
     // Check cooldown timer
     if (cooldownTimer > 0) {
-      setError(`Please wait ${cooldownTimer} seconds before sending another email link`);
+      setError(`Please wait ${cooldownTimer} seconds before sending another reset email`);
       return;
     }
 
-    setEmailLinkLoading(true);
+    setLoading(true);
     
     try {
-      const result = await sendMagicLinkSignin(email);
+      const result = await sendPasswordResetEmail(email);
       
       if (result.success) {
-        setEmailLinkSent(true);
+        setEmailSent(true);
         setError(null);
-        setCooldownTimer(15); // Start 15-second cooldown
-        // Don't show alert, let the UI show the success message
+        setCooldownTimer(30); // 30-second cooldown for password reset
       } else {
         setError(result.message);
-        setEmailLinkSent(false);
+        setEmailSent(false);
       }
     } catch (error: any) {
-      setError('Failed to send email link. Please try again.');
+      setError('Failed to send password reset email. Please try again.');
     } finally {
-      setEmailLinkLoading(false);
+      setLoading(false);
     }
+  };
+
+  const handleBack = () => {
+    router.back();
+  };
+
+  const handleEmailChange = (text: string) => {
+    setEmail(text);
+    if (error) setError(null);
   };
 
   return (
@@ -166,7 +112,7 @@ export default function LoginScreen() {
           onPress={handleBack}
           style={styles.backButton}
           color="#3b82f6"
-          text="Home"
+          text="Back"
         />
 
         <ThemedView style={styles.content}>
@@ -177,15 +123,15 @@ export default function LoginScreen() {
               { backgroundColor: theme.colors.primary },
             ]}
           >
-            <Ionicons name="dice" size={60} color="#FFFFFF" />
+            <Ionicons name="lock-closed" size={60} color="#FFFFFF" />
           </View>
 
-          {/* Welcome Text */}
+          {/* Header Text */}
           <ThemedText variant="title" style={styles.title}>
-            Welcome Back
+            Reset Password
           </ThemedText>
           <ThemedText variant="body" style={styles.subtitle}>
-            Sign in to track your dice stats
+            Enter your email address and we'll send you a link to reset your password
           </ThemedText>
 
           {/* Form */}
@@ -206,33 +152,16 @@ export default function LoginScreen() {
               style={{ marginBottom: error ? 5 : 0 }}
             />
 
-            {!showEmailLink && (
-              <ThemedInput
-                placeholder="Password"
-                value={password}
-                onChangeText={handlePasswordChange}
-                secureTextEntry
-                icon={
-                  <Ionicons
-                    name="lock-closed-outline"
-                    size={20}
-                    color={theme.colors.textSecondary}
-                  />
-                }
-                style={{ marginTop: theme.spacing.md, marginBottom: error ? 5 : 0 }}
-              />
-            )}
-
             {/* Success Display */}
-            {emailLinkSent && (
+            {emailSent && (
               <View style={[styles.successContainer, { backgroundColor: theme.colors.success + '20', borderColor: theme.colors.success }]}>
                 <Ionicons name="checkmark-circle" size={16} color={theme.colors.success} />
                 <View style={styles.successTextContainer}>
                   <ThemedText variant="caption" style={[styles.successText, { color: theme.colors.success }]}>
-                    Email link sent successfully!
+                    Password reset email sent!
                   </ThemedText>
                   <ThemedText variant="caption" style={[styles.successSubtext, { color: theme.colors.textSecondary }]}>
-                    Check your email and click the link to sign in. It may take up to a minute to receive the email.
+                    Check your email and click the link to reset your password. It may take up to a minute to receive the email.
                   </ThemedText>
                 </View>
               </View>
@@ -248,64 +177,23 @@ export default function LoginScreen() {
               </View>
             )}
 
-            {showEmailLink ? (
-              <ThemedButton
-                title={cooldownTimer > 0 ? `Resend in ${cooldownTimer}s` : "Send Email Link"}
-                onPress={handleEmailLinkSignin}
-                loading={emailLinkLoading}
-                disabled={!email.trim() || cooldownTimer > 0}
-                style={{ marginTop: theme.spacing.lg }}
-              />
-            ) : (
-              <ThemedButton
-                title="Sign In"
-                onPress={handleLogin}
-                loading={loading}
-                disabled={!email.trim() || !password.trim()}
-                style={{ marginTop: theme.spacing.lg }}
-              />
-            )}
-
-            {/* Toggle between password and email link */}
-            <View style={[styles.authToggleContainer, { marginTop: theme.spacing.sm }]}>
-              <ThemedButton
-                title={showEmailLink ? "Use Password Instead" : "Use Email Link Instead"}
-                variant="ghost"
-                onPress={() => {
-                  setShowEmailLink(!showEmailLink);
-                  setError(null);
-                  setEmailLinkSent(false);
-                  setCooldownTimer(0);
-                }}
-                size="small"
-              />
-            </View>
+            <ThemedButton
+              title={cooldownTimer > 0 ? `Resend in ${cooldownTimer}s` : "Send Reset Email"}
+              onPress={handlePasswordReset}
+              loading={loading}
+              disabled={!email.trim() || cooldownTimer > 0}
+              style={{ marginTop: theme.spacing.lg }}
+            />
           </ThemedView>
 
           {/* Links */}
           <View style={styles.linksContainer}>
             <ThemedButton
-              title="Create Account"
+              title="Back to Sign In"
               variant="ghost"
-              onPress={() => router.push('/(auth)/signUp')}
+              onPress={() => router.push('/(auth)/login')}
               size="small"
             />
-
-            <TouchableOpacity
-              onPress={() => {
-                console.log('🔗 Forgot Password button clicked, navigating to reset-password');
-                try {
-                  router.push('/reset-password' as any);
-                } catch (error) {
-                  console.error('❌ Navigation error:', error);
-                }
-              }}
-              style={styles.forgotPasswordButton}
-            >
-              <ThemedText style={[styles.forgotPasswordText, { color: theme.colors.primary }]}>
-                Forgot Password?
-              </ThemedText>
-            </TouchableOpacity>
           </View>
         </ThemedView>
       </ScrollView>
@@ -332,12 +220,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     zIndex: 10,
-  },
-  backText: {
-    marginLeft: 8,
-    color: '#3b82f6',
-    fontSize: 16,
-    fontWeight: '500',
   },
   logoContainer: {
     width: 120,
@@ -399,16 +281,5 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '400',
     lineHeight: 16,
-  },
-  authToggleContainer: {
-    alignItems: 'center',
-  },
-  forgotPasswordButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-  },
-  forgotPasswordText: {
-    fontSize: 14,
-    fontWeight: '500',
   },
 });

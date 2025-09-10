@@ -249,7 +249,10 @@ export default function AccountScreen() {
         },
         {
           label: 'Change Password',
-          onPress: () => Alert.alert('Coming Soon', 'Password change will be available soon!'),
+          onPress: () => {
+            console.log('🔐 Change Password button clicked, navigating to reset-password');
+            router.push('/(auth)/reset-password' as any);
+          },
           type: 'button' as const,
         },
       ],

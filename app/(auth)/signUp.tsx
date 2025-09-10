@@ -38,11 +38,13 @@ export default function SignUpScreen() {
     schoolName: '',
   });
   const [loading, setLoading] = useState(false);
-  const [magicLinkLoading, setMagicLinkLoading] = useState(false);
+  const [emailLinkLoading, setEmailLinkLoading] = useState(false);
   const [showSchoolPicker, setShowSchoolPicker] = useState(false);
   const [schoolSearch, setSchoolSearch] = useState('');
   const [filteredSchools, setFilteredSchools] = useState(SCHOOLS);
-  const [showMagicLink, setShowMagicLink] = useState(false);
+  const [showEmailLink, setShowEmailLink] = useState(true);
+  const [emailLinkSent, setEmailLinkSent] = useState(false);
+  const [cooldownTimer, setCooldownTimer] = useState(0);
   const [errors, setErrors] = useState({
     username: '',
     nickname: '',
@@ -62,6 +64,26 @@ export default function SignUpScreen() {
       }
     };
   }, [usernameCheckTimeout]);
+
+  // Cooldown timer effect
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (cooldownTimer > 0) {
+      interval = setInterval(() => {
+        setCooldownTimer((prev) => {
+          if (prev <= 1) {
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [cooldownTimer]);
 
   const handleSchoolSearch = (text: string) => {
     setSchoolSearch(text);
@@ -338,11 +360,11 @@ export default function SignUpScreen() {
     }
   };
 
-  const handleMagicLinkSignup = async () => {
+  const handleEmailLinkSignup = async () => {
     const { email, username, nickname, school } = formData;
 
     if (!email || !username || !nickname) {
-      Alert.alert('Missing Information', 'Please fill in email, username, and nickname for magic link signup.');
+      Alert.alert('Missing Information', 'Please fill in email, username, and nickname for email link signup.');
       return;
     }
 
@@ -385,24 +407,29 @@ export default function SignUpScreen() {
       return;
     }
 
-    setMagicLinkLoading(true);
+    // Check cooldown timer
+    if (cooldownTimer > 0) {
+      Alert.alert('Please Wait', `Please wait ${cooldownTimer} seconds before sending another email link`);
+      return;
+    }
+
+    setEmailLinkLoading(true);
     
     try {
       const result = await sendMagicLinkSignup(email);
       
       if (result.success) {
-        Alert.alert(
-          'Magic Link Sent!', 
-          result.message + '\n\nAfter clicking the magic link, you\'ll be able to complete your profile setup.',
-          [{ text: 'OK', onPress: () => setShowMagicLink(false) }]
-        );
+        setEmailLinkSent(true);
+        setCooldownTimer(15); // Start 15-second cooldown
+        // Don't show alert, let the UI show the success message
       } else {
         Alert.alert('Error', result.message);
+        setEmailLinkSent(false);
       }
     } catch (error: any) {
-      Alert.alert('Error', 'Failed to send magic link. Please try again.');
+      Alert.alert('Error', 'Failed to send email link. Please try again.');
     } finally {
-      setMagicLinkLoading(false);
+      setEmailLinkLoading(false);
     }
   };
 
@@ -548,6 +575,21 @@ export default function SignUpScreen() {
               </>
             )}
 
+            {/* Success Display */}
+            {magicLinkSent && (
+              <View style={[styles.successContainer, { backgroundColor: theme.colors.success + '20', borderColor: theme.colors.success }]}>
+                <Ionicons name="checkmark-circle" size={16} color={theme.colors.success} />
+                <View style={styles.successTextContainer}>
+                  <ThemedText variant="caption" style={[styles.successText, { color: theme.colors.success }]}>
+                    Magic link sent successfully!
+                  </ThemedText>
+                  <ThemedText variant="caption" style={[styles.successSubtext, { color: theme.colors.textSecondary }]}>
+                    Check your email and click the link to complete registration. It may take up to a minute to receive the email.
+                  </ThemedText>
+                </View>
+              </View>
+            )}
+
             {/* School Selector */}
             <TouchableOpacity
               style={[styles.schoolSelector, {
@@ -566,10 +608,10 @@ export default function SignUpScreen() {
 
             {showMagicLink ? (
               <ThemedButton
-                title="Send Magic Link"
+                title={cooldownTimer > 0 ? `Resend in ${cooldownTimer}s` : "Send Magic Link"}
                 onPress={handleMagicLinkSignup}
                 loading={magicLinkLoading}
-                disabled={usernameAvailable === false || checkingUsername}
+                disabled={usernameAvailable === false || checkingUsername || cooldownTimer > 0}
                 style={{ marginTop: theme.spacing.lg }}
               />
             ) : (
@@ -596,6 +638,8 @@ export default function SignUpScreen() {
                     password: '',
                     confirmPassword: '',
                   });
+                  setMagicLinkSent(false);
+                  setCooldownTimer(0);
                 }}
                 size="small"
               />
@@ -809,6 +853,29 @@ const styles = StyleSheet.create({
   helpText: {
     fontSize: 12,
     fontWeight: '400',
+  },
+  successContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    marginTop: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  successTextContainer: {
+    flex: 1,
+  },
+  successText: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  successSubtext: {
+    fontSize: 11,
+    fontWeight: '400',
+    lineHeight: 16,
   },
   authToggleContainer: {
     alignItems: 'center',
