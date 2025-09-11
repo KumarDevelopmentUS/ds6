@@ -1,5 +1,6 @@
 // utils/passwordReset.ts
 import { supabase } from '@/supabase';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export interface PasswordResetResult {
   success: boolean;
@@ -7,11 +8,94 @@ export interface PasswordResetResult {
   error?: string;
 }
 
+// Rate limiting configuration
+const RATE_LIMIT_KEY = 'password_reset_rate_limit';
+const RATE_LIMIT_WINDOW = 15 * 60 * 1000; // 15 minutes
+const MAX_ATTEMPTS = 3; // Maximum 3 attempts per 15 minutes
+
+interface RateLimitData {
+  attempts: number;
+  lastAttempt: number;
+}
+
+/**
+ * Check if user has exceeded rate limit for password reset
+ */
+async function checkRateLimit(): Promise<{ allowed: boolean; remainingTime?: number }> {
+  try {
+    const stored = await AsyncStorage.getItem(RATE_LIMIT_KEY);
+    const now = Date.now();
+    
+    if (!stored) {
+      return { allowed: true };
+    }
+    
+    const rateLimitData: RateLimitData = JSON.parse(stored);
+    
+    // If window has expired, reset
+    if (now - rateLimitData.lastAttempt > RATE_LIMIT_WINDOW) {
+      await AsyncStorage.removeItem(RATE_LIMIT_KEY);
+      return { allowed: true };
+    }
+    
+    // Check if max attempts reached
+    if (rateLimitData.attempts >= MAX_ATTEMPTS) {
+      const remainingTime = Math.ceil((RATE_LIMIT_WINDOW - (now - rateLimitData.lastAttempt)) / 60000);
+      return { allowed: false, remainingTime };
+    }
+    
+    return { allowed: true };
+  } catch (error) {
+    console.error('Error checking rate limit:', error);
+    return { allowed: true }; // Allow on error to avoid blocking legitimate users
+  }
+}
+
+/**
+ * Record a password reset attempt
+ */
+async function recordAttempt(): Promise<void> {
+  try {
+    const stored = await AsyncStorage.getItem(RATE_LIMIT_KEY);
+    const now = Date.now();
+    
+    let rateLimitData: RateLimitData;
+    
+    if (!stored) {
+      rateLimitData = { attempts: 1, lastAttempt: now };
+    } else {
+      rateLimitData = JSON.parse(stored);
+      
+      // If window has expired, reset
+      if (now - rateLimitData.lastAttempt > RATE_LIMIT_WINDOW) {
+        rateLimitData = { attempts: 1, lastAttempt: now };
+      } else {
+        rateLimitData.attempts += 1;
+        rateLimitData.lastAttempt = now;
+      }
+    }
+    
+    await AsyncStorage.setItem(RATE_LIMIT_KEY, JSON.stringify(rateLimitData));
+  } catch (error) {
+    console.error('Error recording rate limit attempt:', error);
+  }
+}
+
 /**
  * Send password reset email
  */
 export async function sendPasswordResetEmail(email: string): Promise<PasswordResetResult> {
   try {
+    // Check rate limit first
+    const rateLimitCheck = await checkRateLimit();
+    if (!rateLimitCheck.allowed) {
+      return {
+        success: false,
+        message: `Too many password reset attempts. Please wait ${rateLimitCheck.remainingTime} minutes before trying again.`,
+        error: 'Rate limit exceeded'
+      };
+    }
+
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
@@ -34,6 +118,9 @@ export async function sendPasswordResetEmail(email: string): Promise<PasswordRes
     if (error) {
       console.error('❌ Password reset error:', error);
       
+      // Record attempt even on failure to prevent abuse
+      await recordAttempt();
+      
       // Provide user-friendly error messages
       let userFriendlyMessage = 'Failed to send password reset email. Please try again.';
       
@@ -52,6 +139,8 @@ export async function sendPasswordResetEmail(email: string): Promise<PasswordRes
       };
     }
 
+    // Record successful attempt
+    await recordAttempt();
     console.log('✅ Password reset email sent successfully');
     return {
       success: true,

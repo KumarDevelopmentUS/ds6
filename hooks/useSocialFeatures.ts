@@ -7,8 +7,8 @@ import { useRouter } from 'expo-router';
 import { useEffect } from 'react';
 import { Alert, Platform } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
-import { validateImageSize } from '../utils/imageUpload';
 import { Comment, Post } from '../types/social';
+import { validateImageSize } from '../utils/imageUpload';
 
 export const useUserProfile = () => {
   const { session } = useAuth();
