@@ -540,7 +540,7 @@ export default function SignUpScreen() {
                 </ThemedText>
               ) : null}
             </View>
-            {!showMagicLink && (
+            {!showEmailLink && (
               <>
                 <View style={{ marginBottom: 20 }}>
                   <ThemedInput
@@ -576,12 +576,12 @@ export default function SignUpScreen() {
             )}
 
             {/* Success Display */}
-            {magicLinkSent && (
+            {emailLinkSent && (
               <View style={[styles.successContainer, { backgroundColor: theme.colors.success + '20', borderColor: theme.colors.success }]}>
                 <Ionicons name="checkmark-circle" size={16} color={theme.colors.success} />
                 <View style={styles.successTextContainer}>
                   <ThemedText variant="caption" style={[styles.successText, { color: theme.colors.success }]}>
-                    Magic link sent successfully!
+                    Email link sent successfully!
                   </ThemedText>
                   <ThemedText variant="caption" style={[styles.successSubtext, { color: theme.colors.textSecondary }]}>
                     Check your email and click the link to complete registration. It may take up to a minute to receive the email.
@@ -606,11 +606,11 @@ export default function SignUpScreen() {
               <Ionicons name="chevron-down" size={20} color={theme.colors.textSecondary} />
             </TouchableOpacity>
 
-            {showMagicLink ? (
+            {showEmailLink ? (
               <ThemedButton
-                title={cooldownTimer > 0 ? `Resend in ${cooldownTimer}s` : "Send Magic Link"}
-                onPress={handleMagicLinkSignup}
-                loading={magicLinkLoading}
+                title={cooldownTimer > 0 ? `Resend in ${cooldownTimer}s` : "Send Email Link"}
+                onPress={handleEmailLinkSignup}
+                loading={emailLinkLoading}
                 disabled={usernameAvailable === false || checkingUsername || cooldownTimer > 0}
                 style={{ marginTop: theme.spacing.lg }}
               />
@@ -627,10 +627,10 @@ export default function SignUpScreen() {
             {/* Toggle between password and magic link */}
             <View style={[styles.authToggleContainer, { marginTop: theme.spacing.sm }]}>
               <ThemedButton
-                title={showMagicLink ? "Use Password Instead" : "Use Magic Link Instead"}
+                title={showEmailLink ? "Use Password Instead" : "Use Email Link Instead"}
                 variant="ghost"
                 onPress={() => {
-                  setShowMagicLink(!showMagicLink);
+                  setShowEmailLink(!showEmailLink);
                   setErrors({
                     username: '',
                     nickname: '',
