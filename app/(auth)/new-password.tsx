@@ -26,6 +26,7 @@ export default function NewPasswordScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sessionValid, setSessionValid] = useState<boolean | null>(null);
+  const [passwordUpdated, setPasswordUpdated] = useState(false);
 
   // Check if session is valid for password update
   useEffect(() => {
@@ -65,16 +66,12 @@ export default function NewPasswordScreen() {
       const result = await updatePassword(newPassword);
       
       if (result.success) {
-        Alert.alert(
-          'Success!',
-          'Your password has been updated successfully. You can now sign in with your new password.',
-          [
-            {
-              text: 'OK',
-              onPress: () => router.replace('/(auth)/login')
-            }
-          ]
-        );
+        setPasswordUpdated(true);
+        
+        // Show confirmation for 2 seconds, then redirect to home
+        setTimeout(() => {
+          router.replace('/(tabs)/' as any);
+        }, 2000);
       } else {
         setError(result.message);
       }
@@ -123,6 +120,22 @@ export default function NewPasswordScreen() {
             onPress={() => router.replace('/(auth)/reset-password')}
             style={{ marginTop: 20 }}
           />
+        </View>
+      </ThemedView>
+    );
+  }
+
+  if (passwordUpdated) {
+    return (
+      <ThemedView style={styles.successContainer}>
+        <View style={styles.successContent}>
+          <Ionicons name="checkmark-circle" size={80} color={theme.colors.success} />
+          <ThemedText variant="title" style={[styles.successTitle, { color: theme.colors.success }]}>
+            Password Updated!
+          </ThemedText>
+          <ThemedText variant="body" style={styles.successMessage}>
+            Your password has been updated successfully. Redirecting to home...
+          </ThemedText>
         </View>
       </ThemedView>
     );
@@ -305,6 +318,26 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   errorMessage: {
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  successContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  successContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  successTitle: {
+    textAlign: 'center',
+    marginTop: 20,
+    marginBottom: 10,
+  },
+  successMessage: {
     textAlign: 'center',
     marginBottom: 20,
   },
