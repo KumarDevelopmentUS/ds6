@@ -72,7 +72,7 @@ export default function CreatePostScreen() {
     // Log community change with username for better debugging
     if (session?.user) {
       const username = session.user.user_metadata?.username || session.user.email?.split('@')[0] || 'unknown';
-      console.log('🏘️ Community change for user:', username, 'from:', selectedCommunity, 'to:', value);
+      console.log('🏘️ Community selection changed');
     }
     setSelectedCommunity(value);
   };
@@ -151,7 +151,7 @@ export default function CreatePostScreen() {
         // Log auto-select with username for better debugging
         if (session?.user) {
           const username = session.user.user_metadata?.username || session.user.email?.split('@')[0] || 'unknown';
-          console.log('🔄 Auto-selecting first community for user:', username, 'community:', userCommunityMemberships[0].communities.id);
+          console.log('🔄 Auto-selecting first available community');
         }
         setSelectedCommunityWithLog(userCommunityMemberships[0].communities.id);
         setShowCommunityFix(false);

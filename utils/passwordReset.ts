@@ -22,7 +22,7 @@ export async function sendPasswordResetEmail(email: string): Promise<PasswordRes
       };
     }
 
-    console.log('📧 Sending password reset email for:', email);
+    console.log('📧 Sending password reset email...');
     
     // Send password reset email
     const { data, error } = await supabase.auth.resetPasswordForEmail(email, {

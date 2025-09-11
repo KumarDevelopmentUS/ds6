@@ -251,7 +251,7 @@ export default function FriendsScreen() {
         return;
       }
       
-      console.log("Current user's school:", currentUserProfile?.school);
+      console.log("Loading user's school information...");
       
       // Try the RPC functions first
       const [schoolResponse, fofResponse] = await Promise.all([

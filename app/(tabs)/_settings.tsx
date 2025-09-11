@@ -72,7 +72,7 @@ export default function AccountScreen() {
 
       // Log username instead of user ID for better debugging
       const username = userProfile?.username || 'unknown';
-      console.log('🔍 Loading profile for user:', username);
+      console.log('🔍 Loading user profile...');
 
       if (error) {
         console.error('Error loading profile:', error?.message);

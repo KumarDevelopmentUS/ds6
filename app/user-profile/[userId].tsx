@@ -124,7 +124,7 @@ export default function UserProfileScreen() {
       .single();
     
     const username = userProfile?.username || 'unknown';
-    console.log('Loading stats for user:', username);
+    console.log('Loading user statistics...');
       
       // Use the hybrid approach: try stored stats first, fallback to calculation
       const { getUserStatsHybrid } = await import('../../utils/profileSync');

@@ -27,8 +27,7 @@ const createStorageAdapter = () => {
       return SecureStore.getItemAsync(key);
     },
     setItem: (key: string, value: string) => {
-      console.log(`Attempting to set SecureStore key: ${key}`);
-      console.log(`Value length for ${key}: ${value.length} characters`);
+      console.log('Setting secure storage key...');
       return SecureStore.setItemAsync(key, value);
     },
     removeItem: (key: string) => {

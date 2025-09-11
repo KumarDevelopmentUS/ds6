@@ -22,7 +22,7 @@ export default function AuthCallbackScreen() {
         // First, try to get the session from the URL hash/fragment
         const { data: { session }, error } = await supabase.auth.getSession();
         
-        console.log('📋 Session check result:', { session: !!session, error });
+        console.log('📋 Session check completed');
         
         if (error) {
           console.error('❌ Auth callback error:', error);

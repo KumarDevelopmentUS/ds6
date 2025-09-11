@@ -33,7 +33,7 @@ export async function sendMagicLinkSignup(email: string): Promise<MagicLinkResul
     }
 
     // Send magic link for sign up
-    console.log('📧 Sending magic link signup for:', email);
+    console.log('📧 Sending magic link signup...');
     console.log('🔗 Redirect URL:', 'https://diestats.app/auth/callback');
     
     const { data, error } = await supabase.auth.signInWithOtp({
@@ -88,7 +88,7 @@ export async function sendMagicLinkSignin(email: string): Promise<MagicLinkResul
     }
 
     // Send magic link for sign in
-    console.log('📧 Sending magic link signin for:', email);
+    console.log('📧 Sending magic link signin...');
     console.log('🔗 Redirect URL:', 'https://diestats.app/auth/callback');
     
     const { data, error } = await supabase.auth.signInWithOtp({

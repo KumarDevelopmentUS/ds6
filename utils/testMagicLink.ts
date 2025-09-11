@@ -2,7 +2,7 @@
 import { supabase } from '@/supabase';
 
 export async function testMagicLink(email: string) {
-  console.log('🧪 Testing magic link for:', email);
+  console.log('🧪 Testing magic link...');
   
   try {
     // Test 1: Check if Supabase client is working

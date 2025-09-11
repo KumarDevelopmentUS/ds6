@@ -22,7 +22,7 @@ export default function PasswordResetCallbackScreen() {
         // Get the current session
         const { data: { session }, error } = await supabase.auth.getSession();
         
-        console.log('📋 Session check result:', { session: !!session, error });
+        console.log('📋 Session check completed');
         
         if (error) {
           console.error('❌ Password reset callback error:', error);

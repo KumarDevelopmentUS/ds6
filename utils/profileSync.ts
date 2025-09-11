@@ -170,7 +170,7 @@ export const updateUserStats = async (userId: string, stats: UserStats): Promise
           .single();
         
         const username = userProfile?.username || 'unknown';
-        console.log(`Updated stats for user ${username}:`, stats);
+        console.log('Updated user stats successfully');
   } catch (error) {
           // Get username for error logging
       const { data: userProfile } = await supabase
@@ -392,7 +392,7 @@ export async function debugUserCommunities() {
       .single();
     
     const username = userProfile?.username || 'unknown';
-    console.log('👤 Checking communities for user:', username);
+    console.log('👤 Checking user communities...');
     
     // Check user_communities table
     const { data: userCommunities, error: ucError } = await supabase
@@ -636,7 +636,7 @@ export async function joinCommunityManually(communityName: string, communityType
       .single();
     
     const username = userProfile?.username || 'unknown';
-    console.log('👤 Username:', username);
+    console.log('👤 Processing user profile...');
     
     // Find or create the community
     let { data: community, error: findError } = await supabase
@@ -814,8 +814,8 @@ export async function ensureUserProfilesExist(userId: string, userData?: Profile
     .single();
   
   const username = userProfile?.username || 'unknown';
-  console.log('🔄 PROFILE SYNC: Starting profile sync for user:', username);
-  console.log('📋 PROFILE SYNC: Profile data:', userData);
+  console.log('🔄 PROFILE SYNC: Starting profile sync...');
+  console.log('📋 PROFILE SYNC: Processing profile data...');
 
   try {
     // Check if user_profiles record exists

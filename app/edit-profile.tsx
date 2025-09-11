@@ -234,7 +234,7 @@ export default function EditProfileScreen() {
   const handleRemoveProfilePicture = async () => {
     if (!profile || !profile.avatar_url) return;
     
-    console.log('Starting profile picture removal...', { profileId: profile.id, avatarUrl: profile.avatar_url });
+    console.log('Starting profile picture removal...');
     
     Alert.alert(
       'Remove Profile Picture',
@@ -256,7 +256,7 @@ export default function EditProfileScreen() {
                 console.log('Step 2: Updating user_profiles table...');
                 // Update the profile to remove the avatar_url
                 const updateSuccess = await updateUserProfilePicture(profile.id, null);
-                console.log('User profile update result:', updateSuccess);
+                console.log('User profile update completed');
                 
                 if (updateSuccess) {
                   console.log('Step 3: Updating local state...');
@@ -264,7 +264,7 @@ export default function EditProfileScreen() {
                   const newProfile = { ...profile, avatar_url: null };
                   // Log profile state without sensitive info
                   const { id, email, ...profileForLog } = newProfile;
-                  console.log('New profile state:', profileForLog);
+                  console.log('Profile state updated successfully');
                   setProfile(newProfile);
                   
                   console.log('Step 4: Profile data already updated in unified user_profiles table');
