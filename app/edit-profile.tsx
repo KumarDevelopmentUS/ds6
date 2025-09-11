@@ -405,15 +405,6 @@ export default function EditProfileScreen() {
             )}
           </View>
           
-          {/* Debug info - remove this later */}
-          <View style={{ padding: 10, backgroundColor: '#f0f0f0', borderRadius: 5, marginBottom: 10 }}>
-            <ThemedText style={{ fontSize: 12, color: '#666' }}>
-              Debug: avatar_url = {profile.avatar_url ? 'EXISTS' : 'NULL'}, 
-              icon = {profile.avatar_icon}, 
-              color = {profile.avatar_icon_color}, 
-              bg = {profile.avatar_background_color}
-            </ThemedText>
-          </View>
 
           {/* Remove Profile Picture Button - only show when user has a profile picture */}
           {profile.avatar_url && (
@@ -494,6 +485,18 @@ export default function EditProfileScreen() {
             onChangeText={(text) => setProfile({ ...profile, nickname: text })}
             icon={<Ionicons name="person-circle-outline" size={20} color={theme.colors.textSecondary} />}
             style={styles.editableInput}
+          />
+
+          {/* Change Password Button */}
+          <ThemedButton
+            title="Change Password"
+            variant="outline"
+            onPress={() => {
+              console.log('🔐 Change Password button clicked, navigating to reset-password');
+              router.push('/(auth)/reset-password' as any);
+            }}
+            icon={<Ionicons name="key-outline" size={20} color={theme.colors.primary} />}
+            style={{ marginTop: theme.spacing.md }}
           />
           
           <ThemedText style={{ marginTop: theme.spacing.md, marginBottom: 4 }}>School</ThemedText>

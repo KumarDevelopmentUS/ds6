@@ -247,14 +247,6 @@ export default function AccountScreen() {
           onPress: () => router.push('/edit-profile'),
           type: 'button' as const,
         },
-        {
-          label: 'Change Password',
-          onPress: () => {
-            console.log('🔐 Change Password button clicked, navigating to reset-password');
-            router.push('/(auth)/reset-password' as any);
-          },
-          type: 'button' as const,
-        },
       ],
     },
   ];
