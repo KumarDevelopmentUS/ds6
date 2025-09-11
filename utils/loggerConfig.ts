@@ -1,11 +1,9 @@
 // utils/loggerConfig.ts
 // Development logging configuration
 
-import { 
-  setLogLevel, 
-  LogLevel, 
-  enableDevelopmentLogging, 
-  enableMinimalLogging 
+import {
+    enableDevelopmentLogging,
+    enableMinimalLogging
 } from './logger';
 
 // Development logging preferences

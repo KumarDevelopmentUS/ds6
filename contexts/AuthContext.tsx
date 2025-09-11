@@ -1,9 +1,9 @@
 // contexts/AuthContext.tsx
 import { supabase } from '@/supabase';
+import { logError, logInfo, logSecurity } from '@/utils/logger';
 import { clearPasswordVerification } from '@/utils/profilePicturePassword';
 import { Session } from '@supabase/supabase-js';
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { logError, logInfo, logSecurity } from '@/utils/logger';
 
 // Create an authentication context.
 const AuthContext = createContext<{
