@@ -83,7 +83,7 @@ function useProtectedRoute(session: Session | null, isReady: boolean) {
     }
 
     const inAuthGroup = segments[0] === '(auth)';
-    const isPasswordReset = segments[1] === 'new-password';
+    const isPasswordReset = segments[1] === 'new-password' || segments[1] === 'reset-password';
 
     // If the user is signed in and is in the auth group,
     // redirect them to the main app (home screen).
