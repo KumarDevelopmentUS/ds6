@@ -1,6 +1,7 @@
 // utils/magicLinkAuth.ts
 import { supabase } from '@/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { logError, logInfo, logSecurity } from './logger';
 
 export interface MagicLinkResult {
   success: boolean;
@@ -46,7 +47,7 @@ async function checkMagicLinkRateLimit(): Promise<{ allowed: boolean; remainingT
     
     return { allowed: true };
   } catch (error) {
-    console.error('Error checking magic link rate limit:', error);
+    logError('Error checking magic link rate limit:', error);
     return { allowed: true }; // Allow on error to avoid blocking legitimate users
   }
 }
@@ -77,7 +78,7 @@ async function recordMagicLinkAttempt(): Promise<void> {
     
     await AsyncStorage.setItem(MAGIC_LINK_RATE_LIMIT_KEY, JSON.stringify(rateLimitData));
   } catch (error) {
-    console.error('Error recording magic link rate limit attempt:', error);
+    logError('Error recording magic link rate limit attempt:', error);
   }
 }
 
@@ -117,8 +118,7 @@ export async function sendMagicLinkSignup(email: string): Promise<MagicLinkResul
     }
 
     // Send magic link for sign up
-    console.log('📧 Sending magic link signup...');
-    console.log('🔗 Redirect URL:', 'https://diestats.app/auth/callback');
+    logSecurity('Sending magic link signup');
     
     const { data, error } = await supabase.auth.signInWithOtp({
       email: email.toLowerCase(),
@@ -128,10 +128,10 @@ export async function sendMagicLinkSignup(email: string): Promise<MagicLinkResul
       }
     });
 
-    console.log('📧 Magic link response:', { data, error });
+    logSecurity('Magic link signup response received');
 
     if (error) {
-      console.error('❌ Magic link signup error:', error);
+      logError('Magic link signup error:', error.message);
       return {
         success: false,
         message: 'Failed to send magic link. Please try again.',
@@ -141,7 +141,7 @@ export async function sendMagicLinkSignup(email: string): Promise<MagicLinkResul
 
     // Record attempt
     await recordMagicLinkAttempt();
-    console.log('✅ Magic link signup sent successfully');
+    logSecurity('Magic link signup sent successfully');
 
     return {
       success: true,
@@ -151,7 +151,7 @@ export async function sendMagicLinkSignup(email: string): Promise<MagicLinkResul
   } catch (error: any) {
     // Record attempt even on error
     await recordMagicLinkAttempt();
-    console.error('Unexpected error during magic link signup:', error);
+    logError('Unexpected error during magic link signup:', error);
     return {
       success: false,
       message: 'An unexpected error occurred. Please try again.',
@@ -186,8 +186,7 @@ export async function sendMagicLinkSignin(email: string): Promise<MagicLinkResul
     }
 
     // Send magic link for sign in
-    console.log('📧 Sending magic link signin...');
-    console.log('🔗 Redirect URL:', 'https://diestats.app/auth/callback');
+    logSecurity('Sending magic link signin');
     
     const { data, error } = await supabase.auth.signInWithOtp({
       email: email.toLowerCase(),
@@ -197,12 +196,12 @@ export async function sendMagicLinkSignin(email: string): Promise<MagicLinkResul
       }
     });
 
-    console.log('📧 Magic link response:', { data, error });
+    logSecurity('Magic link signin response received');
 
     if (error) {
       // Record attempt even on error
       await recordMagicLinkAttempt();
-      console.error('❌ Magic link signin error:', error);
+      logError('Magic link signin error:', error.message);
       
       // Provide user-friendly error messages
       let userFriendlyMessage = 'Failed to send magic link. Please try again.';
@@ -230,7 +229,7 @@ export async function sendMagicLinkSignin(email: string): Promise<MagicLinkResul
   } catch (error: any) {
     // Record attempt even on error
     await recordMagicLinkAttempt();
-    console.error('Unexpected error during magic link signin:', error);
+    logError('Unexpected error during magic link signin:', error);
     return {
       success: false,
       message: 'An unexpected error occurred. Please try again.',
@@ -268,7 +267,7 @@ export async function handleMagicLinkCallback(): Promise<MagicLinkResult> {
     };
 
   } catch (error: any) {
-    console.error('Error handling magic link callback:', error);
+    logError('Error handling magic link callback:', error);
     return {
       success: false,
       message: 'An unexpected error occurred during authentication.',

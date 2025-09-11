@@ -1,6 +1,7 @@
 // utils/passwordReset.ts
 import { supabase } from '@/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { logError, logInfo, logSecurity } from './logger';
 
 export interface PasswordResetResult {
   success: boolean;
@@ -46,7 +47,7 @@ async function checkRateLimit(): Promise<{ allowed: boolean; remainingTime?: num
     
     return { allowed: true };
   } catch (error) {
-    console.error('Error checking rate limit:', error);
+    logError('Error checking rate limit:', error);
     return { allowed: true }; // Allow on error to avoid blocking legitimate users
   }
 }
@@ -77,7 +78,7 @@ async function recordAttempt(): Promise<void> {
     
     await AsyncStorage.setItem(RATE_LIMIT_KEY, JSON.stringify(rateLimitData));
   } catch (error) {
-    console.error('Error recording rate limit attempt:', error);
+    logError('Error recording rate limit attempt:', error);
   }
 }
 
@@ -106,17 +107,17 @@ export async function sendPasswordResetEmail(email: string): Promise<PasswordRes
       };
     }
 
-    console.log('📧 Sending password reset email...');
+    logSecurity('Sending password reset email');
     
     // Send password reset email
     const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: 'https://diestats.app/auth/reset-password',
     });
 
-    console.log('📧 Password reset response:', { data, error });
+    logSecurity('Password reset response received');
 
     if (error) {
-      console.error('❌ Password reset error:', error);
+      logError('Password reset error:', error.message);
       
       // Record attempt even on failure to prevent abuse
       await recordAttempt();
@@ -141,7 +142,7 @@ export async function sendPasswordResetEmail(email: string): Promise<PasswordRes
 
     // Record successful attempt
     await recordAttempt();
-    console.log('✅ Password reset email sent successfully');
+    logSecurity('Password reset email sent successfully');
     return {
       success: true,
       message: 'Password reset email sent! Check your email for instructions.'
