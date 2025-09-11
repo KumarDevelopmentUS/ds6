@@ -2,6 +2,7 @@ import { supabase } from '@/supabase';
 import * as FileSystem from 'expo-file-system';
 import * as ImagePicker from 'expo-image-picker';
 import { Platform } from 'react-native';
+import { logError, logInfo, logSecurity } from './logger';
 
 export interface UploadResult {
   success: boolean;
@@ -41,7 +42,7 @@ export const validateImageSize = async (imageUri: string): Promise<{ valid: bool
 
     return { valid: true };
   } catch (error) {
-    console.error('Error validating image size:', error);
+    logError('Error validating image size:', error);
     return { valid: false, error: 'Failed to validate image size' };
   }
 };
@@ -56,7 +57,7 @@ export const requestImagePermissions = async (): Promise<boolean> => {
     
     return cameraStatus === 'granted' && mediaLibraryStatus === 'granted';
   } catch (error) {
-    console.error('Error requesting permissions:', error);
+    logError('Error requesting permissions:', error);
     return false;
   }
 };
@@ -81,7 +82,7 @@ export const pickImage = async (): Promise<ImagePicker.ImagePickerResult | null>
 
     return result;
   } catch (error) {
-    console.error('Error picking image:', error);
+    logError('Error picking image:', error);
     return null;
   }
 };
@@ -106,7 +107,7 @@ export const takePhoto = async (): Promise<ImagePicker.ImagePickerResult | null>
 
     return result;
   } catch (error) {
-    console.error('Error taking photo:', error);
+    logError('Error taking photo:', error);
     return null;
   }
 };
@@ -219,7 +220,7 @@ export const uploadProfilePicture = async (
       url: urlData.publicUrl 
     };
   } catch (error) {
-    console.error('Error uploading profile picture:', error);
+    logError('Error uploading profile picture:', error);
     return { 
       success: false, 
       error: error instanceof Error ? error.message : 'Unknown error' 
@@ -235,21 +236,21 @@ export const deleteProfilePicture = async (profilePictureUrl: string): Promise<b
     // Security Check 1: Validate user authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      console.error('Authentication required for file deletion');
+      logError('Authentication required for file deletion');
       return false;
     }
 
     // Extract filename from URL
     const filename = profilePictureUrl.split('/').pop();
     if (!filename) {
-      console.error('Invalid profile picture URL - cannot extract filename');
+      logError('Invalid profile picture URL - cannot extract filename');
       return false;
     }
 
     // Security Check 2: Validate user owns this file
     // Profile picture filenames should contain the user ID
     if (!filename.includes(user.id)) {
-      console.error('Unauthorized: Cannot delete files belonging to another user');
+      logError('Unauthorized: Cannot delete files belonging to another user');
       return false;
     }
 
@@ -258,13 +259,13 @@ export const deleteProfilePicture = async (profilePictureUrl: string): Promise<b
       .remove([filename]);
 
     if (error) {
-      console.error('Delete error:', error);
+      logError('Delete error:', error);
       return false;
     }
 
     return true;
   } catch (error) {
-    console.error('Error deleting profile picture:', error);
+    logError('Error deleting profile picture:', error);
     return false;
   }
 };
@@ -280,13 +281,13 @@ export const updateUserProfilePicture = async (
     // Security Check 1: Validate user authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      console.error('Authentication required for profile update');
+      logError('Authentication required for profile update');
       return false;
     }
 
     // Security Check 2: Validate user can only update their own profile
     if (user.id !== userId) {
-      console.error('Unauthorized: Cannot update another user\'s profile');
+      logError('Unauthorized: Cannot update another user\'s profile');
       return false;
     }
 
@@ -296,13 +297,13 @@ export const updateUserProfilePicture = async (
       .eq('id', userId);
 
     if (error) {
-      console.error('Error updating profile:', error);
+      logError('Error updating profile:', error);
       return false;
     }
 
     return true;
   } catch (error) {
-    console.error('Error updating user profile picture:', error);
+    logError('Error updating user profile picture:', error);
     return false;
   }
 };
