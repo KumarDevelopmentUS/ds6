@@ -9,7 +9,6 @@
   ```
   https://diestats.app/auth/callback
   https://diestats.app/auth/reset-password
-  https://diestats.app/(auth)/new-password
   ```
 
 ### 2. Authentication → Email Templates
