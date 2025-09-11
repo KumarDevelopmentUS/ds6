@@ -1,7 +1,7 @@
 // utils/magicLinkAuth.ts
 import { supabase } from '@/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { logError, logInfo, logSecurity } from './logger';
+import { logError, logSecurity } from './logger';
 
 export interface MagicLinkResult {
   success: boolean;

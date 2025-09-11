@@ -1,5 +1,4 @@
 // utils/logger.ts
-import { Platform } from 'react-native';
 
 // Log levels
 export enum LogLevel {
@@ -103,20 +102,54 @@ export function logSecurity(message: string, ...args: any[]): void {
   // Security logs should always be output, but sanitized
   const sanitizedArgs = args.map(arg => {
     if (typeof arg === 'object' && arg !== null) {
-      // Remove sensitive fields
+      // Remove sensitive fields with comprehensive sanitization
       const sanitized = { ...arg };
-      delete sanitized.password;
-      delete sanitized.token;
-      delete sanitized.email;
-      delete sanitized.secret;
-      delete sanitized.key;
+      const sensitiveFields = [
+        'password', 'token', 'email', 'secret', 'key', 'auth', 'session',
+        'credential', 'apiKey', 'accessToken', 'refreshToken', 'jwt',
+        'privateKey', 'publicKey', 'signature', 'hash', 'salt'
+      ];
+      
+      sensitiveFields.forEach(field => {
+        delete sanitized[field];
+        // Also check for nested objects
+        Object.keys(sanitized).forEach(key => {
+          if (typeof sanitized[key] === 'object' && sanitized[key] !== null) {
+            delete sanitized[key][field];
+          }
+        });
+      });
+      
       return sanitized;
     }
+    
+    // Sanitize strings that might contain sensitive data
+    if (typeof arg === 'string') {
+      // Remove potential email addresses
+      const emailRegex = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g;
+      let sanitized = arg.replace(emailRegex, '[EMAIL_REDACTED]');
+      
+      // Remove potential tokens (long alphanumeric strings)
+      const tokenRegex = /\b[A-Za-z0-9]{20,}\b/g;
+      sanitized = sanitized.replace(tokenRegex, '[TOKEN_REDACTED]');
+      
+      return sanitized;
+    }
+    
     return arg;
   });
   
   const formattedMessage = formatMessage('SECURITY', message, ...sanitizedArgs);
-  console.log(formattedMessage);
+  
+  // In production, only log to console if it's a critical security event
+  if (isProduction) {
+    // Only log critical security events in production
+    if (message.toLowerCase().includes('error') || message.toLowerCase().includes('failed')) {
+      console.error(formattedMessage);
+    }
+  } else {
+    console.log(formattedMessage);
+  }
 }
 
 /**
@@ -139,6 +172,26 @@ export function initializeLogger(): void {
   } else {
     setLogLevel(LogLevel.DEBUG);
     logInfo('Logger initialized for development - all logs enabled');
+  }
+}
+
+/**
+ * Development helper - enable all logs for debugging
+ */
+export function enableDevelopmentLogging(): void {
+  if (isDevelopment) {
+    setLogLevel(LogLevel.DEBUG);
+    logInfo('Development logging enabled - all log levels active');
+  }
+}
+
+/**
+ * Development helper - enable only important logs
+ */
+export function enableMinimalLogging(): void {
+  if (isDevelopment) {
+    setLogLevel(LogLevel.WARN);
+    logInfo('Minimal logging enabled - only warnings and errors');
   }
 }
 
