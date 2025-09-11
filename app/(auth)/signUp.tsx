@@ -584,7 +584,7 @@ export default function SignUpScreen() {
                     Email link sent successfully!
                   </ThemedText>
                   <ThemedText variant="caption" style={[styles.successSubtext, { color: theme.colors.textSecondary }]}>
-                    Check your email and click the link to complete registration. It may take up to a minute to receive the email.
+                    Check your email and click the link to complete registration. <ThemedText variant="caption" style={[styles.successSubtext, { color: theme.colors.textSecondary, fontWeight: 'bold' }]}>It may take up to a minute to receive the email.</ThemedText>
                   </ThemedText>
                 </View>
               </View>
