@@ -7,6 +7,7 @@ import { useRouter } from 'expo-router';
 import { useEffect } from 'react';
 import { Alert, Platform } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
+import { validateImageSize } from '../utils/imageUpload';
 import { Comment, Post } from '../types/social';
 
 export const useUserProfile = () => {
@@ -560,6 +561,12 @@ export const useCreatePost = () => {
           // Security Check: Validate user authentication (additional check)
           if (!user || !user.id) {
             throw new Error('User authentication required for image upload');
+          }
+
+          // Security Check: Validate file size
+          const sizeValidation = await validateImageSize(imageUri);
+          if (!sizeValidation.valid) {
+            throw new Error(sizeValidation.error || 'File size validation failed');
           }
 
           const fileName = `${user.id}-${Date.now()}.jpg`;

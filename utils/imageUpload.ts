@@ -9,6 +9,43 @@ export interface UploadResult {
   error?: string;
 }
 
+// File size limits
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB per image
+const MAX_TOTAL_SIZE = 10 * 1024 * 1024; // 10MB total for 2 images
+
+/**
+ * Validate file size for image uploads
+ */
+export const validateImageSize = async (imageUri: string): Promise<{ valid: boolean; error?: string }> => {
+  try {
+    if (Platform.OS === 'web') {
+      // For web, we can't easily get file size from URI, so we'll validate during upload
+      return { valid: true };
+    }
+
+    // For mobile platforms, get file info
+    const fileInfo = await FileSystem.getInfoAsync(imageUri);
+    
+    if (!fileInfo.exists) {
+      return { valid: false, error: 'Image file not found' };
+    }
+
+    if (fileInfo.size && fileInfo.size > MAX_FILE_SIZE) {
+      const sizeMB = (fileInfo.size / (1024 * 1024)).toFixed(1);
+      const maxMB = (MAX_FILE_SIZE / (1024 * 1024)).toFixed(0);
+      return { 
+        valid: false, 
+        error: `Image is too large (${sizeMB}MB). Maximum size allowed is ${maxMB}MB per image.` 
+      };
+    }
+
+    return { valid: true };
+  } catch (error) {
+    console.error('Error validating image size:', error);
+    return { valid: false, error: 'Failed to validate image size' };
+  }
+};
+
 /**
  * Request camera and media library permissions
  */
@@ -96,6 +133,15 @@ export const uploadProfilePicture = async (
       return { 
         success: false, 
         error: 'Unauthorized: Cannot upload files for another user.' 
+      };
+    }
+
+    // Security Check 3: Validate file size
+    const sizeValidation = await validateImageSize(imageUri);
+    if (!sizeValidation.valid) {
+      return {
+        success: false,
+        error: sizeValidation.error || 'File size validation failed'
       };
     }
     // Create a unique filename with proper path structure
