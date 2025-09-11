@@ -3,6 +3,7 @@ import { supabase } from '@/supabase';
 import { clearPasswordVerification } from '@/utils/profilePicturePassword';
 import { Session } from '@supabase/supabase-js';
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { logError, logInfo, logSecurity } from '@/utils/logger';
 
 // Create an authentication context.
 const AuthContext = createContext<{
@@ -32,7 +33,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Fetch initial session.
     supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('🔐 AuthContext: Initial session loaded:', session ? 'User logged in' : 'No session');
+      logSecurity('AuthContext: Initial session loaded');
       setSession(session);
       setIsReady(true);
     });
@@ -41,16 +42,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('🔐 AuthContext: Auth state changed:', event, session ? 'Session present' : 'No session');
+      logSecurity('AuthContext: Auth state changed');
       
       // Handle token refresh events
       if (event === 'TOKEN_REFRESHED') {
-        console.log('🔄 AuthContext: Token refreshed successfully');
+        logInfo('AuthContext: Token refreshed successfully');
       }
       
       // Handle sign out events
       if (event === 'SIGNED_OUT') {
-        console.log('🚪 AuthContext: User signed out');
+        logSecurity('AuthContext: User signed out');
       }
       
       setSession(session);
@@ -61,10 +62,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const { data: { session: currentSession } } = await supabase.auth.getSession();
         if (currentSession) {
-          console.log('🔄 AuthContext: Periodic session check - session still valid');
+          logInfo('AuthContext: Periodic session check - session still valid');
         }
       } catch (error) {
-        console.error('❌ AuthContext: Error during periodic session check:', error);
+        logError('AuthContext: Error during periodic session check:', error);
       }
     }, 23 * 60 * 60 * 1000); // 23 hours
 
@@ -77,19 +78,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try {
-      console.log('🚪 AuthContext: User initiated sign out');
+      logSecurity('AuthContext: User initiated sign out');
       
       // Clear password verification status
       await clearPasswordVerification();
       
       const { error } = await supabase.auth.signOut();
       if (error) {
-        console.error('❌ AuthContext: Error during sign out:', error);
+        logError('AuthContext: Error during sign out:', error);
         throw error;
       }
-      console.log('✅ AuthContext: Sign out successful');
+      logSecurity('AuthContext: Sign out successful');
     } catch (error) {
-      console.error('❌ AuthContext: Sign out failed:', error);
+      logError('AuthContext: Sign out failed:', error);
       throw error;
     }
   };
