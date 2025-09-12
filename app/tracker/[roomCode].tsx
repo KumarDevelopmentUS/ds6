@@ -8,13 +8,13 @@ import * as Clipboard from 'expo-clipboard';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-    Alert,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import QRCodeSVG from 'react-native-qrcode-svg';
 
@@ -209,7 +209,7 @@ const DieStatsTracker: React.FC = () => {
     }
 
     // Set the join link for sharing - using query parameters
-    setJoinLink(`${process.env.EXPO_PUBLIC_APP_URL || 'https://ds6-pi.vercel.app'}/tracker/join?roomCode=${roomCodeString}`);
+    setJoinLink(`${process.env.EXPO_PUBLIC_APP_URL || 'https://diestats.app'}/tracker/join?roomCode=${roomCodeString}`);
   }, [roomCode, roomCodeString, router]);
 
   // Effect to manage Supabase authentication session directly within this component

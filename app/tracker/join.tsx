@@ -1,5 +1,4 @@
 // app/tracker/join.tsx
-import { HapticBackButton } from '@/components/HapticBackButton';
 import { ThemedButton } from '@/components/themed/ThemedButton';
 import { ThemedInput } from '@/components/themed/ThemedInput';
 import { ThemedText } from '@/components/themed/ThemedText';
@@ -358,10 +357,6 @@ export default function JoinMatchScreen() {
   if (!liveMatch) {
     return (
       <SafeAreaView style={styles.container}>
-        <HapticBackButton 
-          onPress={() => router.back()} 
-          style={styles.backButton}
-        />
         <View style={styles.centerContainer}>
           <ThemedText variant="title" color="error">Match Not Found</ThemedText>
           <ThemedText variant="body" style={styles.errorText}>
@@ -379,11 +374,6 @@ export default function JoinMatchScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <HapticBackButton 
-        onPress={() => router.back()} 
-        style={styles.backButton}
-      />
-
       <ScrollView style={styles.content}>
         {/* Match Info */}
         <ThemedView variant="card" style={styles.matchCard}>

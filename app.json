@@ -2,7 +2,7 @@
   "expo": {
     "name": "DieStats6",
     "slug": "DieStats6",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "diestats",
@@ -25,7 +25,7 @@
               "NSExceptionMinimumTLSVersion": "1.0",
               "NSIncludesSubdomains": true
             },
-            "ds6-pi.vercel.app": {
+            "diestats.app": {
               "NSExceptionRequiresForwardSecrecy": false,
               "NSExceptionMinimumTLSVersion": "1.0",
               "NSIncludesSubdomains": true
@@ -35,7 +35,7 @@
         "ITSAppUsesNonExemptEncryption": false
       },
       "associatedDomains": [
-        "applinks:ds6-pi.vercel.app"
+        "applinks:diestats.app"
       ]
     },
     "android": {

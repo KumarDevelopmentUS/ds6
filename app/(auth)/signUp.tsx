@@ -624,26 +624,6 @@ export default function SignUpScreen() {
               />
             )}
 
-            {/* Toggle between password and magic link */}
-            <View style={[styles.authToggleContainer, { marginTop: theme.spacing.sm }]}>
-              <ThemedButton
-                title={showEmailLink ? "Use Password Instead" : "Use Email Link Instead"}
-                variant="ghost"
-                onPress={() => {
-                  setShowEmailLink(!showEmailLink);
-                  setErrors({
-                    username: '',
-                    nickname: '',
-                    email: '',
-                    password: '',
-                    confirmPassword: '',
-                  });
-                  setMagicLinkSent(false);
-                  setCooldownTimer(0);
-                }}
-                size="small"
-              />
-            </View>
             
             {/* Helpful message when username is taken */}
             {usernameAvailable === false && (
