@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "DieStats6",
+    "name": "Die Stats",
     "slug": "DieStats6",
     "version": "1.0.4",
     "orientation": "portrait",
@@ -53,7 +53,8 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/probability.png",
+      "name": "Die Stats"
     },
     "plugins": [
       "expo-router",
