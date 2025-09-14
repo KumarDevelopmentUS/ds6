@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npx expo export --platform web && cp assets/images/probability.png dist/favicon.ico && sed -i '' 's/<title data-rh=\"true\"><\/title>/<title data-rh=\"true\">Die Stats<\/title>/' dist/index.html",
+  "buildCommand": "./build-web.sh",
   "outputDirectory": "dist",
   "devCommand": "npx expo start --web",
   "installCommand": "npm install",
