@@ -8,10 +8,7 @@ cp assets/images/probability.png dist/favicon.ico
 cp assets/images/probability.png dist/favicon.png
 cp assets/images/probability.png dist/apple-touch-icon.png
 
-# Update the title in index.html
-sed -i 's/<title data-rh="true"><\/title>/<title data-rh="true">Die Stats<\/title>/' dist/index.html
-
-# Add proper favicon links to index.html
-sed -i 's|<link rel="icon" href="/favicon.ico" />|<link rel="icon" type="image/png" href="/favicon.png" />\n<link rel="apple-touch-icon" href="/apple-touch-icon.png" />|' dist/index.html
+# Update the title and favicon in index.html using Python
+python3 fix-html.py
 
 echo "Build completed successfully!"
