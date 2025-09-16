@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       comments: {
@@ -128,11 +153,13 @@ export type Database = {
       }
       live_matches: {
         Row: {
+          adjustment_history: Json | null
           createdAt: string | null
           hostId: string | null
           id: string
           livePlayerStats: Json
           liveTeamPenalties: Json
+          manual_adjustments: Json | null
           matchSetup: Json
           matchStartTime: string | null
           participants: string[] | null
@@ -142,11 +169,13 @@ export type Database = {
           winnerTeam: number | null
         }
         Insert: {
+          adjustment_history?: Json | null
           createdAt?: string | null
           hostId?: string | null
           id?: string
           livePlayerStats: Json
           liveTeamPenalties: Json
+          manual_adjustments?: Json | null
           matchSetup: Json
           matchStartTime?: string | null
           participants?: string[] | null
@@ -156,11 +185,13 @@ export type Database = {
           winnerTeam?: number | null
         }
         Update: {
+          adjustment_history?: Json | null
           createdAt?: string | null
           hostId?: string | null
           id?: string
           livePlayerStats?: Json
           liveTeamPenalties?: Json
+          manual_adjustments?: Json | null
           matchSetup?: Json
           matchStartTime?: string | null
           participants?: string[] | null
@@ -272,8 +303,10 @@ export type Database = {
       }
       saved_matches: {
         Row: {
+          adjustment_history: Json | null
           createdAt: string | null
           id: string
+          manual_adjustments: Json | null
           matchDuration: number | null
           matchSetup: Json
           matchStartTime: string | null
@@ -285,8 +318,10 @@ export type Database = {
           winnerTeam: number | null
         }
         Insert: {
+          adjustment_history?: Json | null
           createdAt?: string | null
           id?: string
+          manual_adjustments?: Json | null
           matchDuration?: number | null
           matchSetup: Json
           matchStartTime?: string | null
@@ -298,8 +333,10 @@ export type Database = {
           winnerTeam?: number | null
         }
         Update: {
+          adjustment_history?: Json | null
           createdAt?: string | null
           id?: string
+          manual_adjustments?: Json | null
           matchDuration?: number | null
           matchSetup?: Json
           matchStartTime?: string | null
@@ -712,6 +749,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       match_status: ["waiting", "active", "finished"],

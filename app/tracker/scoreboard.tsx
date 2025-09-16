@@ -7,13 +7,13 @@ import { supabase } from '@/supabase';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    RefreshControl,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    View
+  ActivityIndicator,
+  RefreshControl,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View
 } from 'react-native';
 
 // NEW: Updated PlayerStats interface for Beer Die ruleset - matches types/social.ts
@@ -72,6 +72,8 @@ interface LiveMatch {
   };
   livePlayerStats: { [key: number]: PlayerStats };
   liveTeamPenalties: { 1: number; 2: number };
+  manualAdjustments?: { 1: number; 2: number };
+  adjustmentHistory?: { team: number; amount: number; timestamp: Date }[];
   matchStartTime: string | null;
   winnerTeam: number | null;
 }
@@ -87,12 +89,12 @@ export default function ScoreboardScreen() {
   const [errorMessage, setErrorMessage] = useState('');
 
   // Calculate team score
-  const calculateTeamScore = useCallback((teamNumber: number, playerStats: { [key: number]: PlayerStats }, teamPenalties: { 1: number; 2: number }): number => {
+  const calculateTeamScore = useCallback((teamNumber: number, playerStats: { [key: number]: PlayerStats }, teamPenalties: { 1: number; 2: number }, manualAdjustments?: { 1: number; 2: number }): number => {
     const playerIndices = teamNumber === 1 ? [1, 2] : [3, 4];
     const teamScore = playerIndices.reduce((sum, playerId) => {
       return sum + (playerStats[playerId]?.score || 0);
     }, 0);
-    return teamScore - (teamPenalties[teamNumber as 1 | 2] || 0);
+    return teamScore - (teamPenalties[teamNumber as 1 | 2] || 0) + (manualAdjustments?.[teamNumber as 1 | 2] || 0);
   }, []);
 
   // Calculate player rating: 45% throw + 45% catch + 15% FIFA (max 105%)
@@ -139,6 +141,8 @@ export default function ScoreboardScreen() {
         matchSetup: data.matchSetup,
         livePlayerStats: data.livePlayerStats || {},
         liveTeamPenalties: data.liveTeamPenalties || { 1: 0, 2: 0 },
+        manualAdjustments: data.manual_adjustments || { 1: 0, 2: 0 },
+        adjustmentHistory: data.adjustment_history || [],
         matchStartTime: data.matchStartTime,
         winnerTeam: data.winnerTeam,
       });
@@ -255,8 +259,8 @@ export default function ScoreboardScreen() {
     );
   }
 
-  const team1Score = calculateTeamScore(1, liveMatch.livePlayerStats, liveMatch.liveTeamPenalties);
-  const team2Score = calculateTeamScore(2, liveMatch.livePlayerStats, liveMatch.liveTeamPenalties);
+  const team1Score = calculateTeamScore(1, liveMatch.livePlayerStats, liveMatch.liveTeamPenalties, liveMatch.manualAdjustments);
+  const team2Score = calculateTeamScore(2, liveMatch.livePlayerStats, liveMatch.liveTeamPenalties, liveMatch.manualAdjustments);
 
   return (
     <SafeAreaView style={styles.container}>

@@ -53,9 +53,9 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/probability.png",
+      "favicon": "./assets/images/favicon.ico",
       "name": "Die Stats",
-      "appleTouchIcon": "./assets/images/probability.png"
+      "appleTouchIcon": "./assets/images/favicon.png"
     },
     "plugins": [
       "expo-router",

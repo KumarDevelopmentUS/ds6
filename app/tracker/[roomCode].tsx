@@ -8,13 +8,13 @@ import * as Clipboard from 'expo-clipboard';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  Alert,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    Alert,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import QRCodeSVG from 'react-native-qrcode-svg';
 
@@ -118,6 +118,14 @@ const DieStatsTracker: React.FC = () => {
   const [matchFinished, setMatchFinished] = useState(false);
   const [winnerTeam, setWinnerTeam] = useState<number | null>(null);
 
+  // Manual score adjustment state
+  const [manualAdjustments, setManualAdjustments] = useState<{ 1: number; 2: number }>({ 1: 0, 2: 0 });
+  const [adjustmentHistory, setAdjustmentHistory] = useState<{
+    team: number;
+    amount: number;
+    timestamp: Date;
+  }[]>([]);
+
   // Live session state for real-time updates
   const [liveSessionId, setLiveSessionId] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<any>(null); // Supabase user object
@@ -134,6 +142,7 @@ const DieStatsTracker: React.FC = () => {
   const [showStats, setShowStats] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [showJoinDialog, setShowJoinDialog] = useState(false);
+  const [showManualAdjust, setShowManualAdjust] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -559,7 +568,7 @@ const DieStatsTracker: React.FC = () => {
   };
 
   // Function to update live match data in Supabase
-  const updateLiveMatchData = useCallback(async (updatedPlayerStats?: any, updatedTeamPenalties?: any) => {
+  const updateLiveMatchData = useCallback(async (updatedPlayerStats?: any, updatedTeamPenalties?: any, updatedManualAdjustments?: any, updatedAdjustmentHistory?: any) => {
     if (!liveSessionId) {
       return;
     }
@@ -570,6 +579,8 @@ const DieStatsTracker: React.FC = () => {
         .update({
           livePlayerStats: updatedPlayerStats || playerStats,
           liveTeamPenalties: updatedTeamPenalties || teamPenalties,
+          manual_adjustments: updatedManualAdjustments || manualAdjustments,
+          adjustment_history: updatedAdjustmentHistory || adjustmentHistory,
           userSlotMap: userSlotMap,
         })
         .eq('id', liveSessionId);
@@ -583,7 +594,7 @@ const DieStatsTracker: React.FC = () => {
     } catch (error) {
       console.error('Error syncing play:', error);
     }
-  }, [liveSessionId, playerStats, teamPenalties, userSlotMap]);
+  }, [liveSessionId, playerStats, teamPenalties, manualAdjustments, adjustmentHistory, userSlotMap]);
 
   // Helper function to check if in Match Point, Advantage, or Overtime
   const getGameState = () => {
@@ -844,7 +855,42 @@ const DieStatsTracker: React.FC = () => {
     const teamScore = playerIndices.reduce((sum, playerId) => {
       return sum + (playerStats[playerId]?.score || 0);
     }, 0);
-    return teamScore - (teamPenalties[teamNumber as 1 | 2] || 0);
+    return teamScore - (teamPenalties[teamNumber as 1 | 2] || 0) + (manualAdjustments[teamNumber as 1 | 2] || 0);
+  };
+
+  // Manual score adjustment functions
+  const adjustTeamScore = (teamNumber: 1 | 2, amount: number) => {
+    if (!isHost) return; // Only host can adjust scores
+    
+    const newAdjustments = {
+      ...manualAdjustments,
+      [teamNumber]: (manualAdjustments[teamNumber] || 0) + amount
+    };
+    
+    const newHistory = [...adjustmentHistory, {
+      team: teamNumber,
+      amount: amount,
+      timestamp: new Date()
+    }];
+    
+    setManualAdjustments(newAdjustments);
+    setAdjustmentHistory(newHistory);
+    
+    // Sync to database
+    updateLiveMatchData(playerStats, teamPenalties, newAdjustments, newHistory);
+  };
+
+  const resetManualAdjustments = () => {
+    if (!isHost) return; // Only host can reset adjustments
+    
+    const newAdjustments = { 1: 0, 2: 0 };
+    const newHistory: { team: number; amount: number; timestamp: Date }[] = [];
+    
+    setManualAdjustments(newAdjustments);
+    setAdjustmentHistory(newHistory);
+    
+    // Sync to database
+    updateLiveMatchData(playerStats, teamPenalties, newAdjustments, newHistory);
   };
 
   // Calculates a player's rating: 45% throw + 45% catch + 15% FIFA (max 105%)
@@ -977,6 +1023,8 @@ const DieStatsTracker: React.FC = () => {
         matchSetup: matchSetup,
         playerStats: playerStats,
         teamPenalties: teamPenalties,
+        manual_adjustments: manualAdjustments,
+        adjustment_history: adjustmentHistory,
         matchStartTime: matchStartTime?.toISOString(),
         winnerTeam: winnerTeam,
         matchDuration: matchStartTime
@@ -1705,10 +1753,99 @@ const DieStatsTracker: React.FC = () => {
                 </View>
               )}
 
+              {/* Manual Score Adjustment Section (conditionally rendered) */}
+              {showManualAdjust && isHost && (
+                <View style={styles.nestedCard}>
+                  <View style={styles.adjustmentHeader}>
+                    <Text style={styles.sectionHeader}>Manual Score Adjustment:</Text>
+                    <TouchableOpacity
+                      style={styles.hideAdjustmentButton}
+                      onPress={() => setShowManualAdjust(false)}
+                    >
+                      <Text style={styles.hideAdjustmentButtonText}>Hide</Text>
+                    </TouchableOpacity>
+                  </View>
+                  
+                  {/* Team 1 Adjustment */}
+                  <View style={styles.adjustmentRow}>
+                    <Text style={styles.adjustmentLabel}>Team 1 ({matchSetup.teamNames[0]}):</Text>
+                    <View style={styles.adjustmentControls}>
+                      <TouchableOpacity
+                        style={styles.adjustmentButton}
+                        onPress={() => adjustTeamScore(1, -1)}
+                      >
+                        <Text style={styles.adjustmentButtonText}>-1</Text>
+                      </TouchableOpacity>
+                      <Text style={styles.adjustmentValue}>
+                        {manualAdjustments[1] || 0}
+                      </Text>
+                      <TouchableOpacity
+                        style={styles.adjustmentButton}
+                        onPress={() => adjustTeamScore(1, 1)}
+                      >
+                        <Text style={styles.adjustmentButtonText}>+1</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+
+                  {/* Team 2 Adjustment */}
+                  <View style={styles.adjustmentRow}>
+                    <Text style={styles.adjustmentLabel}>Team 2 ({matchSetup.teamNames[1]}):</Text>
+                    <View style={styles.adjustmentControls}>
+                      <TouchableOpacity
+                        style={styles.adjustmentButton}
+                        onPress={() => adjustTeamScore(2, -1)}
+                      >
+                        <Text style={styles.adjustmentButtonText}>-1</Text>
+                      </TouchableOpacity>
+                      <Text style={styles.adjustmentValue}>
+                        {manualAdjustments[2] || 0}
+                      </Text>
+                      <TouchableOpacity
+                        style={styles.adjustmentButton}
+                        onPress={() => adjustTeamScore(2, 1)}
+                      >
+                        <Text style={styles.adjustmentButtonText}>+1</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+
+                  {/* Reset Button */}
+                  <TouchableOpacity
+                    style={styles.resetAdjustmentButton}
+                    onPress={resetManualAdjustments}
+                  >
+                    <Text style={styles.resetAdjustmentButtonText}>Reset Adjustments</Text>
+                  </TouchableOpacity>
+
+                  {/* Adjustment History */}
+                  {adjustmentHistory.length > 0 && (
+                    <View style={styles.adjustmentHistory}>
+                      <Text style={styles.adjustmentHistoryTitle}>Adjustment History:</Text>
+                      {adjustmentHistory.slice(-5).reverse().map((adjustment, index) => (
+                        <Text key={index} style={styles.adjustmentHistoryItem}>
+                          Team {adjustment.team}: {adjustment.amount > 0 ? '+' : ''}{adjustment.amount} ({adjustment.timestamp.toLocaleTimeString()})
+                        </Text>
+                      ))}
+                    </View>
+                  )}
+                </View>
+              )}
+
               {/* NEW: Redemption Section removed - redemption is now a throw result (Successful Redemption) */}
 
               {/* Action Buttons Row */}
               <View style={styles.actionButtonsRow}>
+                {isHost && (
+                  <TouchableOpacity
+                    style={styles.manualAdjustButton}
+                    onPress={() => setShowManualAdjust(!showManualAdjust)}
+                  >
+                    <Text style={styles.manualAdjustButtonText}>
+                      Manual Adjust
+                    </Text>
+                  </TouchableOpacity>
+                )}
                 <TouchableOpacity 
                   style={styles.clearSelectionButton} 
                   onPress={() => {
@@ -1748,7 +1885,7 @@ const DieStatsTracker: React.FC = () => {
               </TouchableOpacity>
               {!matchFinished && (
                 <TouchableOpacity style={styles.orangeButton} onPress={handleFinishMatch}>
-                  <Text style={styles.buttonText}>Finish Match</Text>
+                  <Text style={styles.orangeButtonText}>Finish Match</Text>
                 </TouchableOpacity>
               )}
               {matchFinished && (
@@ -2844,13 +2981,17 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     backgroundColor: '#8b5cf6', // Purple color for general actions
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 4,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 48,
   },
   actionButtonText: {
     color: '#ffffff',
-    fontSize: 14,
+    fontSize: 16,
+    fontWeight: '600',
   },
   redButton: {
     backgroundColor: '#ef4444', // Red color for critical actions like Self Sink
@@ -2887,7 +3028,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     alignItems: 'center',
     justifyContent: 'center',
-    flex: 0.65, // 65% width
+    flex: 0.5, // 50% width
   },
   errorMessage: {
     color: '#ef4444', // Red for error messages
@@ -2897,9 +3038,17 @@ const styles = StyleSheet.create({
   },
   orangeButton: {
     backgroundColor: '#f97316', // Orange for warning/secondary actions
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 4,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 48,
+  },
+  orangeButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
   },
   greenButton: {
     backgroundColor: '#22c55e', // Green for positive actions
@@ -3026,7 +3175,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     alignItems: 'center',
     justifyContent: 'center',
-    flex: 0.35, // 35% width
+    flex: 0.3, // 30% width
   },
   clearSelectionButtonText: {
     color: '#ffffff',
@@ -3065,6 +3214,108 @@ const styles = StyleSheet.create({
   },
   teamStatsColumn: {
     flex: 1,
+  },
+  // Manual adjustment styles
+  manualAdjustButton: {
+    backgroundColor: '#ef4444', // Red color for manual adjustments
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 4,
+    opacity: 0.8, // Make it less prominent
+    flex: 0.2, // 20% width
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  manualAdjustButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  adjustmentRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+    paddingVertical: 8,
+  },
+  adjustmentLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#374151',
+    flex: 1,
+  },
+  adjustmentControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  adjustmentButton: {
+    backgroundColor: '#6b7280',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  adjustmentButtonText: {
+    color: '#ffffff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  adjustmentValue: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1f2937',
+    minWidth: 30,
+    textAlign: 'center',
+  },
+  resetAdjustmentButton: {
+    backgroundColor: '#dc2626',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 4,
+    alignSelf: 'center',
+    marginTop: 8,
+  },
+  resetAdjustmentButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  adjustmentHistory: {
+    marginTop: 12,
+    padding: 8,
+    backgroundColor: '#f9fafb',
+    borderRadius: 4,
+  },
+  adjustmentHistoryTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 4,
+  },
+  adjustmentHistoryItem: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginBottom: 2,
+  },
+  adjustmentHeader: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+    gap: 16,
+  },
+  hideAdjustmentButton: {
+    backgroundColor: '#6b7280',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 6,
+  },
+  hideAdjustmentButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 
 });
