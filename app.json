@@ -53,7 +53,7 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.ico",
+      "favicon": "./assets/images/favicon.png",
       "name": "Die Stats",
       "appleTouchIcon": "./assets/images/favicon.png"
     },

@@ -16,11 +16,17 @@ if [ ! -f "dist/index.html" ]; then
     exit 1
 fi
 
-# Copy custom favicon in multiple formats
+# Copy custom favicon in multiple formats (if they exist)
 echo "Copying favicon files..."
-cp assets/images/favicon.ico dist/favicon.ico
-cp assets/images/favicon.png dist/favicon.png
-cp assets/images/favicon.png dist/apple-touch-icon.png
+if [ -f "assets/images/favicon.ico" ]; then
+    cp assets/images/favicon.ico dist/favicon.ico
+    echo "Copied favicon.ico"
+fi
+if [ -f "assets/images/favicon.png" ]; then
+    cp assets/images/favicon.png dist/favicon.png
+    cp assets/images/favicon.png dist/apple-touch-icon.png
+    echo "Copied favicon.png and apple-touch-icon.png"
+fi
 
 # Update the title and favicon in index.html using Python
 echo "Updating HTML files..."
