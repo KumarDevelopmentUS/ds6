@@ -989,6 +989,111 @@ export const leaveCommunity = async (userId: string, communityId: number) => {
   }
 };
 
+// Function to handle school community changes when profile is updated
+export const handleSchoolCommunityChange = async (
+  userId: string, 
+  newSchool: string | null, 
+  oldSchool?: string | null
+): Promise<{ success: boolean; error?: string; addedCommunity?: string }> => {
+  try {
+    // If no new school is set, nothing to do
+    if (!newSchool) {
+      return { success: true };
+    }
+
+    // Get username for logging
+    const { data: userProfile } = await supabase
+      .from('user_profiles')
+      .select('username')
+      .eq('id', userId)
+      .single();
+    
+    const username = userProfile?.username || 'unknown';
+    console.log(`📚 Handling school community change for user ${username}: ${oldSchool} → ${newSchool}`);
+
+    // Find or create the new school community
+    let { data: community, error: findError } = await supabase
+      .from('communities')
+      .select('*')
+      .eq('name', newSchool)
+      .eq('type', 'school')
+      .single();
+    
+    if (findError && findError.code === 'PGRST116') {
+      // Community doesn't exist, create it
+      console.log(`📝 Creating new school community: ${newSchool}`);
+      const { data: newCommunity, error: createError } = await supabase
+        .from('communities')
+        .insert({
+          name: newSchool,
+          type: 'school',
+          description: `School community for ${newSchool}`
+        })
+        .select()
+        .single();
+      
+      if (createError) {
+        console.error('❌ Failed to create school community:', createError);
+        return { success: false, error: `Failed to create school community: ${createError.message}` };
+      }
+      
+      community = newCommunity;
+      console.log('✅ School community created:', community);
+    } else if (findError) {
+      console.error('❌ Error finding school community:', findError);
+      return { success: false, error: `Failed to find school community: ${findError.message}` };
+    } else {
+      console.log('✅ Found existing school community:', community);
+    }
+    
+    // Check if user is already a member of the new school community
+    const { data: existingMembership, error: membershipError } = await supabase
+      .from('user_communities')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('community_id', community.id)
+      .single();
+    
+    if (existingMembership) {
+      console.log(`✅ User is already a member of ${newSchool} community`);
+      return { success: true, addedCommunity: newSchool };
+    }
+    
+    // Add user to the new school community
+    console.log(`📝 Adding user to ${newSchool} community...`);
+    const { error: joinError } = await supabase
+      .from('user_communities')
+      .insert({
+        user_id: userId,
+        community_id: community.id
+      });
+    
+    if (joinError) {
+      // Check if it's a duplicate key error (user already joined)
+      if (joinError.code === '23505') {
+        console.log(`✅ User already in ${newSchool} community`);
+        return { success: true, addedCommunity: newSchool };
+      }
+      console.error('❌ Failed to join school community:', joinError);
+      return { success: false, error: `Failed to join school community: ${joinError.message}` };
+    }
+    
+    console.log(`✅ Successfully added user to ${newSchool} community`);
+    
+    // Note: We intentionally do NOT remove the user from their old school community
+    // This allows users to remain connected to multiple schools if they transfer
+    
+    return { success: true, addedCommunity: newSchool };
+    
+  } catch (error) {
+    console.error('❌ School community change failed:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error during school community change' 
+    };
+  }
+};
+
 // Debug function to create a test post in General community
 export const createTestPostInGeneral = async () => {
   try {

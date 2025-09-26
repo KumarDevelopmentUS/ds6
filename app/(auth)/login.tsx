@@ -33,7 +33,7 @@ export default function LoginScreen() {
 
   // Cooldown timer effect
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: ReturnType<typeof setInterval>;
     if (cooldownTimer > 0) {
       interval = setInterval(() => {
         setCooldownTimer((prev) => {

@@ -10,11 +10,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    View
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  View
 } from 'react-native';
 
 export default function ResetPasswordScreen() {
@@ -30,7 +30,7 @@ export default function ResetPasswordScreen() {
 
   // Cooldown timer effect
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: ReturnType<typeof setInterval>;
     if (cooldownTimer > 0) {
       interval = setInterval(() => {
         setCooldownTimer((prev) => {
@@ -131,7 +131,7 @@ export default function ResetPasswordScreen() {
             Reset Password
           </ThemedText>
           <ThemedText variant="body" style={styles.subtitle}>
-            Enter your email address and we'll send you a link to reset your password
+            Enter your email address and we&apos;ll send you a link to reset your password
           </ThemedText>
 
           {/* Form */}

@@ -257,7 +257,7 @@ export const PostCard = memo(PostCardComponent);
 const styles = StyleSheet.create({
   container: {
     backgroundColor: '#fff',
-    marginHorizontal: 16,
+    marginHorizontal: 8,
     marginVertical: 8,
     padding: 16,
     borderRadius: 12,

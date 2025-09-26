@@ -519,7 +519,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    padding: 20,
+    padding: 12,
     paddingTop: 100, // Add more padding for back button
   },
   backButton: {

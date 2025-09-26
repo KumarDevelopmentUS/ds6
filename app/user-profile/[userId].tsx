@@ -438,7 +438,7 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingTop: 60, // Space for back button
-    paddingHorizontal: 20,
+    paddingHorizontal: 12,
     paddingBottom: 20,
   },
   backButton: {

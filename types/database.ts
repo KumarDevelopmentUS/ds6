@@ -128,11 +128,13 @@ export type Database = {
       }
       live_matches: {
         Row: {
+          adjustment_history: Json | null
           createdAt: string | null
           hostId: string | null
           id: string
           livePlayerStats: Json
           liveTeamPenalties: Json
+          manual_adjustments: Json | null
           matchSetup: Json
           matchStartTime: string | null
           participants: string[] | null
@@ -142,11 +144,13 @@ export type Database = {
           winnerTeam: number | null
         }
         Insert: {
+          adjustment_history?: Json | null
           createdAt?: string | null
           hostId?: string | null
           id?: string
           livePlayerStats: Json
           liveTeamPenalties: Json
+          manual_adjustments?: Json | null
           matchSetup: Json
           matchStartTime?: string | null
           participants?: string[] | null
@@ -156,11 +160,13 @@ export type Database = {
           winnerTeam?: number | null
         }
         Update: {
+          adjustment_history?: Json | null
           createdAt?: string | null
           hostId?: string | null
           id?: string
           livePlayerStats?: Json
           liveTeamPenalties?: Json
+          manual_adjustments?: Json | null
           matchSetup?: Json
           matchStartTime?: string | null
           participants?: string[] | null
@@ -272,8 +278,10 @@ export type Database = {
       }
       saved_matches: {
         Row: {
+          adjustment_history: Json | null
           createdAt: string | null
           id: string
+          manual_adjustments: Json | null
           matchDuration: number | null
           matchSetup: Json
           matchStartTime: string | null
@@ -285,8 +293,10 @@ export type Database = {
           winnerTeam: number | null
         }
         Insert: {
+          adjustment_history?: Json | null
           createdAt?: string | null
           id?: string
+          manual_adjustments?: Json | null
           matchDuration?: number | null
           matchSetup: Json
           matchStartTime?: string | null
@@ -298,8 +308,10 @@ export type Database = {
           winnerTeam?: number | null
         }
         Update: {
+          adjustment_history?: Json | null
           createdAt?: string | null
           id?: string
+          manual_adjustments?: Json | null
           matchDuration?: number | null
           matchSetup?: Json
           matchStartTime?: string | null
@@ -551,7 +563,7 @@ export type Database = {
         }[]
       }
       get_schoolmates: {
-        Args: { user_id: string }
+        Args: { input_user_id: string }
         Returns: {
           avatar_background_color: string
           avatar_icon: string

@@ -29,6 +29,7 @@ import { getSchoolByValue, SCHOOLS, searchSchools } from '../constants/schools';
 import { useTheme } from '../contexts/ThemeContext';
 import { deleteProfilePicture, pickImage, takePhoto, updateUserProfilePicture, uploadProfilePicture } from '../utils/imageUpload';
 import { isPasswordVerified, markPasswordVerified, verifyProfilePicturePassword } from '../utils/profilePicturePassword';
+import { handleSchoolCommunityChange } from '../utils/profileSync';
 
 const { width } = Dimensions.get('window');
 const ICON_SIZE = 60;
@@ -306,7 +307,17 @@ export default function EditProfileScreen() {
     
     const { nickname, school, avatar_icon, avatar_icon_color, avatar_background_color } = profile;
 
-    // Update only user_profiles table now
+    // Get the original profile to compare school changes
+    const { data: originalProfile } = await supabase
+      .from('user_profiles')
+      .select('school')
+      .eq('id', profile.id)
+      .single();
+
+    const oldSchool = originalProfile?.school;
+    const hasSchoolChanged = oldSchool !== school;
+
+    // Update user_profiles table
     const { error: updateError } = await supabase
       .from('user_profiles')
       .update({ 
@@ -320,18 +331,37 @@ export default function EditProfileScreen() {
       })
       .eq('id', profile.id);
 
+    if (updateError) {
+      setLoading(false);
+      Alert.alert('Update Error', updateError.message);
+      return;
+    }
+
+    // Handle school community changes if school was updated
+    let communityMessage = '';
+    if (hasSchoolChanged && school) {
+      console.log(`📚 School changed from "${oldSchool}" to "${school}"`);
+      const communityResult = await handleSchoolCommunityChange(profile.id, school, oldSchool);
+      
+      if (communityResult.success && communityResult.addedCommunity) {
+        communityMessage = `\n\nYou've been added to the ${communityResult.addedCommunity} community!`;
+        if (oldSchool) {
+          communityMessage += ` You remain a member of your previous school communities.`;
+        }
+      } else if (!communityResult.success && communityResult.error) {
+        console.warn('School community update failed:', communityResult.error);
+        // Don't fail the whole operation, just log the warning
+      }
+    }
+
     setLoading(false);
 
-    if (updateError) {
-      Alert.alert('Update Error', updateError.message);
-    } else {
-      // Invalidate queries to ensure UI updates properly across the app
-      await queryClient.invalidateQueries({ queryKey: ['userCommunities'] });
-      await queryClient.invalidateQueries({ queryKey: ['user_profiles'] });
+    // Invalidate queries to ensure UI updates properly across the app
+    await queryClient.invalidateQueries({ queryKey: ['userCommunities'] });
+    await queryClient.invalidateQueries({ queryKey: ['user_profiles'] });
 
-      Alert.alert('Success', 'Profile updated successfully!');
-      router.replace('/(tabs)/' as any);
-    }
+    Alert.alert('Success', `Profile updated successfully!${communityMessage}`);
+    router.replace('/(tabs)/' as any);
   };
 
   const selectIcon = (iconName: keyof typeof Ionicons.glyphMap) => {
@@ -485,6 +515,7 @@ export default function EditProfileScreen() {
             onChangeText={(text) => setProfile({ ...profile, nickname: text })}
             icon={<Ionicons name="person-circle-outline" size={20} color={theme.colors.textSecondary} />}
             style={styles.editableInput}
+            maxLength={15}
           />
 
           {/* Change Password Button */}
@@ -641,7 +672,7 @@ export default function EditProfileScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   loadingContainer: { justifyContent: 'center', alignItems: 'center' },
-  content: { padding: 20, paddingBottom: 40, alignItems: 'center' },
+  content: { padding: 12, paddingBottom: 40, alignItems: 'center' },
   backButton: { position: 'absolute', top: 60, left: 20, flexDirection: 'row', alignItems: 'center', zIndex: 10 },
   backText: { marginLeft: 8, fontSize: 16, fontWeight: '500' },
   screenTitle: { textAlign: 'center', marginBottom: 30, marginTop: 80 },

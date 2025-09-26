@@ -67,7 +67,7 @@ export default function SignUpScreen() {
 
   // Cooldown timer effect
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: ReturnType<typeof setInterval>;
     if (cooldownTimer > 0) {
       interval = setInterval(() => {
         setCooldownTimer((prev) => {
@@ -101,6 +101,9 @@ export default function SignUpScreen() {
     if (username.length > 0 && username.length < 5) {
       return 'Username must be at least 5 characters long';
     }
+    if (username.length > 15) {
+      return 'Username must be no more than 15 characters long';
+    }
     if (username.length > 0 && !/^[a-zA-Z0-9._]+$/.test(username)) {
       return 'Username can only contain letters, numbers, dots (.), and underscores (_)';
     }
@@ -108,8 +111,11 @@ export default function SignUpScreen() {
   };
 
   const validateNickname = (nickname: string) => {
+    if (nickname.length > 15) {
+      return 'Name must be no more than 15 characters long';
+    }
     if (nickname.length > 0 && !/^[a-zA-Z0-9._]+$/.test(nickname)) {
-      return 'Nickname can only contain letters, numbers, dots (.), and underscores (_)';
+      return 'Name can only contain letters, numbers, dots (.), and underscores (_)';
     }
     return '';
   };
@@ -391,9 +397,9 @@ export default function SignUpScreen() {
 
     // If username availability hasn't been checked yet, check it now
     if (usernameAvailable === null) {
-      setMagicLinkLoading(true);
+      setEmailLinkLoading(true);
       const isAvailable = await checkUsernameAvailability(username);
-      setMagicLinkLoading(false);
+      setEmailLinkLoading(false);
       
       if (!isAvailable) {
         Alert.alert('Username Taken', 'This username is already taken. Please choose a different username.');
@@ -475,6 +481,7 @@ export default function SignUpScreen() {
                 onChangeText={(text) => handleInputChange('nickname', text)}
                 icon={<Ionicons name="person-outline" size={24} color={theme.colors.textSecondary} />}
                 style={{ marginBottom: errors.nickname ? 5 : 0 }}
+                maxLength={15}
               />
               {errors.nickname ? (
                 <ThemedText variant="caption" style={[styles.errorText, { color: theme.colors.error }]}>
@@ -490,6 +497,7 @@ export default function SignUpScreen() {
                 autoCapitalize="none"
                 icon={<Ionicons name="at" size={24} color={theme.colors.textSecondary} />}
                 style={{ marginBottom: errors.username ? 5 : 0 }}
+                maxLength={15}
               />
               {errors.username ? (
                 <ThemedText variant="caption" style={[styles.errorText, { color: theme.colors.error }]}>

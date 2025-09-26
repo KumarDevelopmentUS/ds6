@@ -687,7 +687,7 @@ const styles = StyleSheet.create({
   content: {
     flexGrow: 1,
     justifyContent: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: 12,
     paddingBottom: 40,
     maxWidth: 800,
     alignSelf: 'center',
@@ -696,7 +696,7 @@ const styles = StyleSheet.create({
   header: {
     marginTop: 40,
     marginBottom: 24,
-    padding: 20,
+    padding: 16,
   },
   headerContent: {
     flexDirection: 'row',
@@ -746,7 +746,7 @@ const styles = StyleSheet.create({
   centeredContainer: {
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: 12,
     paddingTop: 40,
     maxWidth: 800,
     alignSelf: 'center',
@@ -785,7 +785,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
     maxWidth: 600,
-    paddingHorizontal: 20,
+    paddingHorizontal: 12,
     alignSelf: 'center',
   },
   quickStartButton: {

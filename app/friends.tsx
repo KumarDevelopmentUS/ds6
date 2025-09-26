@@ -255,7 +255,7 @@ export default function FriendsScreen() {
       
       // Try the RPC functions first
       const [schoolResponse, fofResponse] = await Promise.all([
-        supabase.rpc('get_schoolmates', { user_id: userId }),
+        supabase.rpc('get_schoolmates', { input_user_id: userId }),
         supabase.rpc('get_friends_of_friends', { p_user_id: userId })
       ]);
       
@@ -553,7 +553,7 @@ const styles = StyleSheet.create({
   tabContainer: { flexDirection: 'row', justifyContent: 'space-around', paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: '#e0e0e0', marginTop: 40 },
   tab: { paddingVertical: 10, borderBottomWidth: 2, borderBottomColor: 'transparent' },
   activeTab: { borderBottomWidth: 2 },
-  content: { flex: 1, paddingHorizontal: 20, paddingTop: 10 },
+  content: { flex: 1, paddingHorizontal: 12, paddingTop: 10 },
   fullScreenView: { flex: 1, paddingTop: 60 },
   searchSection: { marginBottom: 20 },
   userCard: { flexDirection: 'row', alignItems: 'center', padding: 15, marginBottom: 10, borderRadius: 8 },

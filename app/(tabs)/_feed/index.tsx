@@ -699,12 +699,12 @@ const styles = StyleSheet.create({
   centeredContainer: {
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: 12,
   },
   content: {
     flexGrow: 1,
     justifyContent: 'center',
-    padding: 20,
+    padding: 12,
     paddingBottom: 40,
   },
 });
