@@ -72,3 +72,16 @@ export const AVATAR_COLORS = [
   '#14b8a6', // Teal
   '#f97316', // Orange
 ];
+
+// Utility function to generate random avatar settings
+export const generateRandomAvatar = () => {
+  const randomIcon = FUN_AVATAR_ICONS[Math.floor(Math.random() * FUN_AVATAR_ICONS.length)];
+  const randomIconColor = AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)];
+  const randomBackgroundColor = AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)];
+
+  return {
+    avatar_icon: randomIcon.name,
+    avatar_icon_color: randomIconColor,
+    avatar_background_color: randomBackgroundColor,
+  };
+};

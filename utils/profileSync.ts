@@ -1,4 +1,5 @@
 // utils/profileSync.ts
+import { generateRandomAvatar } from '../constants/avatarIcons';
 import { supabase } from '../supabase';
 
 export interface ProfileData {
@@ -828,6 +829,7 @@ export async function ensureUserProfilesExist(userId: string, userData?: Profile
     if (userProfileFetchError && userProfileFetchError.code === 'PGRST116') {
       // User profile doesn't exist, create it with all fields
       console.log('🔄 PROFILE SYNC: Creating unified user_profiles record...');
+      const randomAvatar = generateRandomAvatar();
       const { error: userProfileInsertError } = await supabase
         .from('user_profiles')
         .insert({
@@ -836,9 +838,7 @@ export async function ensureUserProfilesExist(userId: string, userData?: Profile
           display_name: userData?.nickname || 'Player',
           nickname: userData?.nickname || 'Player',
           school: userData?.school || null,
-          avatar_icon: 'person',
-          avatar_icon_color: '#FFFFFF',
-          avatar_background_color: '#007AFF',
+          ...randomAvatar,
         });
 
       if (userProfileInsertError) {

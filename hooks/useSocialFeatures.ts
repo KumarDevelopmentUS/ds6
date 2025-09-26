@@ -6,6 +6,7 @@ import * as FileSystem from 'expo-file-system';
 import { useRouter } from 'expo-router';
 import { useEffect } from 'react';
 import { Alert, Platform } from 'react-native';
+import { generateRandomAvatar } from '../constants/avatarIcons';
 import { useAuth } from '../contexts/AuthContext';
 import { Comment, Post } from '../types/social';
 import { validateImageSize } from '../utils/imageUpload';
@@ -33,15 +34,14 @@ export const useUserProfile = () => {
         if (error.code === 'PGRST116') {
           console.log('Profile not found, creating default profile...');
           
+          const randomAvatar = generateRandomAvatar();
           const defaultProfile = {
             id: user.id,
             username: user.email?.split('@')[0] || 'user' + Date.now(),
             nickname: user.user_metadata?.nickname || user.email?.split('@')[0] || 'Player',
             display_name: user.user_metadata?.nickname || user.email?.split('@')[0] || 'Player',
             school: user.user_metadata?.school || null,
-            avatar_icon: 'person',
-            avatar_icon_color: '#FFFFFF',
-            avatar_background_color: '#007AFF',
+            ...randomAvatar,
           };
 
           const { data: newProfile, error: createError } = await supabase

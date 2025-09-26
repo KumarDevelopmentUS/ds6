@@ -62,6 +62,7 @@ export default function EditProfileScreen() {
   const [passwordInput, setPasswordInput] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [pendingAction, setPendingAction] = useState<'upload' | null>(null);
+  const [nicknameError, setNicknameError] = useState('');
   const [schoolSearch, setSchoolSearch] = useState('');
   const [filteredSchools, setFilteredSchools] = useState(SCHOOLS);
 
@@ -301,11 +302,38 @@ export default function EditProfileScreen() {
     );
   };
 
+  const validateNickname = (nickname: string) => {
+    if (nickname.length > 0 && nickname.length < 3) {
+      return 'Name must be at least 3 characters long';
+    }
+    if (nickname.length > 15) {
+      return 'Name must be no more than 15 characters long';
+    }
+    if (nickname.length > 0 && !/^[a-zA-Z0-9._]+$/.test(nickname)) {
+      return 'Name can only contain letters, numbers, dots (.), and underscores (_)';
+    }
+    return '';
+  };
+
+  const handleNicknameChange = (text: string) => {
+    setProfile({ ...profile!, nickname: text });
+    const error = validateNickname(text);
+    setNicknameError(error);
+  };
+
   const handleUpdateProfile = async () => {
     if (!profile) return;
     setLoading(true);
     
     const { nickname, school, avatar_icon, avatar_icon_color, avatar_background_color } = profile;
+
+    // Validate nickname before saving
+    const validationError = validateNickname(nickname || '');
+    if (validationError) {
+      setLoading(false);
+      Alert.alert('Validation Error', validationError);
+      return;
+    }
 
     // Get the original profile to compare school changes
     const { data: originalProfile } = await supabase
@@ -512,11 +540,16 @@ export default function EditProfileScreen() {
           <ThemedText style={{ marginTop: theme.spacing.md, marginBottom: 4 }}>Nickname</ThemedText>
           <ThemedInput
             value={profile.nickname}
-            onChangeText={(text) => setProfile({ ...profile, nickname: text })}
+            onChangeText={handleNicknameChange}
             icon={<Ionicons name="person-circle-outline" size={20} color={theme.colors.textSecondary} />}
-            style={styles.editableInput}
+            style={[styles.editableInput, { marginBottom: nicknameError ? 5 : 0 }]}
             maxLength={15}
           />
+          {nicknameError ? (
+            <ThemedText variant="caption" style={[{ color: theme.colors.error, marginBottom: theme.spacing.sm }]}>
+              {nicknameError}
+            </ThemedText>
+          ) : null}
 
           {/* Change Password Button */}
           <ThemedButton

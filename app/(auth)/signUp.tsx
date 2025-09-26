@@ -111,6 +111,9 @@ export default function SignUpScreen() {
   };
 
   const validateNickname = (nickname: string) => {
+    if (nickname.length > 0 && nickname.length < 3) {
+      return 'Name must be at least 3 characters long';
+    }
     if (nickname.length > 15) {
       return 'Name must be no more than 15 characters long';
     }
