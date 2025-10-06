@@ -807,34 +807,46 @@ export async function debugProfileStatus(userId: string) {
 }
 
 export async function ensureUserProfilesExist(userId: string, userData?: ProfileData) {
-  // Get username for logging
-  const { data: userProfile } = await supabase
-    .from('user_profiles')
-    .select('username')
-    .eq('id', userId)
-    .single();
-  
-  const username = userProfile?.username || 'unknown';
-  console.log('🔄 PROFILE SYNC: Starting profile sync...');
-  console.log('📋 PROFILE SYNC: Processing profile data...');
+  console.log('🔄 PROFILE SYNC: Starting profile sync for user:', userId);
+  console.log('📋 PROFILE SYNC: Processing profile data:', userData);
 
   try {
     // Check if user_profiles record exists
     const { data: existingUserProfile, error: userProfileFetchError } = await supabase
       .from('user_profiles')
-      .select('id')
+      .select('id, username')
       .eq('id', userId)
       .single();
 
     if (userProfileFetchError && userProfileFetchError.code === 'PGRST116') {
       // User profile doesn't exist, create it with all fields
       console.log('🔄 PROFILE SYNC: Creating unified user_profiles record...');
+      
+      // Generate a unique username if needed
+      let finalUsername = userData?.username;
+      if (!finalUsername) {
+        finalUsername = 'user' + Date.now();
+      } else {
+        // Check if the desired username is already taken
+        const { data: existingUsernameProfile, error: usernameCheckError } = await supabase
+          .from('user_profiles')
+          .select('id')
+          .eq('username', finalUsername.toLowerCase())
+          .single();
+
+        if (!usernameCheckError && existingUsernameProfile) {
+          // Username is taken, generate a unique one
+          console.log('⚠️ PROFILE SYNC: Username already taken, generating unique username...');
+          finalUsername = finalUsername + '_' + Date.now();
+        }
+      }
+
       const randomAvatar = generateRandomAvatar();
       const { error: userProfileInsertError } = await supabase
         .from('user_profiles')
         .insert({
           id: userId,
-          username: userData?.username || 'user' + Date.now(),
+          username: finalUsername.toLowerCase(),
           display_name: userData?.nickname || 'Player',
           nickname: userData?.nickname || 'Player',
           school: userData?.school || null,
@@ -843,14 +855,77 @@ export async function ensureUserProfilesExist(userId: string, userData?: Profile
 
       if (userProfileInsertError) {
         console.error('❌ PROFILE SYNC: Error creating user_profiles record:', userProfileInsertError);
-        throw userProfileInsertError;
+        
+        // If it's a unique constraint violation, try with a different username
+        if (userProfileInsertError.code === '23505' && userProfileInsertError.message.includes('username')) {
+          console.log('🔄 PROFILE SYNC: Username conflict detected, retrying with unique username...');
+          const uniqueUsername = 'user' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+          
+          const { error: retryError } = await supabase
+            .from('user_profiles')
+            .insert({
+              id: userId,
+              username: uniqueUsername,
+              display_name: userData?.nickname || 'Player',
+              nickname: userData?.nickname || 'Player',
+              school: userData?.school || null,
+              ...randomAvatar,
+            });
+
+          if (retryError) {
+            console.error('❌ PROFILE SYNC: Retry failed:', retryError);
+            throw retryError;
+          }
+          
+          console.log('✅ PROFILE SYNC: Created unified user_profiles record with unique username:', uniqueUsername);
+        } else {
+          throw userProfileInsertError;
+        }
+      } else {
+        console.log('✅ PROFILE SYNC: Created unified user_profiles record with username:', finalUsername);
       }
-      console.log('✅ PROFILE SYNC: Created unified user_profiles record');
     } else if (userProfileFetchError) {
       console.error('❌ PROFILE SYNC: Error fetching user_profiles record:', userProfileFetchError);
       throw userProfileFetchError;
     } else {
-      console.log('✅ PROFILE SYNC: User_profiles record already exists');
+      console.log('✅ PROFILE SYNC: User_profiles record already exists with username:', existingUserProfile.username);
+      
+      // If profile exists but has no username, update it
+      if (!existingUserProfile.username && userData?.username) {
+        console.log('🔄 PROFILE SYNC: Updating existing profile with username...');
+        
+        // Check if the desired username is available
+        let finalUsername = userData.username;
+        const { data: existingUsernameProfile, error: usernameCheckError } = await supabase
+          .from('user_profiles')
+          .select('id')
+          .eq('username', finalUsername.toLowerCase())
+          .neq('id', userId) // Exclude current user
+          .single();
+
+        if (!usernameCheckError && existingUsernameProfile) {
+          // Username is taken, generate a unique one
+          console.log('⚠️ PROFILE SYNC: Username already taken, generating unique username...');
+          finalUsername = finalUsername + '_' + Date.now();
+        }
+
+        const { error: updateError } = await supabase
+          .from('user_profiles')
+          .update({
+            username: finalUsername.toLowerCase(),
+            display_name: userData.nickname || existingUserProfile.display_name || 'Player',
+            nickname: userData.nickname || existingUserProfile.nickname || 'Player',
+            school: userData.school || existingUserProfile.school,
+          })
+          .eq('id', userId);
+
+        if (updateError) {
+          console.error('❌ PROFILE SYNC: Error updating profile:', updateError);
+          throw updateError;
+        }
+        
+        console.log('✅ PROFILE SYNC: Updated profile with username:', finalUsername);
+      }
     }
 
     console.log('🎉 PROFILE SYNC: Profile sync completed successfully');
@@ -1184,5 +1259,85 @@ export const debugUserCommunityMemberships = async () => {
   } catch (error) {
     console.error('Error checking memberships:', error);
     return false;
+  }
+};
+
+// Cleanup function to fix orphaned accounts and duplicate usernames
+export const cleanupOrphanedAccounts = async () => {
+  console.log('🧹 CLEANUP: Starting orphaned account cleanup...');
+  
+  try {
+    // Get current user
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      console.error('❌ No authenticated user found');
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    // Check if current user has a profile
+    const { data: userProfile, error: profileError } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single();
+
+    if (profileError && profileError.code === 'PGRST116') {
+      // User has no profile, create one
+      console.log('🔧 CLEANUP: Creating missing profile for current user...');
+      
+      const result = await ensureUserProfilesExist(user.id, {
+        username: user.user_metadata?.username,
+        nickname: user.user_metadata?.nickname,
+        school: user.user_metadata?.school,
+      });
+
+      if (!result.success) {
+        return { success: false, error: 'Failed to create profile: ' + result.error };
+      }
+
+      // Also ensure user is in default community
+      await joinDefaultCommunity(user.id);
+      
+      console.log('✅ CLEANUP: Fixed missing profile for current user');
+    } else if (!profileError && userProfile) {
+      // Profile exists, check if it has a username
+      if (!userProfile.username) {
+        console.log('🔧 CLEANUP: Fixing missing username for current user...');
+        
+        let username = user.user_metadata?.username || user.email?.split('@')[0] || 'user' + Date.now();
+        
+        // Check if username is already taken
+        const { data: existingProfile, error: usernameCheckError } = await supabase
+          .from('user_profiles')
+          .select('id')
+          .eq('username', username.toLowerCase())
+          .neq('id', user.id) // Exclude current user
+          .single();
+
+        if (!usernameCheckError && existingProfile) {
+          // Username is taken, generate a unique one
+          username = username + '_' + Date.now();
+        }
+
+        const { error: updateError } = await supabase
+          .from('user_profiles')
+          .update({ username: username.toLowerCase() })
+          .eq('id', user.id);
+
+        if (updateError) {
+          console.error('❌ CLEANUP: Failed to update username:', updateError);
+          return { success: false, error: 'Failed to update username: ' + updateError.message };
+        }
+        
+        console.log('✅ CLEANUP: Fixed missing username:', username);
+      }
+    }
+
+    console.log('🎉 CLEANUP: Cleanup completed successfully');
+    return { success: true, message: 'Cleanup completed successfully' };
+
+  } catch (error) {
+    console.error('❌ CLEANUP: Unexpected error:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 };

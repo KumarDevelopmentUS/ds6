@@ -35,9 +35,23 @@ export const useUserProfile = () => {
           console.log('Profile not found, creating default profile...');
           
           const randomAvatar = generateRandomAvatar();
+          let username = user.user_metadata?.username || user.email?.split('@')[0] || 'user' + Date.now();
+          
+          // Check if username is already taken
+          const { data: existingProfile, error: usernameCheckError } = await supabase
+            .from('user_profiles')
+            .select('id')
+            .eq('username', username.toLowerCase())
+            .single();
+
+          if (!usernameCheckError && existingProfile) {
+            // Username is taken, generate a unique one
+            username = username + '_' + Date.now();
+          }
+          
           const defaultProfile = {
             id: user.id,
-            username: user.email?.split('@')[0] || 'user' + Date.now(),
+            username: username.toLowerCase(),
             nickname: user.user_metadata?.nickname || user.email?.split('@')[0] || 'Player',
             display_name: user.user_metadata?.nickname || user.email?.split('@')[0] || 'Player',
             school: user.user_metadata?.school || null,
@@ -52,6 +66,26 @@ export const useUserProfile = () => {
 
           if (createError) {
             console.error('Failed to create default profile:', createError);
+            
+            // If it's a unique constraint violation, try with a different username
+            if (createError.code === '23505' && createError.message.includes('username')) {
+              const uniqueUsername = 'user' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+              const retryProfile = { ...defaultProfile, username: uniqueUsername };
+              
+              const { data: retryNewProfile, error: retryError } = await supabase
+                .from('user_profiles')
+                .insert(retryProfile)
+                .select()
+                .single();
+
+              if (retryError) {
+                console.error('Failed to create profile on retry:', retryError);
+                return retryProfile; // Return default even if insert fails
+              }
+              
+              return retryNewProfile;
+            }
+            
             return defaultProfile; // Return default even if insert fails
           }
 

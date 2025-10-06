@@ -83,9 +83,12 @@ async function recordMagicLinkAttempt(): Promise<void> {
 }
 
 /**
- * Send magic link for sign up
+ * Send magic link for sign up with user data
  */
-export async function sendMagicLinkSignup(email: string): Promise<MagicLinkResult> {
+export async function sendMagicLinkSignup(
+  email: string, 
+  userData?: { username?: string; nickname?: string; school?: string }
+): Promise<MagicLinkResult> {
   try {
     // Check rate limit first
     const rateLimitCheck = await checkMagicLinkRateLimit();
@@ -107,17 +110,27 @@ export async function sendMagicLinkSignup(email: string): Promise<MagicLinkResul
       };
     }
 
-    // Check if user already exists
-    const { data: existingUser } = await supabase.auth.getUser();
-    if (existingUser.user) {
-      return {
-        success: false,
-        message: 'An account with this email already exists. Please sign in instead.',
-        error: 'User already exists'
-      };
+    // Check if user already exists by trying to sign in (this will fail if user doesn't exist)
+    // We can't use admin.getUserByEmail without admin privileges, so we'll rely on the signup process to handle duplicates
+
+    // If username is provided, check if it's already taken
+    if (userData?.username) {
+      const { data: existingProfile, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('id')
+        .eq('username', userData.username.toLowerCase())
+        .single();
+
+      if (!profileError && existingProfile) {
+        return {
+          success: false,
+          message: 'This username is already taken. Please choose a different username.',
+          error: 'Username already exists'
+        };
+      }
     }
 
-    // Send magic link for sign up
+    // Send magic link for sign up with user metadata
     logSecurity('Sending magic link signup');
     
     const { data, error } = await supabase.auth.signInWithOtp({
@@ -125,6 +138,11 @@ export async function sendMagicLinkSignup(email: string): Promise<MagicLinkResul
       options: {
         emailRedirectTo: 'https://diestats.app/auth/callback',
         shouldCreateUser: true, // This allows creating new users
+        data: userData ? {
+          username: userData.username?.toLowerCase(),
+          nickname: userData.nickname,
+          school: userData.school,
+        } : undefined,
       }
     });
 

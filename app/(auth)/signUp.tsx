@@ -4,6 +4,7 @@ import { SCHOOLS, searchSchools } from '@/constants/schools';
 import { supabase } from '@/supabase';
 import { sendMagicLinkSignup } from '@/utils/magicLinkAuth';
 import { ensureUserProfilesExist, joinDefaultCommunity } from '@/utils/profileSync';
+import { storePendingSignupData } from '@/utils/signupStorage';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -425,7 +426,19 @@ export default function SignUpScreen() {
     setEmailLinkLoading(true);
     
     try {
-      const result = await sendMagicLinkSignup(email);
+      // Store signup data temporarily for use in callback
+      storePendingSignupData({
+        email: email.toLowerCase(),
+        username: username.toLowerCase(),
+        nickname: nickname,
+        school: school,
+      });
+      
+      const result = await sendMagicLinkSignup(email, {
+        username: username.toLowerCase(),
+        nickname: nickname,
+        school: school,
+      });
       
       if (result.success) {
         setEmailLinkSent(true);

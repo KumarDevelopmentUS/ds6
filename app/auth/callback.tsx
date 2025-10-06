@@ -3,6 +3,8 @@ import { ThemedText } from '@/components/themed/ThemedText';
 import { ThemedView } from '@/components/themed/ThemedView';
 import { useTheme } from '@/contexts/ThemeContext';
 import { supabase } from '@/supabase';
+import { ensureUserProfilesExist, joinDefaultCommunity } from '@/utils/profileSync';
+import { retrievePendingSignupData } from '@/utils/signupStorage';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -33,13 +35,40 @@ export default function AuthCallbackScreen() {
 
         if (session) {
           console.log('✅ Session found, user authenticated');
-          setStatus('success');
-          setMessage('Successfully authenticated! Redirecting...');
           
-          // Redirect to home after a short delay
-          setTimeout(() => {
-            router.replace('/(tabs)/' as any);
-          }, 2000);
+          // Retrieve stored signup data
+          const user = session.user;
+          const pendingData = retrievePendingSignupData(user.email || '');
+          
+          // Use pending data if available, otherwise fall back to user_metadata
+          const userData = pendingData ? {
+            username: pendingData.username,
+            nickname: pendingData.nickname,
+            school: pendingData.school,
+          } : {
+            username: user.user_metadata?.username,
+            nickname: user.user_metadata?.nickname,
+            school: user.user_metadata?.school,
+          };
+          
+          console.log('📋 Using signup data:', userData);
+          
+          try {
+            await ensureUserProfilesExist(user.id, userData);
+            await joinDefaultCommunity(user.id);
+            
+            setStatus('success');
+            setMessage('Successfully authenticated! Redirecting...');
+            
+            // Redirect to home after a short delay
+            setTimeout(() => {
+              router.replace('/(tabs)/' as any);
+            }, 2000);
+          } catch (profileError) {
+            console.error('❌ Error creating user profile:', profileError);
+            setStatus('error');
+            setMessage('Account created but profile setup failed. Please try logging in again.');
+          }
         } else {
           console.log('⚠️ No session found, trying to handle URL parameters...');
           
@@ -62,13 +91,40 @@ export default function AuthCallbackScreen() {
             
             if (data.session) {
               console.log('✅ Code exchanged successfully, user authenticated');
-              setStatus('success');
-              setMessage('Successfully authenticated! Redirecting...');
               
-              // Redirect to home after a short delay
-              setTimeout(() => {
-                router.replace('/(tabs)/' as any);
-              }, 2000);
+              // Retrieve stored signup data
+              const user = data.session.user;
+              const pendingData = retrievePendingSignupData(user.email || '');
+              
+              // Use pending data if available, otherwise fall back to user_metadata
+              const userData = pendingData ? {
+                username: pendingData.username,
+                nickname: pendingData.nickname,
+                school: pendingData.school,
+              } : {
+                username: user.user_metadata?.username,
+                nickname: user.user_metadata?.nickname,
+                school: user.user_metadata?.school,
+              };
+              
+              console.log('📋 Using signup data:', userData);
+              
+              try {
+                await ensureUserProfilesExist(user.id, userData);
+                await joinDefaultCommunity(user.id);
+                
+                setStatus('success');
+                setMessage('Successfully authenticated! Redirecting...');
+                
+                // Redirect to home after a short delay
+                setTimeout(() => {
+                  router.replace('/(tabs)/' as any);
+                }, 2000);
+              } catch (profileError) {
+                console.error('❌ Error creating user profile:', profileError);
+                setStatus('error');
+                setMessage('Account created but profile setup failed. Please try logging in again.');
+              }
             } else {
               console.log('❌ No session after code exchange');
               setStatus('error');
