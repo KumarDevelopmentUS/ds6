@@ -44,10 +44,12 @@ export default function AuthCallbackScreen() {
           const userData = pendingData ? {
             username: pendingData.username,
             nickname: pendingData.nickname,
+            firstName: pendingData.firstName,
             school: pendingData.school,
           } : {
             username: user.user_metadata?.username,
             nickname: user.user_metadata?.nickname,
+            firstName: user.user_metadata?.nickname,
             school: user.user_metadata?.school,
           };
           
@@ -100,10 +102,12 @@ export default function AuthCallbackScreen() {
               const userData = pendingData ? {
                 username: pendingData.username,
                 nickname: pendingData.nickname,
+                firstName: pendingData.firstName,
                 school: pendingData.school,
               } : {
                 username: user.user_metadata?.username,
                 nickname: user.user_metadata?.nickname,
+                firstName: user.user_metadata?.nickname,
                 school: user.user_metadata?.school,
               };
               

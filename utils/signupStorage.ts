@@ -13,6 +13,7 @@ export interface PendingSignupData {
   email: string;
   username: string;
   nickname: string;
+  firstName: string;
   school?: string;
   timestamp: number;
 }

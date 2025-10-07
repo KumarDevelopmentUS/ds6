@@ -5,6 +5,7 @@ import { supabase } from '../supabase';
 export interface ProfileData {
   username?: string;
   nickname?: string;
+  firstName?: string;
   school?: string;
 }
 
@@ -849,6 +850,7 @@ export async function ensureUserProfilesExist(userId: string, userData?: Profile
           username: finalUsername.toLowerCase(),
           display_name: userData?.nickname || 'Player',
           nickname: userData?.nickname || 'Player',
+          first_name: userData?.firstName || userData?.nickname || 'Player',
           school: userData?.school || null,
           ...randomAvatar,
         });
@@ -868,6 +870,7 @@ export async function ensureUserProfilesExist(userId: string, userData?: Profile
               username: uniqueUsername,
               display_name: userData?.nickname || 'Player',
               nickname: userData?.nickname || 'Player',
+              first_name: userData?.firstName || userData?.nickname || 'Player',
               school: userData?.school || null,
               ...randomAvatar,
             });
@@ -915,6 +918,7 @@ export async function ensureUserProfilesExist(userId: string, userData?: Profile
             username: finalUsername.toLowerCase(),
             display_name: userData.nickname || existingUserProfile.display_name || 'Player',
             nickname: userData.nickname || existingUserProfile.nickname || 'Player',
+            first_name: userData.firstName || userData.nickname || existingUserProfile.first_name || 'Player',
             school: userData.school || existingUserProfile.school,
           })
           .eq('id', userId);

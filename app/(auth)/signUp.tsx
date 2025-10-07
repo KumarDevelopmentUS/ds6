@@ -431,6 +431,7 @@ export default function SignUpScreen() {
         email: email.toLowerCase(),
         username: username.toLowerCase(),
         nickname: nickname,
+        firstName: nickname, // Use nickname as first_name
         school: school,
       });
       
@@ -490,173 +491,196 @@ export default function SignUpScreen() {
 
           {/* Form */}
           <ThemedView variant="card" style={styles.formCard}>
-            <View style={{ marginBottom: 20 }}>
-              <ThemedInput
-                placeholder="First Name"
-                value={formData.nickname}
-                onChangeText={(text) => handleInputChange('nickname', text)}
-                icon={<Ionicons name="person-outline" size={24} color={theme.colors.textSecondary} />}
-                style={{ marginBottom: errors.nickname ? 5 : 0 }}
-                maxLength={15}
-              />
-              {errors.nickname ? (
-                <ThemedText variant="caption" style={[styles.errorText, { color: theme.colors.error }]}>
-                  {errors.nickname}
-                </ThemedText>
-              ) : null}
-            </View>
-            <View style={{ marginBottom: 20 }}>
-              <ThemedInput
-                placeholder="Username"
-                value={formData.username}
-                onChangeText={(text) => handleInputChange('username', text)}
-                autoCapitalize="none"
-                icon={<Ionicons name="at" size={24} color={theme.colors.textSecondary} />}
-                style={{ marginBottom: errors.username ? 5 : 0 }}
-                maxLength={15}
-              />
-              {errors.username ? (
-                <ThemedText variant="caption" style={[styles.errorText, { color: theme.colors.error }]}>
-                  {errors.username}
-                </ThemedText>
-              ) : null}
-              {/* Username availability indicator */}
-              {formData.username.length >= 5 && usernameAvailable !== null && (
-                <View style={styles.usernameStatusContainer}>
-                  {checkingUsername ? (
-                    <View style={styles.usernameStatusRow}>
-                      <Ionicons name="time-outline" size={16} color={theme.colors.textSecondary} />
-                      <ThemedText variant="caption" style={[styles.usernameStatusText, { color: theme.colors.textSecondary }]}>
-                        Checking username availability...
-                      </ThemedText>
-                    </View>
-                  ) : usernameAvailable ? (
-                    <View style={styles.usernameStatusRow}>
-                      <Ionicons name="checkmark-circle" size={16} color={theme.colors.success} />
-                      <ThemedText variant="caption" style={[styles.usernameStatusText, { color: theme.colors.success }]}>
-                        Username available
-                      </ThemedText>
-                    </View>
-                  ) : (
-                    <View style={styles.usernameStatusRow}>
-                      <Ionicons name="close-circle" size={16} color={theme.colors.error} />
-                      <ThemedText variant="caption" style={[styles.usernameStatusText, { color: theme.colors.error }]}>
-                        Username already taken
-                      </ThemedText>
-                    </View>
-                  )}
+            {emailLinkSent ? (
+              /* Email Sent Confirmation */
+              <View style={styles.emailSentContainer}>
+                <View style={[styles.emailSentIconContainer, { backgroundColor: theme.colors.success + '20' }]}>
+                  <Ionicons name="mail" size={48} color={theme.colors.success} />
                 </View>
-              )}
-            </View>
-            <View style={{ marginBottom: 20 }}>
-              <ThemedInput
-                placeholder="Email"
-                value={formData.email}
-                onChangeText={(text) => handleInputChange('email', text)}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                icon={<Ionicons name="mail-outline" size={24} color={theme.colors.textSecondary} />}
-                style={{ marginBottom: errors.email ? 5 : 0 }}
-              />
-              {errors.email ? (
-                <ThemedText variant="caption" style={[styles.errorText, { color: theme.colors.error }]}>
-                  {errors.email}
+                
+                <ThemedText variant="subtitle" style={[styles.emailSentTitle, { color: theme.colors.success }]}>
+                  Email Sent!
                 </ThemedText>
-              ) : null}
-            </View>
-            {!showEmailLink && (
+                
+                <ThemedText variant="body" style={[styles.emailSentMessage, { color: theme.colors.text }]}>
+                  Please check <ThemedText variant="body" style={{ fontWeight: 'bold' }}>{formData.email}</ThemedText> for your login link.
+                </ThemedText>
+                
+                <ThemedText variant="caption" style={[styles.emailSentNote, { color: theme.colors.textSecondary }]}>
+                  It may take up to a minute to receive the email. Check your spam folder if you don't see it.
+                </ThemedText>
+
+                {cooldownTimer > 0 ? (
+                  <ThemedText variant="caption" style={[styles.resendTimer, { color: theme.colors.textSecondary }]}>
+                    Can resend in {cooldownTimer}s
+                  </ThemedText>
+                ) : (
+                  <ThemedButton
+                    title="Resend Email"
+                    variant="ghost"
+                    onPress={handleEmailLinkSignup}
+                    loading={emailLinkLoading}
+                    style={{ marginTop: theme.spacing.md }}
+                  />
+                )}
+              </View>
+            ) : (
+              /* Signup Form */
               <>
                 <View style={{ marginBottom: 20 }}>
                   <ThemedInput
-                    placeholder="Password"
-                    value={formData.password}
-                    onChangeText={(text) => handleInputChange('password', text)}
-                    secureTextEntry
-                    icon={<Ionicons name="lock-closed-outline" size={24} color={theme.colors.textSecondary} />}
-                    style={{ marginBottom: errors.password ? 5 : 0 }}
+                    placeholder="First Name"
+                    value={formData.nickname}
+                    onChangeText={(text) => handleInputChange('nickname', text)}
+                    icon={<Ionicons name="person-outline" size={24} color={theme.colors.textSecondary} />}
+                    style={{ marginBottom: errors.nickname ? 5 : 0 }}
+                    maxLength={15}
                   />
-                  {errors.password ? (
+                  {errors.nickname ? (
                     <ThemedText variant="caption" style={[styles.errorText, { color: theme.colors.error }]}>
-                      {errors.password}
+                      {errors.nickname}
                     </ThemedText>
                   ) : null}
                 </View>
                 <View style={{ marginBottom: 20 }}>
                   <ThemedInput
-                    placeholder="Confirm Password"
-                    value={formData.confirmPassword}
-                    onChangeText={(text) => handleInputChange('confirmPassword', text)}
-                    secureTextEntry
-                    icon={<Ionicons name="lock-closed-outline" size={24} color={theme.colors.textSecondary} />}
-                    style={{ marginBottom: errors.confirmPassword ? 5 : 0 }}
+                    placeholder="Username"
+                    value={formData.username}
+                    onChangeText={(text) => handleInputChange('username', text)}
+                    autoCapitalize="none"
+                    icon={<Ionicons name="at" size={24} color={theme.colors.textSecondary} />}
+                    style={{ marginBottom: errors.username ? 5 : 0 }}
+                    maxLength={15}
                   />
-                  {errors.confirmPassword ? (
+                  {errors.username ? (
                     <ThemedText variant="caption" style={[styles.errorText, { color: theme.colors.error }]}>
-                      {errors.confirmPassword}
+                      {errors.username}
+                    </ThemedText>
+                  ) : null}
+                  {/* Username availability indicator */}
+                  {formData.username.length >= 5 && usernameAvailable !== null && (
+                    <View style={styles.usernameStatusContainer}>
+                      {checkingUsername ? (
+                        <View style={styles.usernameStatusRow}>
+                          <Ionicons name="time-outline" size={16} color={theme.colors.textSecondary} />
+                          <ThemedText variant="caption" style={[styles.usernameStatusText, { color: theme.colors.textSecondary }]}>
+                            Checking username availability...
+                          </ThemedText>
+                        </View>
+                      ) : usernameAvailable ? (
+                        <View style={styles.usernameStatusRow}>
+                          <Ionicons name="checkmark-circle" size={16} color={theme.colors.success} />
+                          <ThemedText variant="caption" style={[styles.usernameStatusText, { color: theme.colors.success }]}>
+                            Username available
+                          </ThemedText>
+                        </View>
+                      ) : (
+                        <View style={styles.usernameStatusRow}>
+                          <Ionicons name="close-circle" size={16} color={theme.colors.error} />
+                          <ThemedText variant="caption" style={[styles.usernameStatusText, { color: theme.colors.error }]}>
+                            Username already taken
+                          </ThemedText>
+                        </View>
+                      )}
+                    </View>
+                  )}
+                </View>
+                <View style={{ marginBottom: 20 }}>
+                  <ThemedInput
+                    placeholder="Email"
+                    value={formData.email}
+                    onChangeText={(text) => handleInputChange('email', text)}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    icon={<Ionicons name="mail-outline" size={24} color={theme.colors.textSecondary} />}
+                    style={{ marginBottom: errors.email ? 5 : 0 }}
+                  />
+                  {errors.email ? (
+                    <ThemedText variant="caption" style={[styles.errorText, { color: theme.colors.error }]}>
+                      {errors.email}
                     </ThemedText>
                   ) : null}
                 </View>
+                {!showEmailLink && (
+                  <>
+                    <View style={{ marginBottom: 20 }}>
+                      <ThemedInput
+                        placeholder="Password"
+                        value={formData.password}
+                        onChangeText={(text) => handleInputChange('password', text)}
+                        secureTextEntry
+                        icon={<Ionicons name="lock-closed-outline" size={24} color={theme.colors.textSecondary} />}
+                        style={{ marginBottom: errors.password ? 5 : 0 }}
+                      />
+                      {errors.password ? (
+                        <ThemedText variant="caption" style={[styles.errorText, { color: theme.colors.error }]}>
+                          {errors.password}
+                        </ThemedText>
+                      ) : null}
+                    </View>
+                    <View style={{ marginBottom: 20 }}>
+                      <ThemedInput
+                        placeholder="Confirm Password"
+                        value={formData.confirmPassword}
+                        onChangeText={(text) => handleInputChange('confirmPassword', text)}
+                        secureTextEntry
+                        icon={<Ionicons name="lock-closed-outline" size={24} color={theme.colors.textSecondary} />}
+                        style={{ marginBottom: errors.confirmPassword ? 5 : 0 }}
+                      />
+                      {errors.confirmPassword ? (
+                        <ThemedText variant="caption" style={[styles.errorText, { color: theme.colors.error }]}>
+                          {errors.confirmPassword}
+                        </ThemedText>
+                      ) : null}
+                    </View>
+                  </>
+                )}
+
+                {/* School Selector */}
+                <TouchableOpacity
+                  style={[styles.schoolSelector, {
+                    backgroundColor: theme.colors.inputBackground,
+                    borderColor: theme.colors.border,
+                    marginTop: theme.spacing.md
+                  }]}
+                  onPress={() => setShowSchoolPicker(true)}
+                >
+                  <Ionicons name="school-outline" size={20} color={theme.colors.textSecondary} />
+                  <ThemedText style={styles.schoolText}>
+                    {formData.schoolName || 'Select School (Optional)'}
+                  </ThemedText>
+                  <Ionicons name="chevron-down" size={20} color={theme.colors.textSecondary} />
+                </TouchableOpacity>
+
+                {showEmailLink ? (
+                  <ThemedButton
+                    title={cooldownTimer > 0 ? `Resend in ${cooldownTimer}s` : "Send Email Link"}
+                    onPress={handleEmailLinkSignup}
+                    loading={emailLinkLoading}
+                    disabled={usernameAvailable === false || checkingUsername || cooldownTimer > 0}
+                    style={{ marginTop: theme.spacing.lg }}
+                  />
+                ) : (
+                  <ThemedButton
+                    title="Create Account"
+                    onPress={handleSignUp}
+                    loading={loading}
+                    disabled={usernameAvailable === false || checkingUsername}
+                    style={{ marginTop: theme.spacing.lg }}
+                  />
+                )}
+
+                
+                {/* Helpful message when username is taken */}
+                {usernameAvailable === false && (
+                  <ThemedText 
+                    variant="caption" 
+                    style={[styles.helpText, { color: theme.colors.textSecondary, textAlign: 'center', marginTop: 10 }]}
+                  >
+                    Please choose a different username to continue
+                  </ThemedText>
+                )}
               </>
-            )}
-
-            {/* Success Display */}
-            {emailLinkSent && (
-              <View style={[styles.successContainer, { backgroundColor: theme.colors.success + '20', borderColor: theme.colors.success }]}>
-                <Ionicons name="checkmark-circle" size={16} color={theme.colors.success} />
-                <View style={styles.successTextContainer}>
-                  <ThemedText variant="caption" style={[styles.successText, { color: theme.colors.success }]}>
-                    Email link sent successfully!
-                  </ThemedText>
-                  <ThemedText variant="caption" style={[styles.successSubtext, { color: theme.colors.textSecondary }]}>
-                    Check your email and click the link to complete registration. <ThemedText variant="caption" style={[styles.successSubtext, { color: theme.colors.textSecondary, fontWeight: 'bold' }]}>It may take up to a minute to receive the email.</ThemedText>
-                  </ThemedText>
-                </View>
-              </View>
-            )}
-
-            {/* School Selector */}
-            <TouchableOpacity
-              style={[styles.schoolSelector, {
-                backgroundColor: theme.colors.inputBackground,
-                borderColor: theme.colors.border,
-                marginTop: theme.spacing.md
-              }]}
-              onPress={() => setShowSchoolPicker(true)}
-            >
-              <Ionicons name="school-outline" size={20} color={theme.colors.textSecondary} />
-              <ThemedText style={styles.schoolText}>
-                {formData.schoolName || 'Select School (Optional)'}
-              </ThemedText>
-              <Ionicons name="chevron-down" size={20} color={theme.colors.textSecondary} />
-            </TouchableOpacity>
-
-            {showEmailLink ? (
-              <ThemedButton
-                title={cooldownTimer > 0 ? `Resend in ${cooldownTimer}s` : "Send Email Link"}
-                onPress={handleEmailLinkSignup}
-                loading={emailLinkLoading}
-                disabled={usernameAvailable === false || checkingUsername || cooldownTimer > 0}
-                style={{ marginTop: theme.spacing.lg }}
-              />
-            ) : (
-              <ThemedButton
-                title="Create Account"
-                onPress={handleSignUp}
-                loading={loading}
-                disabled={usernameAvailable === false || checkingUsername}
-                style={{ marginTop: theme.spacing.lg }}
-              />
-            )}
-
-            
-            {/* Helpful message when username is taken */}
-            {usernameAvailable === false && (
-              <ThemedText 
-                variant="caption" 
-                style={[styles.helpText, { color: theme.colors.textSecondary, textAlign: 'center', marginTop: 10 }]}
-              >
-                Please choose a different username to continue
-              </ThemedText>
             )}
           </ThemedView>
 
@@ -883,5 +907,40 @@ const styles = StyleSheet.create({
   },
   authToggleContainer: {
     alignItems: 'center',
+  },
+  emailSentContainer: {
+    alignItems: 'center',
+    paddingVertical: 30,
+  },
+  emailSentIconContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  emailSentTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  emailSentMessage: {
+    fontSize: 16,
+    marginBottom: 12,
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  emailSentNote: {
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginTop: 8,
+  },
+  resendTimer: {
+    fontSize: 14,
+    textAlign: 'center',
+    marginTop: 20,
   },
 });
