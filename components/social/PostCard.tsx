@@ -1,6 +1,5 @@
 // components/social/PostCard.tsx
 import { getSchoolByValue } from '@/constants/schools';
-import { useTheme } from '@/contexts/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import * as Device from 'expo-device';
 import { Image } from 'expo-image';
@@ -52,7 +51,6 @@ const PostCardComponent: React.FC<PostCardProps> = ({
 }) => {
   const [imageModalVisible, setImageModalVisible] = useState(false);
   const router = useRouter();
-  const { theme } = useTheme();
 
   const scale = useSharedValue(1);
   const translateX = useSharedValue(0);
@@ -244,8 +242,8 @@ const PostCardComponent: React.FC<PostCardProps> = ({
              userVote={userVote || null}
           />
           <View style={styles.commentButton}>
-            <Ionicons name="chatbubble-outline" size={18} color={theme.colors.textSecondary} />
-            <Text style={[styles.commentCount, { color: theme.colors.textSecondary }]}>{post.comment_count}</Text>
+            <Ionicons name="chatbubble-outline" size={18} color="#666" />
+            <Text style={styles.commentCount}>{post.comment_count}</Text>
           </View>
         </View>
       </TouchableOpacity>
@@ -258,7 +256,7 @@ export const PostCard = memo(PostCardComponent);
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: 'transparent',
+    backgroundColor: '#fff',
     marginHorizontal: 8,
     marginVertical: 8,
     padding: 16,

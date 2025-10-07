@@ -2,7 +2,6 @@
 'use client';
 
 import { HapticBackButton } from '@/components/HapticBackButton';
-import { useTheme } from '@/contexts/ThemeContext';
 import { supabase } from '@/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
@@ -101,7 +100,6 @@ const DieStatsTracker: React.FC = () => {
   const { roomCode } = useLocalSearchParams();
   const roomCodeString = Array.isArray(roomCode) ? roomCode[0] : roomCode || generateId(6);
   const router = useRouter();
-  const { theme } = useTheme();
 
   // Core game state, initialized with default values
   const [matchSetup, setMatchSetup] = useState<MatchSetup>({
@@ -2443,151 +2441,149 @@ const DieStatsTracker: React.FC = () => {
   );
   };
 
-  // Move styles inside component to access theme
-  const styles = StyleSheet.create({
-    container: {
-      flexGrow: 1,
-      backgroundColor: theme.colors.background,
-      padding: 16,
-    },
-    headerCard: {
-      marginTop: 100,
-      backgroundColor: theme.colors.card,
-      borderRadius: 12,
-      padding: 20,
-      marginBottom: 16,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.08,
-      shadowRadius: 8,
-      elevation: 2,
-    },
-    headerTitle: {
-      fontSize: 28,
-      fontWeight: 'bold',
-      color: theme.colors.text,
-      marginBottom: 4,
-    },
-    headerSubtitle: {
-      fontSize: 20,
-      color: theme.colors.textSecondary,
-      marginBottom: 8,
-    },
-    roomCodeText: {
-      fontSize: 14,
-      color: theme.colors.textSecondary,
-      marginBottom: 4,
-    },
-    elapsedTimeText: {
-      fontSize: 14,
-      color: theme.colors.textSecondary,
-    },
-    card: {
-      backgroundColor: theme.colors.card,
-      borderRadius: 8,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 3,
-      padding: 24,
-      marginBottom: 16,
-    },
-    cardTitle: {
-      fontSize: 20,
-      fontWeight: '600',
-      marginBottom: 16,
-      color: theme.colors.text,
-    },
-    input: {
-      width: '100%',
-      padding: 12,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      borderRadius: 4,
-      marginBottom: 12,
-      color: theme.colors.text,
-      backgroundColor: theme.colors.inputBackground,
-    },
-    teamNameInput: {
-      width: '100%',
-      padding: 12,
-      borderWidth: 2,
-      borderColor: theme.colors.primary,
-      borderRadius: 4,
-      marginBottom: 16,
-      color: theme.colors.text,
-      backgroundColor: theme.dark ? theme.colors.inputBackground : '#f0f9ff',
-      fontWeight: '600',
-    },
-    primaryButton: {
-      backgroundColor: theme.colors.primary,
-      paddingVertical: 12,
-      paddingHorizontal: 16,
-      borderRadius: 4,
-      alignItems: 'center',
-      justifyContent: 'center',
-      width: '100%',
-    },
-    buttonText: {
-      color: theme.dark ? '#FFFFFF' : '#000000',
-      fontWeight: 'bold',
-      fontSize: 16,
-    },
-    disabledButton: {
-      backgroundColor: theme.colors.buttonSecondary,
-      opacity: 0.6,
-    },
+// StyleSheet for component styling
+const styles = StyleSheet.create({
+  container: {
+    flexGrow: 1,
+    backgroundColor: '#f3f4f6',
+    padding: 16,
+  },
+  headerCard: {
+    marginTop: 100, // Increased space for the back button and safe area
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#1f2937',
+    marginBottom: 4,
+  },
+  headerSubtitle: {
+    fontSize: 20,
+    color: '#4b5563',
+    marginBottom: 8,
+  },
+  roomCodeText: {
+    fontSize: 14,
+    color: '#6b7280',
+    marginBottom: 4,
+  },
+  elapsedTimeText: {
+    fontSize: 14,
+    color: '#6b7280',
+  },
+  card: {
+    backgroundColor: '#ffffff',
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    padding: 24,
+    marginBottom: 16,
+  },
+  cardTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    marginBottom: 16,
+    color: '#1f2937',
+  },
+  input: {
+    width: '100%',
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 4,
+    marginBottom: 12,
+    color: '#1f2937',
+  },
+  teamNameInput: {
+    width: '100%',
+    padding: 12,
+    borderWidth: 2,
+    borderColor: '#3b82f6',
+    borderRadius: 4,
+    marginBottom: 16,
+    color: '#1f2937',
+    backgroundColor: '#f0f9ff',
+    fontWeight: '600',
+  },
+  primaryButton: {
+    backgroundColor: '#3b82f6',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+  },
+  buttonText: {
+    color: '#000000',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  disabledButton: {
+    backgroundColor: '#9ca3af',
+  },
   sectionHeader: {
-      fontSize: 16,
-      fontWeight: '500',
-      marginBottom: 8,
-      color: theme.colors.text,
-    },
-    collapsibleHeader: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: 8,
-    },
-    collapseIcon: {
-      fontSize: 16,
-      color: theme.colors.textSecondary,
-      fontWeight: 'bold',
-    },
-    twoColumnRow: {
-      flexDirection: 'row',
-      gap: 10,
-    },
-    halfCard: {
-      flex: 1,
-    },
-    inputGroup: {
-      marginBottom: 12,
-    },
-    label: {
-      fontSize: 14,
-      fontWeight: '500',
-      marginBottom: 4,
-      color: theme.colors.text,
-    },
-    setupSection: {
-      marginBottom: 24,
-      paddingBottom: 16,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.colors.border,
-    },
-    dropdownButton: {
-      paddingVertical: 8,
-      paddingHorizontal: 16,
-      borderRadius: 6,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      backgroundColor: theme.colors.inputBackground,
-      marginRight: 8,
-    },
-    dropdownButtonSelected: {
-      backgroundColor: theme.colors.primary,
+    fontSize: 16,
+    fontWeight: '500',
+    marginBottom: 8,
+    color: '#1f2937',
+  },
+  collapsibleHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  collapseIcon: {
+    fontSize: 16,
+    color: '#6b7280',
+    fontWeight: 'bold',
+  },
+  twoColumnRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  halfCard: {
+    flex: 1,
+  },
+  inputGroup: {
+    marginBottom: 12,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginBottom: 4,
+    color: '#374151',
+  },
+  setupSection: {
+    marginBottom: 24,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  dropdownButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    backgroundColor: '#ffffff',
+    marginRight: 8,
+  },
+  dropdownButtonSelected: {
+    backgroundColor: '#3b82f6',
     borderColor: '#3b82f6',
   },
   dropdownButtonText: {

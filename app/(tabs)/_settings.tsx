@@ -208,18 +208,6 @@ export default function AccountScreen() {
 
   const settingsOptions = [
     {
-      title: 'Appearance',
-      icon: 'moon-outline',
-      items: [
-        {
-          label: 'Dark Mode',
-          value: theme.dark,
-          onToggle: toggleColorScheme,
-          type: 'switch' as const,
-        },
-      ],
-    },
-    {
       title: 'App Preferences',
       icon: 'game-controller-outline',
       items: [

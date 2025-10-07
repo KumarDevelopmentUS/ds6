@@ -3,11 +3,9 @@ import { CommunitySettingsPanel } from '@/components/CommunitySettingsPanel';
 import { PostCard } from '@/components/social/PostCard';
 import { ThemedText } from '@/components/themed/ThemedText';
 import { ThemedView } from '@/components/themed/ThemedView';
-import { ThemedButton } from '@/components/themed/ThemedButton';
 import { getSchoolByValue } from '@/constants/schools';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFeed } from '@/contexts/FeedContext';
-import { useTheme } from '@/contexts/ThemeContext';
 import { usePosts, useRealtimeUpdates } from '@/hooks/useSocialFeatures';
 import { supabase } from '@/supabase';
 import { debugFeedProvider, debugUserCommunities, fixUserCommunityMembership } from '@/utils/profileSync';
@@ -31,7 +29,6 @@ import {
 
 export default function FeedScreen() {
   const router = useRouter();
-  const { theme } = useTheme();
   const { session } = useAuth();
   const { communities, isLoading: isCommunitiesLoading, error: communitiesError, refetch } = useFeed();
   const [selectedCommunityId, setSelectedCommunityId] = useState<number | null>(null);
@@ -221,10 +218,10 @@ export default function FeedScreen() {
   // Handle the loading state for fetching communities
   if (isCommunitiesLoading) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-          <ThemedText style={styles.loadingText}>Loading communities...</ThemedText>
+          <ActivityIndicator size="large" />
+          <Text style={styles.loadingText}>Loading communities...</Text>
         </View>
       </SafeAreaView>
 
@@ -234,17 +231,20 @@ export default function FeedScreen() {
   // Handle any errors that occurred while fetching communities
   if (communitiesError) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <SafeAreaView style={styles.container}>
         <View style={styles.emptyContainer}>
-          <ThemedText style={styles.emptyText}>Error loading communities: {communitiesError.message}</ThemedText>
+          <Text style={styles.emptyText}>Error loading communities: {communitiesError.message}</Text>
           
           {/* Fix button */}
           <View style={{ marginTop: 20, gap: 10 }}>
-            <ThemedButton
-              title="🔧 Fix Community Membership"
+            <TouchableOpacity 
+              style={{ backgroundColor: '#ff6b6b', padding: 15, borderRadius: 8 }}
               onPress={fixCommunityMembership}
-              style={{ backgroundColor: theme.colors.error }}
-            />
+            >
+              <Text style={{ color: 'white', textAlign: 'center', fontWeight: 'bold' }}>
+                🔧 Fix Community Membership
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
       </SafeAreaView>
@@ -255,24 +255,27 @@ export default function FeedScreen() {
   // If communities array is empty, show fix option
   if (!communities || communities.length === 0) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <SafeAreaView style={styles.container}>
         <View style={styles.emptyContainer}>
-          <Ionicons name="home-outline" size={64} color={theme.colors.textSecondary} />
-          <ThemedText style={styles.emptyText}>You haven&apos;t joined any communities yet.</ThemedText>
-          <ThemedText style={styles.emptySubtext}>
+          <Ionicons name="home-outline" size={64} color="#666" />
+          <Text style={styles.emptyText}>You haven&apos;t joined any communities yet.</Text>
+          <Text style={styles.emptySubtext}>
             Join a community to start seeing posts and connecting with others!
-          </ThemedText>
+          </Text>
           
           <View style={{ marginTop: 30, gap: 12, width: '100%', maxWidth: 300 }}>
-            <ThemedButton
-              title="🏘️ Join General Community"
+            <TouchableOpacity 
+              style={{ backgroundColor: '#007AFF', padding: 16, borderRadius: 8 }}
               onPress={fixCommunityMembership}
-              style={{ padding: 16 }}
-            />
+            >
+              <Text style={{ color: 'white', textAlign: 'center', fontWeight: 'bold', fontSize: 16 }}>
+                🏘️ Join General Community
+              </Text>
+            </TouchableOpacity>
 
-            <ThemedText variant="caption" style={{ textAlign: 'center', marginTop: 8, paddingHorizontal: 20 }}>
+            <Text style={{ color: '#666', textAlign: 'center', marginTop: 8, fontSize: 14, paddingHorizontal: 20 }}>
               Or join a school community by selecting a school in the Edit Profile section of the Settings tab
-            </ThemedText>
+            </Text>
           </View>
         </View>
       </SafeAreaView>
@@ -381,7 +384,7 @@ export default function FeedScreen() {
           <Ionicons
             name={dropdownVisible ? "chevron-up" : "chevron-down"}
             size={20}
-            color={theme.colors.primary}
+            color="#007AFF"
           />
         </TouchableOpacity>
 
@@ -403,7 +406,7 @@ export default function FeedScreen() {
           <Ionicons 
             name="people" 
             size={24} 
-            color={selectedCommunityId ? theme.colors.primary : theme.colors.border} 
+            color={selectedCommunityId ? "#007AFF" : "#CCCCCC"} 
           />
         </TouchableOpacity>
       </View>
@@ -431,7 +434,7 @@ export default function FeedScreen() {
                 All Communities
               </Text>
               {selectedCommunityId === null && (
-                <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
+                <Ionicons name="checkmark" size={20} color="#007AFF" />
               )}
             </TouchableOpacity>
 
@@ -453,7 +456,7 @@ export default function FeedScreen() {
                     {displayName}
                   </Text>
                   {selectedCommunityId === community.id && (
-                    <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
+                    <Ionicons name="checkmark" size={20} color="#007AFF" />
                   )}
                 </TouchableOpacity>
               );
@@ -475,17 +478,17 @@ export default function FeedScreen() {
               setRealtimeEnabled(true);
               refetchPosts();
             }}
-            tintColor={theme.colors.primary}
+            tintColor="#007AFF"
           />
         }
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <ThemedText style={styles.emptyText}>
+            <Text style={styles.emptyText}>
               {selectedCommunity
                 ? `No posts in ${selectedCommunityDisplayName || ''} yet. Be the first to share!`
                 : 'No posts yet. Be the first to share!'}
-            </ThemedText>
+            </Text>
           </View>
         }
       />
@@ -519,176 +522,175 @@ export default function FeedScreen() {
   );
 }
 
-  // Use dynamic styles function that depends on theme
-  const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: theme.colors.background,
-    },
-    header: {
-      backgroundColor: theme.colors.card,
-      paddingHorizontal: 16,
-      paddingVertical: 12,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.colors.border,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-    },
-    dropdownButton: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingVertical: 8,
-      paddingHorizontal: 12,
-      backgroundColor: theme.colors.inputBackground,
-      borderRadius: 8,
-      flex: 1,
-      marginHorizontal: 12,
-    },
-    headerButton: {
-      padding: 4,
-    },
-    headerButtonDisabled: {
-      opacity: 0.5,
-    },
-    dropdownButtonText: {
-      fontSize: 18,
-      fontWeight: '600',
-      color: theme.colors.text,
-    },
-    modalOverlay: {
-      flex: 1,
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
-      justifyContent: 'flex-start',
-      paddingTop: 100,
-    },
-    dropdownContainer: {
-      backgroundColor: theme.colors.card,
-      marginHorizontal: 16,
-      borderRadius: 12,
-      paddingVertical: 8,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.25,
-      shadowRadius: 4,
-      elevation: 5,
-    },
-    dropdownItem: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingVertical: 12,
-      paddingHorizontal: 16,
-    },
-    dropdownItemText: {
-      fontSize: 16,
-      color: theme.colors.text,
-    },
-    dropdownItemTextSelected: {
-      color: theme.colors.primary,
-      fontWeight: '600',
-    },
-    listContent: {
-      paddingVertical: 8,
-      paddingBottom: 80,
-    },
-    loadingContainer: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: theme.colors.background,
-    },
-    loadingText: {
-      marginTop: 12,
-      fontSize: 16,
-      color: theme.colors.textSecondary,
-    },
-    emptyContainer: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      padding: 20,
-      marginTop: 100,
-    },
-    emptyText: {
-      fontSize: 18,
-      color: theme.colors.text,
-      textAlign: 'center',
-      fontWeight: '600',
-      marginBottom: 8,
-    },
-    emptySubtext: {
-      fontSize: 14,
-      color: theme.colors.textSecondary,
-      textAlign: 'center',
-      lineHeight: 20,
-    },
-    fab: {
-      position: 'absolute',
-      bottom: 20,
-      right: 20,
-      width: 56,
-      height: 56,
-      borderRadius: 28,
-      backgroundColor: theme.colors.primary,
-      justifyContent: 'center',
-      alignItems: 'center',
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.25,
-      shadowRadius: 4,
-      elevation: 5,
-    },
-    loginCard: {
-      alignItems: 'center',
-      marginBottom: 32,
-      padding: 24,
-      width: '100%',
-      maxWidth: 400,
-    },
-    loginTitle: {
-      marginTop: 16,
-      marginBottom: 8,
-      textAlign: 'center',
-    },
-    loginSubtext: {
-      textAlign: 'center',
-      marginBottom: 24,
-      opacity: 0.8,
-      lineHeight: 20,
-    },
-    loginButtons: {
-      width: '100%',
-      maxWidth: 300,
-      gap: 12,
-    },
-    signInButton: {
-      backgroundColor: theme.colors.primary,
-      padding: 16,
-      borderRadius: 8,
-      alignItems: 'center',
-    },
-    createAccountButton: {
-      backgroundColor: theme.colors.primary,
-      padding: 16,
-      borderRadius: 8,
-      alignItems: 'center',
-    },
-    buttonText: {
-      color: 'white',
-      fontSize: 16,
-      fontWeight: 'bold',
-    },
-    centeredContainer: {
-      justifyContent: 'center',
-      alignItems: 'center',
-      paddingHorizontal: 12,
-    },
-    content: {
-      flexGrow: 1,
-      justifyContent: 'center',
-      padding: 12,
-      paddingBottom: 40,
-    },
-  });
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  header: {
+    backgroundColor: '#fff',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  dropdownButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between', // Aligns items on opposite ends
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 8,
+    flex: 1,
+    marginHorizontal: 12,
+  },
+  headerButton: {
+    padding: 4,
+  },
+  headerButtonDisabled: {
+    opacity: 0.5,
+  },
+  dropdownButtonText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#000',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-start',
+    paddingTop: 100,
+  },
+  dropdownContainer: {
+    backgroundColor: '#fff',
+    marginHorizontal: 16,
+    borderRadius: 12,
+    paddingVertical: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  dropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  dropdownItemText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  dropdownItemTextSelected: {
+    color: '#007AFF',
+    fontWeight: '600',
+  },
+  listContent: {
+    paddingVertical: 8,
+    paddingBottom: 80, // Add padding for FABs
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: '#666',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    marginTop: 100,
+  },
+  emptyText: {
+    fontSize: 18,
+    color: '#333',
+    textAlign: 'center',
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  fab: {
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#007AFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  loginCard: {
+    alignItems: 'center',
+    marginBottom: 32,
+    padding: 24,
+    width: '100%',
+    maxWidth: 400,
+  },
+  loginTitle: {
+    marginTop: 16,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  loginSubtext: {
+    textAlign: 'center',
+    marginBottom: 24,
+    opacity: 0.8,
+    lineHeight: 20,
+  },
+  loginButtons: {
+    width: '100%',
+    maxWidth: 300,
+    gap: 12,
+  },
+  signInButton: {
+    backgroundColor: '#007AFF',
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  createAccountButton: {
+    backgroundColor: '#007AFF',
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  centeredContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+  },
+  content: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    padding: 12,
+    paddingBottom: 40,
+  },
+});

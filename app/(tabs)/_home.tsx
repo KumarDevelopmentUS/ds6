@@ -656,7 +656,7 @@ export default function MainMenuScreen() {
                   style={[styles.modalButton, styles.modalButtonPrimary]}
                   onPress={handleWebJoinRoom}
                 >
-                  <ThemedText variant="body" style={{ color: 'white' }}>Join</ThemedText>
+                  <ThemedText variant="body" style={{ color: '#fff' }}>Join</ThemedText>
                 </TouchableOpacity>
               </View>
             </ThemedView>
@@ -679,12 +679,11 @@ export default function MainMenuScreen() {
   );
 }
 
-  // Move styles inside component to access theme
-  const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: theme.colors.background,
-    },
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
   content: {
     flexGrow: 1,
     justifyContent: 'center',
@@ -885,15 +884,14 @@ export default function MainMenuScreen() {
   },
   modalInput: {
     borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderColor: '#ddd',
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
     marginBottom: 20,
     textAlign: 'center',
     textTransform: 'uppercase',
-    color: theme.colors.text,
-    backgroundColor: theme.colors.inputBackground,
+    color: '#666',
   },
   modalButtons: {
     flexDirection: 'row',
@@ -906,12 +904,12 @@ export default function MainMenuScreen() {
     alignItems: 'center',
   },
   modalButtonSecondary: {
-    backgroundColor: theme.colors.buttonSecondary,
+    backgroundColor: '#f5f5f5',
     borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderColor: '#ddd',
   },
   modalButtonPrimary: {
-    backgroundColor: theme.colors.primary,
+    backgroundColor: '#007AFF',
   },
   featuresOverviewCard: {
     marginBottom: 24,
@@ -954,21 +952,21 @@ export default function MainMenuScreen() {
     gap: 12,
   },
   signInButton: {
-      backgroundColor: theme.colors.primary,
-      padding: 16,
-      borderRadius: 8,
-      alignItems: 'center',
-    },
-    createAccountButton: {
-      backgroundColor: theme.colors.primary,
-      padding: 16,
-      borderRadius: 8,
-      alignItems: 'center',
-    },
-    buttonText: {
-      color: 'white',
-      textAlign: 'center',
-      fontWeight: 'bold',
-      fontSize: 16,
-    },
-  });
+    backgroundColor: '#007AFF',
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  createAccountButton: {
+    backgroundColor: '#007AFF',
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: 'white',
+    textAlign: 'center',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+});
