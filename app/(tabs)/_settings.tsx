@@ -21,7 +21,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 
 export default function AccountScreen() {
   const router = useRouter();
-  const { theme } = useTheme();
+  const { theme, toggleColorScheme } = useTheme();
   const { vibrationEnabled, setVibrationEnabled } = useHaptics();
   const { communities: userCommunities, isLoading: communitiesLoading, refetch } = useFeed();
   const { session } = useAuth();
@@ -207,6 +207,18 @@ export default function AccountScreen() {
   };
 
   const settingsOptions = [
+    {
+      title: 'Appearance',
+      icon: 'moon-outline',
+      items: [
+        {
+          label: 'Dark Mode',
+          value: theme.dark,
+          onToggle: toggleColorScheme,
+          type: 'switch' as const,
+        },
+      ],
+    },
     {
       title: 'App Preferences',
       icon: 'game-controller-outline',

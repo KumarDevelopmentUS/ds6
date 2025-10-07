@@ -2,6 +2,44 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
+// Function to apply Dark Reader-style CSS filter for web
+const applyDarkModeFilter = (isDark: boolean) => {
+  if (typeof document === 'undefined') return;
+  
+  const rootElement = document.documentElement;
+  
+  if (isDark) {
+    // Apply dark mode filter similar to Dark Reader extension
+    rootElement.style.filter = 'invert(0.9) hue-rotate(180deg)';
+    rootElement.style.backgroundColor = '#000000';
+    
+    // Prevent images and videos from being inverted twice
+    const style = document.getElementById('dark-mode-style') || document.createElement('style');
+    style.id = 'dark-mode-style';
+    style.textContent = `
+      img, video, [style*="background-image"] {
+        filter: invert(1) hue-rotate(180deg) !important;
+      }
+      * {
+        background-color: inherit !important;
+      }
+    `;
+    if (!document.getElementById('dark-mode-style')) {
+      document.head.appendChild(style);
+    }
+  } else {
+    // Remove dark mode filter
+    rootElement.style.filter = '';
+    rootElement.style.backgroundColor = '';
+    
+    // Remove the style tag
+    const style = document.getElementById('dark-mode-style');
+    if (style) {
+      style.remove();
+    }
+  }
+};
+
 type ColorScheme = 'light' | 'dark';
 
 interface Theme {
@@ -119,12 +157,12 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const loadThemePreference = async () => {
     try {
-      // Force light mode - ignore any saved dark mode preferences
-      setColorScheme('light');
-      saveThemePreference('light');
+      const savedScheme = await AsyncStorage.getItem('colorScheme');
+      if (savedScheme === 'dark' || savedScheme === 'light') {
+        setColorScheme(savedScheme);
+      }
     } catch (error) {
       console.error('Error loading theme preference:', error);
-      // On error, default to light mode
       setColorScheme('light');
     }
   };
@@ -138,20 +176,32 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const toggleColorScheme = () => {
-    // Dark mode is disabled - always stay in light mode
-    // This function is kept for compatibility but doesn't change the theme
-    console.log('Dark mode is disabled - staying in light mode');
+    const newScheme = colorScheme === 'light' ? 'dark' : 'light';
+    setColorScheme(newScheme);
+    saveThemePreference(newScheme);
+    
+    // Apply CSS filter for web dark mode
+    if (typeof document !== 'undefined') {
+      applyDarkModeFilter(newScheme === 'dark');
+    }
   };
 
   const handleSetColorScheme = (scheme: ColorScheme) => {
-    // Force light mode regardless of what's requested
-    if (scheme !== 'light') {
-      console.log('Dark mode is disabled - forcing light mode');
-      scheme = 'light';
-    }
     setColorScheme(scheme);
     saveThemePreference(scheme);
+    
+    // Apply CSS filter for web dark mode
+    if (typeof document !== 'undefined') {
+      applyDarkModeFilter(scheme === 'dark');
+    }
   };
+
+  // Apply dark mode filter on initial load
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      applyDarkModeFilter(colorScheme === 'dark');
+    }
+  }, [colorScheme]);
 
   const theme = colorScheme === 'dark' ? darkTheme : lightTheme;
 
