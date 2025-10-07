@@ -235,7 +235,7 @@ export default function FeedScreen() {
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>Error loading communities: {communitiesError.message}</Text>
           
-          {/* Debug and Fix buttons */}
+          {/* Fix button */}
           <View style={{ marginTop: 20, gap: 10 }}>
             <TouchableOpacity 
               style={{ backgroundColor: '#ff6b6b', padding: 15, borderRadius: 8 }}
@@ -243,15 +243,6 @@ export default function FeedScreen() {
             >
               <Text style={{ color: 'white', textAlign: 'center', fontWeight: 'bold' }}>
                 🔧 Fix Community Membership
-              </Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={{ backgroundColor: '#4ecdc4', padding: 15, borderRadius: 8 }}
-              onPress={debugCommunities}
-            >
-              <Text style={{ color: 'white', textAlign: 'center', fontWeight: 'bold' }}>
-                🔍 Debug Communities
               </Text>
             </TouchableOpacity>
           </View>
@@ -282,14 +273,9 @@ export default function FeedScreen() {
               </Text>
             </TouchableOpacity>
 
-            <TouchableOpacity 
-              style={{ backgroundColor: '#4ecdc4', padding: 12, borderRadius: 8 }}
-              onPress={debugCommunities}
-            >
-              <Text style={{ color: 'white', textAlign: 'center', fontWeight: 'bold' }}>
-                🔍 Debug Communities
-              </Text>
-            </TouchableOpacity>
+            <Text style={{ color: '#666', textAlign: 'center', marginTop: 8, fontSize: 14, paddingHorizontal: 20 }}>
+              Or join a school community by selecting a school in the Edit Profile section of the Settings tab
+            </Text>
           </View>
         </View>
       </SafeAreaView>
