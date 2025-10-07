@@ -1064,17 +1064,7 @@ const DieStatsTracker: React.FC = () => {
         // Don't fail the match save if stats update fails
       }
   
-      Alert.alert(
-        'Success', 
-        'Match statistics saved successfully!',
-        [
-          {
-            text: 'Go Home',
-            onPress: () => router.push('/(tabs)/' as any),
-          }
-        ]
-      );
-  
+      // Clean up live session if it exists
       if (liveSessionId) {
         await supabase
           .from('live_matches')
@@ -1083,6 +1073,23 @@ const DieStatsTracker: React.FC = () => {
       }
   
       setLiveSessionId(null);
+
+      // Show success message and navigate to home
+      Alert.alert(
+        'Success', 
+        'Match statistics saved successfully!',
+        [
+          {
+            text: 'OK',
+            onPress: () => router.push('/(tabs)/' as any),
+          }
+        ]
+      );
+      
+      // Auto-navigate after a brief delay if user doesn't dismiss the alert
+      setTimeout(() => {
+        router.push('/(tabs)/' as any);
+      }, 1500);
     } catch (error: any) {
       console.error('Error saving match:', error.message);
       Alert.alert('Error', `Failed to save match statistics: ${error.message}`);
