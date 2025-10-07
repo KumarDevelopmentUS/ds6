@@ -550,18 +550,6 @@ export default function EditProfileScreen() {
               {nicknameError}
             </ThemedText>
           ) : null}
-
-          {/* Change Password Button */}
-          <ThemedButton
-            title="Change Password"
-            variant="outline"
-            onPress={() => {
-              console.log('🔐 Change Password button clicked, navigating to reset-password');
-              router.push('/(auth)/reset-password' as any);
-            }}
-            icon={<Ionicons name="key-outline" size={20} color={theme.colors.primary} />}
-            style={{ marginTop: theme.spacing.md }}
-          />
           
           <ThemedText style={{ marginTop: theme.spacing.md, marginBottom: 4 }}>School</ThemedText>
           <TouchableOpacity style={styles.schoolSelector} onPress={() => setShowSchoolPicker(true)}>
@@ -577,6 +565,18 @@ export default function EditProfileScreen() {
             onPress={handleUpdateProfile}
             loading={loading}
             style={{ marginTop: theme.spacing.lg }}
+          />
+
+          {/* Change Password Button */}
+          <ThemedButton
+            title="Change Password"
+            variant="outline"
+            onPress={() => {
+              console.log('🔐 Change Password button clicked, navigating to reset-password');
+              router.push('/(auth)/reset-password' as any);
+            }}
+            icon={<Ionicons name="key-outline" size={20} color={theme.colors.primary} />}
+            style={{ marginTop: theme.spacing.md }}
           />
         </ThemedView>
 

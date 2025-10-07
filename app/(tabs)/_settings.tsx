@@ -208,26 +208,7 @@ export default function AccountScreen() {
 
   const settingsOptions = [
     {
-      title: 'Appearance',
-      icon: 'moon-outline',
-      items: [
-        {
-          label: 'Dark Mode',
-          value: false, // Always false (light mode)
-          onToggle: () => {
-            Alert.alert(
-              'Coming Soon! 🌙',
-              'Dark mode will be available in a future update. For now, the app stays in light mode for the best experience.',
-              [{ text: 'OK', style: 'default' }]
-            );
-          },
-          type: 'switch' as const,
-          disabled: true, // Disable the switch
-        },
-      ],
-    },
-    {
-      title: 'App Preferences', // Renamed from 'Game Settings'
+      title: 'App Preferences',
       icon: 'game-controller-outline',
       items: [
         {
