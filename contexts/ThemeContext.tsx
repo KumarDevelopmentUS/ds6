@@ -2,84 +2,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
-// Function to apply Dark Reader-style CSS filter for web
-const applyDarkModeFilter = (isDark: boolean) => {
-  if (typeof document === 'undefined') return;
-  
-  if (isDark) {
-    // Create or update dark mode style
-    let style = document.getElementById('dark-mode-style');
-    if (!style) {
-      style = document.createElement('style');
-      style.id = 'dark-mode-style';
-      document.head.appendChild(style);
-    }
-    
-    // Enhanced Dark Reader-style CSS with better handling
-    style.textContent = `
-      /* Main inversion filter */
-      html {
-        background-color: #181a1b !important;
-      }
-      
-      html, body {
-        background-color: #181a1b !important;
-        color: #e8e6e3 !important;
-      }
-      
-      /* Invert main content */
-      body {
-        filter: invert(0.88) hue-rotate(180deg) !important;
-      }
-      
-      /* Counter-invert images, videos, and media */
-      img, video, iframe, canvas,
-      [style*="background-image"],
-      svg, picture {
-        filter: invert(1) hue-rotate(180deg) !important;
-      }
-      
-      /* Handle specific UI elements */
-      input, textarea, select {
-        background-color: #1e2021 !important;
-        color: #e8e6e3 !important;
-        border-color: #3e4446 !important;
-      }
-      
-      /* Improve text contrast */
-      * {
-        color: inherit !important;
-        border-color: inherit !important;
-      }
-      
-      /* Fix scrollbars */
-      ::-webkit-scrollbar {
-        background-color: #202324 !important;
-      }
-      
-      ::-webkit-scrollbar-thumb {
-        background-color: #454a4d !important;
-      }
-      
-      /* Prevent double inversion on certain elements */
-      [data-theme="dark"] {
-        filter: none !important;
-      }
-      
-      /* Better handling of borders and shadows */
-      * {
-        box-shadow: none !important;
-      }
-    `;
-  } else {
-    // Remove dark mode styles
-    const style = document.getElementById('dark-mode-style');
-    if (style) {
-      style.remove();
-    }
-  }
-};
-
 type ColorScheme = 'light' | 'dark';
 
 interface Theme {
@@ -158,22 +80,22 @@ const darkTheme: Theme = {
   dark: true,
   colors: {
     primary: '#0A84FF',
-    background: '#000000',
-    card: '#1C1C1E',
-    text: '#FFFFFF',
-    textSecondary: '#999999',
-    border: '#38383A',
+    background: '#121212',
+    card: '#1E1E1E',
+    text: '#E8E8E8',
+    textSecondary: '#A0A0A0',
+    border: '#2C2C2E',
     notification: '#FF453A',
     error: '#FF453A',
     success: '#32D74B',
     warning: '#FF9F0A',
     info: '#5E5CE6',
-    tabBar: '#1C1C1E',
+    tabBar: '#1E1E1E',
     tabBarActive: '#0A84FF',
-    headerBackground: '#1C1C1E',
-    inputBackground: '#2C2C2E',
+    headerBackground: '#1E1E1E',
+    inputBackground: '#2A2A2A',
     buttonPrimary: '#0A84FF',
-    buttonSecondary: '#38383A',
+    buttonSecondary: '#2C2C2E',
   },
   spacing: lightTheme.spacing,
   borderRadius: lightTheme.borderRadius,
@@ -219,29 +141,12 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const newScheme = colorScheme === 'light' ? 'dark' : 'light';
     setColorScheme(newScheme);
     saveThemePreference(newScheme);
-    
-    // Apply CSS filter for web dark mode
-    if (typeof document !== 'undefined') {
-      applyDarkModeFilter(newScheme === 'dark');
-    }
   };
 
   const handleSetColorScheme = (scheme: ColorScheme) => {
     setColorScheme(scheme);
     saveThemePreference(scheme);
-    
-    // Apply CSS filter for web dark mode
-    if (typeof document !== 'undefined') {
-      applyDarkModeFilter(scheme === 'dark');
-    }
   };
-
-  // Apply dark mode filter on initial load
-  useEffect(() => {
-    if (typeof document !== 'undefined') {
-      applyDarkModeFilter(colorScheme === 'dark');
-    }
-  }, [colorScheme]);
 
   const theme = colorScheme === 'dark' ? darkTheme : lightTheme;
 
