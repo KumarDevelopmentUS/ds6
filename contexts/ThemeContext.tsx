@@ -6,33 +6,73 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 const applyDarkModeFilter = (isDark: boolean) => {
   if (typeof document === 'undefined') return;
   
-  const rootElement = document.documentElement;
-  
   if (isDark) {
-    // Apply dark mode filter similar to Dark Reader extension
-    rootElement.style.filter = 'invert(0.9) hue-rotate(180deg)';
-    rootElement.style.backgroundColor = '#000000';
-    
-    // Prevent images and videos from being inverted twice
-    const style = document.getElementById('dark-mode-style') || document.createElement('style');
-    style.id = 'dark-mode-style';
-    style.textContent = `
-      img, video, [style*="background-image"] {
-        filter: invert(1) hue-rotate(180deg) !important;
-      }
-      * {
-        background-color: inherit !important;
-      }
-    `;
-    if (!document.getElementById('dark-mode-style')) {
+    // Create or update dark mode style
+    let style = document.getElementById('dark-mode-style');
+    if (!style) {
+      style = document.createElement('style');
+      style.id = 'dark-mode-style';
       document.head.appendChild(style);
     }
-  } else {
-    // Remove dark mode filter
-    rootElement.style.filter = '';
-    rootElement.style.backgroundColor = '';
     
-    // Remove the style tag
+    // Enhanced Dark Reader-style CSS with better handling
+    style.textContent = `
+      /* Main inversion filter */
+      html {
+        background-color: #181a1b !important;
+      }
+      
+      html, body {
+        background-color: #181a1b !important;
+        color: #e8e6e3 !important;
+      }
+      
+      /* Invert main content */
+      body {
+        filter: invert(0.88) hue-rotate(180deg) !important;
+      }
+      
+      /* Counter-invert images, videos, and media */
+      img, video, iframe, canvas,
+      [style*="background-image"],
+      svg, picture {
+        filter: invert(1) hue-rotate(180deg) !important;
+      }
+      
+      /* Handle specific UI elements */
+      input, textarea, select {
+        background-color: #1e2021 !important;
+        color: #e8e6e3 !important;
+        border-color: #3e4446 !important;
+      }
+      
+      /* Improve text contrast */
+      * {
+        color: inherit !important;
+        border-color: inherit !important;
+      }
+      
+      /* Fix scrollbars */
+      ::-webkit-scrollbar {
+        background-color: #202324 !important;
+      }
+      
+      ::-webkit-scrollbar-thumb {
+        background-color: #454a4d !important;
+      }
+      
+      /* Prevent double inversion on certain elements */
+      [data-theme="dark"] {
+        filter: none !important;
+      }
+      
+      /* Better handling of borders and shadows */
+      * {
+        box-shadow: none !important;
+      }
+    `;
+  } else {
+    // Remove dark mode styles
     const style = document.getElementById('dark-mode-style');
     if (style) {
       style.remove();
