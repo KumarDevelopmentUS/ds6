@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Alert, SafeAreaView, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Dimensions, Modal, Platform, SafeAreaView, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 
 
 import { CommunitySettingsPanel } from '../../components/CommunitySettingsPanel';
@@ -13,11 +13,14 @@ import { UserAvatar } from '../../components/social/UserAvatar';
 import { ThemedButton } from '../../components/themed/ThemedButton';
 import { ThemedText } from '../../components/themed/ThemedText';
 import { ThemedView } from '../../components/themed/ThemedView';
+import { AVATAR_COLORS, FUN_AVATAR_ICONS } from '../../constants/avatarIcons';
 import { getSchoolByValue } from '../../constants/schools';
 import { useAuth } from '../../contexts/AuthContext';
 import { useFeed } from '../../contexts/FeedContext';
 import { useHaptics } from '../../contexts/HapticsContext';
 import { useTheme } from '../../contexts/ThemeContext';
+
+const { width } = Dimensions.get('window');
 
 export default function AccountScreen() {
   const router = useRouter();
@@ -45,6 +48,8 @@ export default function AccountScreen() {
     joinedAt: string;
   } | null>(null);
   const [communitySettingsVisible, setCommunitySettingsVisible] = useState(false);
+  const [showAvatarCustomizer, setShowAvatarCustomizer] = useState(false);
+  const [activeTab, setActiveTab] = useState<'icon' | 'iconColor' | 'bgColor'>('icon');
 
   useEffect(() => {
     loadUserAndProfile();
@@ -135,6 +140,54 @@ export default function AccountScreen() {
     refetch();
     if (session?.user) {
       isUserInGeneralCommunity(session.user.id).then(setIsInGeneralCommunity);
+    }
+  };
+
+  const handleSelectIcon = async (iconName: keyof typeof Ionicons.glyphMap) => {
+    if (!session?.user || !profile) return;
+    
+    setProfile({ ...profile, avatar_icon: iconName });
+    
+    const { error } = await supabase
+      .from('user_profiles')
+      .update({ avatar_icon: iconName })
+      .eq('id', session.user.id);
+    
+    if (error) {
+      console.error('Error updating icon:', error);
+      Alert.alert('Error', 'Failed to update icon');
+    }
+  };
+
+  const handleSelectIconColor = async (color: string) => {
+    if (!session?.user || !profile) return;
+    
+    setProfile({ ...profile, avatar_icon_color: color });
+    
+    const { error } = await supabase
+      .from('user_profiles')
+      .update({ avatar_icon_color: color })
+      .eq('id', session.user.id);
+    
+    if (error) {
+      console.error('Error updating icon color:', error);
+      Alert.alert('Error', 'Failed to update icon color');
+    }
+  };
+
+  const handleSelectBackgroundColor = async (color: string) => {
+    if (!session?.user || !profile) return;
+    
+    setProfile({ ...profile, avatar_background_color: color });
+    
+    const { error } = await supabase
+      .from('user_profiles')
+      .update({ avatar_background_color: color })
+      .eq('id', session.user.id);
+    
+    if (error) {
+      console.error('Error updating background color:', error);
+      Alert.alert('Error', 'Failed to update background color');
     }
   };
 
@@ -241,22 +294,40 @@ export default function AccountScreen() {
       {/* User Info */}
       {session?.user && profile ? (
         <ThemedView variant="card" style={styles.userCard}>
-          <UserAvatar
-            profilePictureUrl={profile.avatar_url}
-            icon={profile.avatar_icon}
-            iconColor={profile.avatar_icon_color}
-            backgroundColor={profile.avatar_background_color}
-            size={40}
-          />
+          <TouchableOpacity 
+            onPress={() => setShowAvatarCustomizer(true)}
+            style={styles.avatarContainer}
+            activeOpacity={0.7}
+          >
+            <UserAvatar
+              profilePictureUrl={profile.avatar_url}
+              icon={profile.avatar_icon}
+              iconColor={profile.avatar_icon_color}
+              backgroundColor={profile.avatar_background_color}
+              size={80}
+            />
+            {/* Gear Icon Indicator */}
+            <View style={[styles.gearIconContainer, { backgroundColor: theme.colors.background, borderColor: theme.colors.border }]}>
+              <Ionicons name="settings" size={14} color="#999" />
+            </View>
+          </TouchableOpacity>
           <ThemedText variant="subtitle" style={styles.userName}>
             {profile.nickname || profile.display_name || 'Player'}
           </ThemedText>
           {/* Username under nickname */}
           {session.user.user_metadata?.username && (
-            <ThemedText variant="caption" style={{ marginBottom: 2, color: theme.colors.textSecondary }}>
+            <ThemedText variant="caption" style={{ marginBottom: 8, color: theme.colors.textSecondary }}>
               @{session.user.user_metadata.username}
             </ThemedText>
           )}
+          {/* Edit Profile Button */}
+          <ThemedButton
+            title="Edit Profile"
+            variant="outline"
+            onPress={() => router.push('/edit-profile')}
+            icon={<Ionicons name="create-outline" size={20} color={theme.colors.primary} />}
+            style={styles.editProfileButton}
+          />
         </ThemedView>
       ) : !session ? (
         <View style={styles.centeredContainer}>
@@ -524,6 +595,150 @@ export default function AccountScreen() {
           onLeaveCommunity={handleLeaveCommunity}
         />
       )}
+
+      {/* Avatar Customization Modal */}
+      <Modal 
+        visible={showAvatarCustomizer} 
+        animationType="slide" 
+        transparent={true} 
+        onRequestClose={() => setShowAvatarCustomizer(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: theme.colors.background }]}>
+            {/* Modal Header */}
+            <View style={styles.modalHeader}>
+              <ThemedText variant="subtitle">Customize Avatar</ThemedText>
+              <TouchableOpacity onPress={() => setShowAvatarCustomizer(false)}>
+                <Ionicons name="close" size={24} color={theme.colors.text} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Avatar Preview */}
+            {profile && (
+              <View style={styles.avatarPreviewContainer}>
+                <UserAvatar
+                  profilePictureUrl={profile.avatar_url}
+                  icon={profile.avatar_icon}
+                  iconColor={profile.avatar_icon_color}
+                  backgroundColor={profile.avatar_background_color}
+                  size={80}
+                />
+              </View>
+            )}
+
+            {/* Tab Navigation */}
+            <View style={styles.tabContainer}>
+              <TouchableOpacity 
+                style={[styles.tab, activeTab === 'icon' && styles.activeTab, activeTab === 'icon' && { borderBottomColor: theme.colors.primary }]}
+                onPress={() => setActiveTab('icon')}
+              >
+                <ThemedText style={[styles.tabText, activeTab === 'icon' && styles.activeTabText, activeTab === 'icon' && { color: theme.colors.primary }]}>
+                  Icon
+                </ThemedText>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.tab, activeTab === 'iconColor' && styles.activeTab, activeTab === 'iconColor' && { borderBottomColor: theme.colors.primary }]}
+                onPress={() => setActiveTab('iconColor')}
+              >
+                <ThemedText style={[styles.tabText, activeTab === 'iconColor' && styles.activeTabText, activeTab === 'iconColor' && { color: theme.colors.primary }]}>
+                  Icon Color
+                </ThemedText>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.tab, activeTab === 'bgColor' && styles.activeTab, activeTab === 'bgColor' && { borderBottomColor: theme.colors.primary }]}
+                onPress={() => setActiveTab('bgColor')}
+              >
+                <ThemedText style={[styles.tabText, activeTab === 'bgColor' && styles.activeTabText, activeTab === 'bgColor' && { color: theme.colors.primary }]}>
+                  Background
+                </ThemedText>
+              </TouchableOpacity>
+            </View>
+
+            {/* Tab Content */}
+            <View style={styles.tabContentContainer}>
+              {activeTab === 'icon' && (
+                <ScrollView 
+                  style={styles.scrollView}
+                  contentContainerStyle={styles.gridContent}
+                  showsVerticalScrollIndicator={true}
+                >
+                  <View style={styles.iconGrid}>
+                    {FUN_AVATAR_ICONS.map((item) => (
+                      <TouchableOpacity 
+                        key={item.name}
+                        style={styles.iconItem} 
+                        onPress={() => handleSelectIcon(item.name)}
+                        activeOpacity={0.7}
+                      >
+                        <View style={[
+                          styles.iconItemContainer,
+                          profile?.avatar_icon === item.name && styles.selectedItem,
+                          profile?.avatar_icon === item.name && { borderColor: theme.colors.primary, backgroundColor: theme.colors.primary + '20' }
+                        ]}>
+                          <Ionicons name={item.name} size={36} color="#666" />
+                        </View>
+                        <ThemedText variant="caption" style={styles.iconLabel} numberOfLines={2}>
+                          {item.label}
+                        </ThemedText>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </ScrollView>
+              )}
+
+              {activeTab === 'iconColor' && (
+                <ScrollView 
+                  style={styles.scrollView}
+                  contentContainerStyle={styles.gridContent}
+                  showsVerticalScrollIndicator={true}
+                >
+                  <View style={styles.colorGrid}>
+                    {AVATAR_COLORS.map((item) => (
+                      <TouchableOpacity 
+                        key={item}
+                        style={[styles.colorItem, { backgroundColor: item }]} 
+                        onPress={() => handleSelectIconColor(item)}
+                        activeOpacity={0.7}
+                      >
+                        {profile?.avatar_icon_color === item && (
+                          <View style={styles.colorCheckmark}>
+                            <Ionicons name="checkmark-circle" size={32} color={item === '#FFFFFF' || item === '#f59e0b' ? '#000' : '#FFF'} />
+                          </View>
+                        )}
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </ScrollView>
+              )}
+
+              {activeTab === 'bgColor' && (
+                <ScrollView 
+                  style={styles.scrollView}
+                  contentContainerStyle={styles.gridContent}
+                  showsVerticalScrollIndicator={true}
+                >
+                  <View style={styles.colorGrid}>
+                    {AVATAR_COLORS.map((item) => (
+                      <TouchableOpacity 
+                        key={item}
+                        style={[styles.colorItem, { backgroundColor: item }]} 
+                        onPress={() => handleSelectBackgroundColor(item)}
+                        activeOpacity={0.7}
+                      >
+                        {profile?.avatar_background_color === item && (
+                          <View style={styles.colorCheckmark}>
+                            <Ionicons name="checkmark-circle" size={32} color={item === '#FFFFFF' || item === '#f59e0b' ? '#000' : '#FFF'} />
+                          </View>
+                        )}
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </ScrollView>
+              )}
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
     </SafeAreaView>
   );
@@ -543,6 +758,26 @@ const styles = StyleSheet.create({
   userCard: {
     alignItems: 'center',
     marginBottom: 32,
+  },
+  avatarContainer: {
+    position: 'relative',
+    marginBottom: 12,
+  },
+  gearIconContainer: {
+    position: 'absolute',
+    bottom: 4,
+    right: -2,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
   },
   avatar: {
     width: 80,
@@ -725,5 +960,150 @@ const styles = StyleSheet.create({
   cardHeaderTitle: {
     marginLeft: 12,
     fontWeight: '600',
+  },
+  editProfileButton: {
+    marginTop: 8,
+    minWidth: 150,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    width: '90%',
+    maxWidth: 600,
+    maxHeight: Platform.OS === 'web' ? '85vh' : '80%',
+    borderRadius: 16,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e5e5',
+  },
+  avatarPreviewContainer: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e5e5',
+    marginBottom: 16,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderBottomWidth: 3,
+    borderBottomColor: 'transparent',
+    ...(Platform.OS === 'web' && {
+      cursor: 'pointer' as any,
+      userSelect: 'none' as any,
+    }),
+  },
+  activeTab: {
+    borderBottomWidth: 3,
+  },
+  tabText: {
+    fontSize: 15,
+    fontWeight: '500',
+  },
+  activeTabText: {
+    fontWeight: '700',
+  },
+  tabContentContainer: {
+    flex: 1,
+    minHeight: 350,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  iconGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-around',
+    paddingHorizontal: 8,
+  },
+  iconItem: {
+    width: Platform.OS === 'web' ? 110 : (width - 120) / 3,
+    alignItems: 'center',
+    marginBottom: 24,
+    paddingHorizontal: 4,
+  },
+  iconItemContainer: {
+    width: Platform.OS === 'web' ? 90 : 85,
+    height: Platform.OS === 'web' ? 90 : 85,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 3,
+    borderColor: '#e5e5e5',
+    marginBottom: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+    ...(Platform.OS === 'web' && {
+      cursor: 'pointer' as any,
+      transition: 'all 0.2s ease',
+    }),
+  },
+  selectedItem: {
+    borderWidth: 3,
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  iconLabel: {
+    textAlign: 'center',
+    fontSize: 11,
+    lineHeight: 14,
+  },
+  colorGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    gap: 16,
+  },
+  colorItem: {
+    width: Platform.OS === 'web' ? 70 : 65,
+    height: Platform.OS === 'web' ? 70 : 65,
+    borderRadius: Platform.OS === 'web' ? 35 : 32.5,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: '#ddd',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
+    ...(Platform.OS === 'web' && {
+      cursor: 'pointer' as any,
+      transition: 'transform 0.2s ease',
+    }),
+  },
+  colorCheckmark: {
+    position: 'absolute',
+  },
+  gridContent: {
+    paddingVertical: 16,
+    paddingBottom: 32,
   },
 });

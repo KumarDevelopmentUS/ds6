@@ -590,17 +590,33 @@ export default function EditProfileScreen() {
                   <Ionicons name="close" size={24} color={theme.colors.text} />
                 </TouchableOpacity>
               </View>
-              <FlatList
-                data={FUN_AVATAR_ICONS}
-                keyExtractor={(item) => item.name}
-                numColumns={4}
-                renderItem={({ item }) => (
-                  <TouchableOpacity style={styles.iconItem} onPress={() => selectIcon(item.name)}>
-                    <Ionicons name={item.name} size={ICON_SIZE / 1.5} color={theme.colors.textSecondary} />
-                    <ThemedText variant="caption" style={{ textAlign: 'center', marginTop: 4 }}>{item.label}</ThemedText>
-                  </TouchableOpacity>
-                )}
-              />
+              <ScrollView 
+                style={styles.modalScrollView}
+                contentContainerStyle={styles.modalGridContent}
+                showsVerticalScrollIndicator={true}
+              >
+                <View style={styles.iconGrid}>
+                  {FUN_AVATAR_ICONS.map((item) => (
+                    <TouchableOpacity 
+                      key={item.name}
+                      style={styles.iconItem} 
+                      onPress={() => selectIcon(item.name)}
+                      activeOpacity={0.7}
+                    >
+                      <View style={[
+                        styles.iconItemBox,
+                        profile.avatar_icon === item.name && styles.selectedIconBox,
+                        profile.avatar_icon === item.name && { borderColor: theme.colors.primary, backgroundColor: theme.colors.primary + '20' }
+                      ]}>
+                        <Ionicons name={item.name} size={36} color="#666" />
+                      </View>
+                      <ThemedText variant="caption" style={{ textAlign: 'center', marginTop: 6, fontSize: 11 }} numberOfLines={2}>
+                        {item.label}
+                      </ThemedText>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </ScrollView>
             </View>
           </View>
         </Modal>
@@ -614,7 +630,26 @@ export default function EditProfileScreen() {
                   <Ionicons name="close" size={24} color={theme.colors.text} />
                 </TouchableOpacity>
               </View>
-              <FlatList data={AVATAR_COLORS} keyExtractor={(item) => item} numColumns={Math.floor(width / (COLOR_SWATCH_SIZE + 20))} renderItem={({ item }) => (<TouchableOpacity style={[styles.colorItem, { backgroundColor: item }]} onPress={() => selectIconColor(item)}>{profile.avatar_icon_color === item && (<Ionicons name="checkmark-circle" size={24} color="#FFFFFF" />)}</TouchableOpacity>)} />
+              <ScrollView 
+                style={styles.modalScrollView}
+                contentContainerStyle={styles.modalGridContent}
+                showsVerticalScrollIndicator={true}
+              >
+                <View style={styles.colorGrid}>
+                  {AVATAR_COLORS.map((item) => (
+                    <TouchableOpacity 
+                      key={item}
+                      style={[styles.colorItem, { backgroundColor: item }]} 
+                      onPress={() => selectIconColor(item)}
+                      activeOpacity={0.7}
+                    >
+                      {profile.avatar_icon_color === item && (
+                        <Ionicons name="checkmark-circle" size={32} color={item === '#FFFFFF' || item === '#f59e0b' ? '#000' : '#FFF'} />
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </ScrollView>
             </View>
           </View>
         </Modal>
@@ -628,7 +663,26 @@ export default function EditProfileScreen() {
                   <Ionicons name="close" size={24} color={theme.colors.text} />
                 </TouchableOpacity>
               </View>
-              <FlatList data={AVATAR_COLORS} keyExtractor={(item) => item} numColumns={Math.floor(width / (COLOR_SWATCH_SIZE + 20))} renderItem={({ item }) => (<TouchableOpacity style={[styles.colorItem, { backgroundColor: item }]} onPress={() => selectBgColor(item)}>{profile.avatar_background_color === item && (<Ionicons name="checkmark-circle" size={24} color="#FFFFFF" />)}</TouchableOpacity>)} />
+              <ScrollView 
+                style={styles.modalScrollView}
+                contentContainerStyle={styles.modalGridContent}
+                showsVerticalScrollIndicator={true}
+              >
+                <View style={styles.colorGrid}>
+                  {AVATAR_COLORS.map((item) => (
+                    <TouchableOpacity 
+                      key={item}
+                      style={[styles.colorItem, { backgroundColor: item }]} 
+                      onPress={() => selectBgColor(item)}
+                      activeOpacity={0.7}
+                    >
+                      {profile.avatar_background_color === item && (
+                        <Ionicons name="checkmark-circle" size={32} color={item === '#FFFFFF' || item === '#f59e0b' ? '#000' : '#FFF'} />
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </ScrollView>
             </View>
           </View>
         </Modal>
@@ -765,8 +819,76 @@ const styles = StyleSheet.create({
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.5)', justifyContent: 'center', padding: 20 },
   modalContent: { borderRadius: 20, padding: 20, maxHeight: '80%', width: '100%' },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-  iconItem: { width: ICON_SIZE + 10, height: ICON_SIZE + 30, justifyContent: 'center', alignItems: 'center', margin: 5, borderRadius: 8 },
-  colorItem: { width: COLOR_SWATCH_SIZE, height: COLOR_SWATCH_SIZE, borderRadius: COLOR_SWATCH_SIZE / 2, margin: 5, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#ccc' },
+  modalScrollView: {
+    maxHeight: Platform.OS === 'web' ? '50vh' : 400,
+  },
+  modalGridContent: {
+    paddingVertical: 16,
+    paddingBottom: 32,
+  },
+  iconGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-around',
+    paddingHorizontal: 8,
+  },
+  iconItem: { 
+    width: Platform.OS === 'web' ? 110 : (width - 120) / 3,
+    alignItems: 'center',
+    marginBottom: 24,
+    paddingHorizontal: 4,
+  },
+  iconItemBox: {
+    width: Platform.OS === 'web' ? 90 : 85,
+    height: Platform.OS === 'web' ? 90 : 85,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 3,
+    borderColor: '#e5e5e5',
+    marginBottom: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+    ...(Platform.OS === 'web' && {
+      cursor: 'pointer' as any,
+      transition: 'all 0.2s ease',
+    }),
+  },
+  selectedIconBox: {
+    borderWidth: 3,
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  colorGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    gap: 16,
+  },
+  colorItem: { 
+    width: Platform.OS === 'web' ? 70 : 65,
+    height: Platform.OS === 'web' ? 70 : 65,
+    borderRadius: Platform.OS === 'web' ? 35 : 32.5,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: '#ddd',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
+    ...(Platform.OS === 'web' && {
+      cursor: 'pointer' as any,
+      transition: 'transform 0.2s ease',
+    }),
+  },
   searchContainer: { flexDirection: 'row', alignItems: 'center', borderRadius: 8, paddingHorizontal: 16, paddingVertical: 12, marginBottom: 16, gap: 12 },
   searchInput: { flex: 1, fontSize: 16 },
   schoolItem: { paddingVertical: 16, borderBottomWidth: 1 },

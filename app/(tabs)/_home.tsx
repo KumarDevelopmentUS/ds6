@@ -104,11 +104,19 @@ export default function MainMenuScreen() {
 
   const loadUserData = async () => {
     if (session?.user) {
-      const firstName =
-        session.user.user_metadata?.first_name ||
+      // Fetch nickname from user_profiles table
+      const { data: userProfile } = await supabase
+        .from('user_profiles')
+        .select('nickname, display_name')
+        .eq('id', session.user.id)
+        .single();
+      
+      const displayName = 
+        userProfile?.nickname || 
+        userProfile?.display_name || 
         session.user.user_metadata?.nickname ||
         'Player';
-      setUserName(firstName);
+      setUserName(displayName);
 
       try {
         // Load real user stats from saved_matches

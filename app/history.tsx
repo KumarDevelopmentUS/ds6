@@ -247,15 +247,19 @@ export default function GameHistoryScreen() {
         />
         <ThemedView style={styles.container}>
           <View style={styles.emptyState}>
-            <Ionicons name="time-outline" size={64} color={theme.colors.text} />
-            <ThemedText variant="subtitle" style={styles.emptyStateText}>
-              Sign in to view your game history
+            <Ionicons name="time-outline" size={80} color={theme.colors.textSecondary} style={styles.emptyStateIcon} />
+            <ThemedText variant="title" style={styles.emptyStateTitle}>
+              Game History
+            </ThemedText>
+            <ThemedText variant="body" style={styles.emptyStateText}>
+              Sign in to track your matches and view detailed performance stats
             </ThemedText>
             <ThemedButton
               title="Sign In"
               onPress={() => router.push('/(auth)/login')}
               size="medium"
-              style={{ marginTop: 20 }}
+              style={{ marginTop: 24 }}
+              icon={<Ionicons name="log-in-outline" size={20} color="#FFFFFF" />}
             />
           </View>
         </ThemedView>
@@ -305,9 +309,12 @@ export default function GameHistoryScreen() {
         {/* Header */}
         <ThemedView style={styles.header}>
           <ThemedText variant="title">Game History</ThemedText>
-          <ThemedText variant="caption">
-            {matches.length} {matches.length === 1 ? 'match' : 'matches'} played
-          </ThemedText>
+          <View style={styles.headerInfo}>
+            <Ionicons name="trophy-outline" size={16} color={theme.colors.textSecondary} />
+            <ThemedText variant="caption" style={styles.headerCaption}>
+              {matches.length} {matches.length === 1 ? 'match' : 'matches'} played
+            </ThemedText>
+          </View>
         </ThemedView>
 
         {/* Filter Tabs */}
@@ -318,15 +325,16 @@ export default function GameHistoryScreen() {
               style={[
                 styles.filterTab,
                 filter === filterType && styles.filterTabActive,
+                filter === filterType && { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary }
               ]}
               onPress={() => setFilter(filterType)}
             >
               <ThemedText
                 variant="body"
                 style={{
-                  fontWeight: filter === filterType ? 'bold' : '600',
-                  color: filter === filterType ? '#FFFFFF' : '#1F2937',
-                  fontSize: 16,
+                  fontWeight: filter === filterType ? '700' : '500',
+                  color: filter === filterType ? '#FFFFFF' : theme.colors.text,
+                  fontSize: 15,
                   textAlign: 'center'
                 }}
               >
@@ -339,10 +347,19 @@ export default function GameHistoryScreen() {
         {/* Match List */}
         {filteredMatches.length === 0 ? (
           <ThemedView variant="card" style={styles.emptyCard}>
+            <Ionicons 
+              name={matches.length === 0 ? "game-controller-outline" : "filter-outline"} 
+              size={64} 
+              color={theme.colors.textSecondary} 
+              style={styles.emptyIcon} 
+            />
+            <ThemedText variant="subtitle" style={styles.emptyTitle}>
+              {matches.length === 0 ? "No Matches Yet" : "No Matches Found"}
+            </ThemedText>
             <ThemedText variant="body" style={styles.emptyText}>
               {matches.length === 0 
-                ? "No matches found. Join a game as a player to see your history!"
-                : "No matches found for this filter."}
+                ? "Join a game as a player to start building your match history!"
+                : "Try a different filter to see more matches"}
             </ThemedText>
           </ThemedView>
         ) : (
@@ -374,7 +391,7 @@ export default function GameHistoryScreen() {
                             isWin ? styles.winBadge : styles.lossBadge,
                           ]}
                         >
-                          <ThemedText variant="caption" color="primary">
+                          <ThemedText variant="caption" style={styles.badgeText}>
                             {isWin ? 'WIN' : 'LOSS'}
                           </ThemedText>
                         </View>
@@ -520,65 +537,76 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 12,
-    paddingTop: 100, // Add more padding for back button
+    paddingTop: 100,
   },
   backButton: {
     position: 'absolute',
-    top: 60, // Moved down to avoid status bar/notch
+    top: 60,
     left: 20,
     flexDirection: 'row',
     alignItems: 'center',
     zIndex: 10,
   },
-  backText: {
-    marginLeft: 8,
-    color: '#3b82f6',
-    fontSize: 16,
-    fontWeight: '500',
-  },
   header: {
-    marginBottom: 24,
+    marginBottom: 20,
+  },
+  headerInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 4,
+  },
+  headerCaption: {
+    opacity: 0.7,
   },
   filterContainer: {
     flexDirection: 'row',
-    marginBottom: 20,
-    gap: 12,
-    justifyContent: 'center',
+    marginBottom: 24,
+    gap: 10,
+    paddingHorizontal: 4,
   },
   filterTab: {
     flex: 1,
     paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 25,
-    backgroundColor: '#F9FAFB',
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    backgroundColor: '#F3F4F6',
     borderWidth: 2,
-    borderColor: '#D1D5DB',
+    borderColor: '#E5E7EB',
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
-    minWidth: 80,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
   filterTabActive: {
-    backgroundColor: '#3b82f6',
-    borderColor: '#3b82f6',
-    shadowColor: '#3b82f6',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 4,
   },
   emptyCard: {
-    padding: 40,
+    padding: 48,
     alignItems: 'center',
+  },
+  emptyIcon: {
+    opacity: 0.3,
+    marginBottom: 16,
+  },
+  emptyTitle: {
+    marginBottom: 8,
+    textAlign: 'center',
   },
   emptyText: {
     textAlign: 'center',
+    opacity: 0.7,
+    lineHeight: 20,
   },
   matchCard: {
     marginBottom: 12,
+    borderRadius: 12,
   },
   matchHeader: {
     flexDirection: 'row',
@@ -598,6 +626,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 12,
+  },
+  badgeText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
   },
   winBadge: {
     backgroundColor: '#22c55e',
@@ -708,9 +740,20 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 32,
+  },
+  emptyStateIcon: {
+    opacity: 0.3,
+    marginBottom: 20,
+  },
+  emptyStateTitle: {
+    marginBottom: 12,
+    textAlign: 'center',
   },
   emptyStateText: {
-    marginTop: 16,
     textAlign: 'center',
+    opacity: 0.7,
+    lineHeight: 22,
+    maxWidth: 300,
   },
 });

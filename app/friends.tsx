@@ -1,5 +1,6 @@
 // app/friends.tsx
 import { HapticBackButton } from '@/components/HapticBackButton';
+import { UserAvatar } from '@/components/social/UserAvatar';
 import { supabase } from '@/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -370,41 +371,30 @@ export default function FriendsScreen() {
     };
 
     return (
-      <TouchableOpacity disabled={from !== 'friends'} onPress={() => router.push(`/user-profile/${item.id}`)}>
+      <TouchableOpacity 
+        disabled={from !== 'friends'} 
+        onPress={() => router.push(`/user-profile/${item.id}`)}
+        activeOpacity={0.7}
+      >
         <ThemedView variant="card" style={styles.userCard}>
-          <View style={[styles.avatar, { backgroundColor: item.avatar_background_color }]}>
-            <Ionicons name={item.avatar_icon} size={30} color={item.avatar_icon_color} />
-          </View>
+          <UserAvatar
+            profilePictureUrl={null}
+            icon={item.avatar_icon}
+            iconColor={item.avatar_icon_color}
+            backgroundColor={item.avatar_background_color}
+            size={52}
+          />
           <View style={styles.userInfo}>
             <ThemedText variant="body" style={styles.username}>{item.nickname}</ThemedText>
-            <ThemedText variant="caption">{`@${item.username}`}</ThemedText>
-            <ThemedText variant="caption" numberOfLines={1}>{item.school}</ThemedText>
-            
-            {/* TODO: Re-enable quick stats preview - need to implement proper hooks pattern
-                Options:
-                1. Move useUserStats to component level and pass data down
-                2. Use context/state management for user stats
-                3. Pre-fetch stats when component mounts
-                
-                Current issue: useUserStats hook cannot be called inside renderUserProfile function
-                due to React Rules of Hooks violation */}
-            {/* <View style={styles.quickStats}>
-              <View style={styles.quickStatItem}>
-                <Ionicons name="trophy" size={14} color={theme.colors.warning} />
-                <ThemedText variant="caption" style={styles.quickStatText}>...</ThemedText>
-                <ThemedText variant="caption" style={styles.quickStatLabel}>Matches</ThemedText>
+            <ThemedText variant="caption" style={styles.userHandle}>{`@${item.username}`}</ThemedText>
+            {item.school && (
+              <View style={styles.schoolContainer}>
+                <Ionicons name="school-outline" size={12} color={theme.colors.textSecondary} />
+                <ThemedText variant="caption" style={styles.schoolText} numberOfLines={1}>
+                  {item.school}
+                </ThemedText>
               </View>
-              <View style={styles.quickStatItem}>
-                <Ionicons name="star" size={14} color={theme.colors.warning} />
-                <ThemedText variant="caption" style={styles.quickStatText}>...</ThemedText>
-                <ThemedText variant="caption" style={styles.quickStatLabel}>Ranking</ThemedText>
-              </View>
-              <View style={styles.quickStatItem}>
-                <Ionicons name="checkmark-circle" size={14} color={theme.colors.success} />
-                <ThemedText variant="caption" style={styles.quickStatText}>...</ThemedText>
-                <ThemedText variant="caption" style={styles.quickStatLabel}>Wins</ThemedText>
-              </View>
-            </View> */}
+            )}
           </View>
           { from === 'expand' && renderActionButton() }
           { 'request_direction' in item && item.request_direction === 'incoming' && (
@@ -414,7 +404,7 @@ export default function FriendsScreen() {
               </View>
           )}
           { 'request_direction' in item && item.request_direction === 'outgoing' && <ThemedButton title="Requested" size="small" disabled={true} /> }
-          { from === 'friends' && <Ionicons name="stats-chart-outline" size={20} color={theme.colors.textSecondary} /> }
+          { from === 'friends' && <Ionicons name="chevron-forward" size={22} color={theme.colors.textSecondary} /> }
         </ThemedView>
       </TouchableOpacity>
     );
@@ -473,11 +463,31 @@ export default function FriendsScreen() {
 
       <View style={styles.tabContainer}>
         {['friends', 'requests', 'expand'].map((tab) => (
-          <TouchableOpacity key={tab} style={[styles.tab, currentTab === tab && styles.activeTab, {borderColor: theme.colors.primary}]} onPress={() => setCurrentTab(tab as any)}>
-            <ThemedText variant={currentTab === tab ? 'subtitle' : 'body'}>
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
-              {tab === 'requests' && friendRequests.length > 0 && ` (${friendRequests.length})`}
-            </ThemedText>
+          <TouchableOpacity 
+            key={tab} 
+            style={[
+              styles.tab, 
+              currentTab === tab && styles.activeTab, 
+              currentTab === tab && { borderBottomColor: theme.colors.primary }
+            ]} 
+            onPress={() => setCurrentTab(tab as any)}
+          >
+            <View style={styles.tabContent}>
+              <ThemedText 
+                variant={currentTab === tab ? 'subtitle' : 'body'}
+                style={[
+                  styles.tabText,
+                  currentTab === tab && { color: theme.colors.primary }
+                ]}
+              >
+                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              </ThemedText>
+              {tab === 'requests' && friendRequests.length > 0 && (
+                <View style={[styles.badge, { backgroundColor: theme.colors.error }]}>
+                  <ThemedText style={styles.badgeText}>{friendRequests.length}</ThemedText>
+                </View>
+              )}
+            </View>
           </TouchableOpacity>
         ))}
       </View>
@@ -486,7 +496,20 @@ export default function FriendsScreen() {
         {loading && <ActivityIndicator style={{ marginTop: 20 }} size="large" />}
 
         {currentTab === 'friends' && !loading && (
-            <FlatList data={friends} renderItem={(props) => renderUserProfile({...props, from: 'friends'})} keyExtractor={(item) => item.id} ListEmptyComponent={<ThemedText style={styles.emptyText}>You have no friends yet.</ThemedText>} />
+            <FlatList 
+              data={friends} 
+              renderItem={(props) => renderUserProfile({...props, from: 'friends'})} 
+              keyExtractor={(item) => item.id} 
+              ListEmptyComponent={
+                <View style={styles.emptyState}>
+                  <Ionicons name="people-outline" size={64} color={theme.colors.textSecondary} style={styles.emptyIcon} />
+                  <ThemedText variant="subtitle" style={styles.emptyTitle}>No Friends Yet</ThemedText>
+                  <ThemedText variant="caption" style={styles.emptyText}>
+                    Start building your network by searching for friends in the Expand tab
+                  </ThemedText>
+                </View>
+              } 
+            />
         )}
 
         {currentTab === 'requests' && !loading && (
@@ -498,9 +521,17 @@ export default function FriendsScreen() {
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => renderUserProfile({ item, from: 'requests' })}
             renderSectionHeader={({ section: { title, data } }) => (
-                data.length > 0 ? <ThemedText variant="subtitle" style={styles.expandSectionTitle}>{title}</ThemedText> : null
+                data.length > 0 ? <ThemedText variant="subtitle" style={styles.sectionTitle}>{title}</ThemedText> : null
             )}
-            ListEmptyComponent={<ThemedText style={styles.emptyText}>No new friend requests.</ThemedText>}
+            ListEmptyComponent={
+              <View style={styles.emptyState}>
+                <Ionicons name="mail-outline" size={64} color={theme.colors.textSecondary} style={styles.emptyIcon} />
+                <ThemedText variant="subtitle" style={styles.emptyTitle}>No Pending Requests</ThemedText>
+                <ThemedText variant="caption" style={styles.emptyText}>
+                  You don't have any friend requests at the moment
+                </ThemedText>
+              </View>
+            }
           />
         )}
         
@@ -518,23 +549,46 @@ export default function FriendsScreen() {
               />
             </View>
 
-            {loadingExpand ? <ActivityIndicator/> : 
+            {loadingExpand ? <ActivityIndicator style={{ marginTop: 40 }} size="large" /> : 
               (searchResults.length > 0 || searchQuery) ? (
-                <FlatList data={searchResults} renderItem={(props) => renderUserProfile({...props, from: 'expand'})} keyExtractor={(item) => item.id} ListEmptyComponent={<ThemedText style={styles.emptyText}>No users found.</ThemedText>} />
+                <FlatList 
+                  data={searchResults} 
+                  renderItem={(props) => renderUserProfile({...props, from: 'expand'})} 
+                  keyExtractor={(item) => item.id} 
+                  ListEmptyComponent={
+                    <View style={styles.emptyState}>
+                      <Ionicons name="search-outline" size={64} color={theme.colors.textSecondary} style={styles.emptyIcon} />
+                      <ThemedText variant="subtitle" style={styles.emptyTitle}>No Users Found</ThemedText>
+                      <ThemedText variant="caption" style={styles.emptyText}>
+                        Try searching with a different username
+                      </ThemedText>
+                    </View>
+                  } 
+                />
               ) : (
-                <ScrollView>
-                  <ThemedText variant="subtitle" style={styles.expandSectionTitle}>From Your School</ThemedText>
+                <ScrollView showsVerticalScrollIndicator={false}>
+                  <ThemedText variant="subtitle" style={styles.sectionTitle}>From Your School</ThemedText>
                   {schoolmates.length > 0 ? (
                     schoolmates.map(item => <View key={item.id}>{renderUserProfile({ item, from: 'expand' })}</View>)
                   ) : (
-                    <ThemedText style={styles.emptyText}>No new people found from your school.</ThemedText>
+                    <View style={styles.emptyStateSmall}>
+                      <Ionicons name="school-outline" size={32} color={theme.colors.textSecondary} />
+                      <ThemedText variant="caption" style={styles.emptyTextSmall}>
+                        No new people found from your school
+                      </ThemedText>
+                    </View>
                   )}
                   
-                  <ThemedText variant="subtitle" style={styles.expandSectionTitle}>Friends of Friends</ThemedText>
+                  <ThemedText variant="subtitle" style={styles.sectionTitle}>Friends of Friends</ThemedText>
                   {friendsOfFriends.length > 0 ? (
                     friendsOfFriends.map(item => <View key={item.id}>{renderUserProfile({ item, from: 'expand' })}</View>)
                   ) : (
-                    <ThemedText style={styles.emptyText}>No new friends of friends found.</ThemedText>
+                    <View style={styles.emptyStateSmall}>
+                      <Ionicons name="git-network-outline" size={32} color={theme.colors.textSecondary} />
+                      <ThemedText variant="caption" style={styles.emptyTextSmall}>
+                        No friends of friends found
+                      </ThemedText>
+                    </View>
                   )}
                 </ScrollView>
               )
@@ -547,32 +601,185 @@ export default function FriendsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, paddingTop: 60 },
-  backButton: { position: 'absolute', top: 60, left: 20, flexDirection: 'row', alignItems: 'center', zIndex: 10 },
-  backText: { marginLeft: 8 },
-  tabContainer: { flexDirection: 'row', justifyContent: 'space-around', paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: '#e0e0e0', marginTop: 40 },
-  tab: { paddingVertical: 10, borderBottomWidth: 2, borderBottomColor: 'transparent' },
-  activeTab: { borderBottomWidth: 2 },
-  content: { flex: 1, paddingHorizontal: 12, paddingTop: 10 },
-  fullScreenView: { flex: 1, paddingTop: 60 },
-  searchSection: { marginBottom: 20 },
-  userCard: { flexDirection: 'row', alignItems: 'center', padding: 15, marginBottom: 10, borderRadius: 8 },
-  avatar: { width: 50, height: 50, borderRadius: 25, justifyContent: 'center', alignItems: 'center', marginRight: 15 },
-  userInfo: { flex: 1 },
-  username: { fontWeight: 'bold' },
-  requestButtons: { flexDirection: 'row', gap: 8 },
-  emptyText: { textAlign: 'center', marginTop: 50, color: '#888' },
-  expandSectionTitle: { marginTop: 20, marginBottom: 10, paddingHorizontal: 5, fontWeight: 'bold', color: '#6c757d' },
-  backButtonInline: { flexDirection: 'row', alignItems: 'center' },
-  profileHeader: { flexDirection: 'row', justifyContent: 'flex-start', alignItems: 'center', marginBottom: 20, paddingHorizontal: 20 },
-  profileContent: { paddingVertical: 10 },
-  profileInfoContainer: { alignItems: 'center', marginBottom: 30, paddingHorizontal: 20 },
-  profileAvatar: { width: 100, height: 100, borderRadius: 50, justifyContent: 'center', alignItems: 'center', marginBottom: 15 },
-  statsCard: { marginHorizontal: 20, padding: 20, borderRadius: 8 },
-  statsTitle: { textAlign: 'center', marginBottom: 20 },
-  statRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#e0e0e0' },
-  quickStats: { flexDirection: 'row', justifyContent: 'space-around', marginTop: 10, paddingHorizontal: 10 },
-  quickStatItem: { alignItems: 'center' },
-  quickStatText: { marginTop: 5 },
-  quickStatLabel: { marginTop: 2 }
+  container: { 
+    flex: 1, 
+    paddingTop: 60 
+  },
+  backButton: { 
+    position: 'absolute', 
+    top: 60, 
+    left: 20, 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    zIndex: 10 
+  },
+  tabContainer: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-around', 
+    borderBottomWidth: 1, 
+    borderBottomColor: '#e5e5e5', 
+    marginTop: 40,
+    marginHorizontal: 12,
+  },
+  tab: { 
+    flex: 1,
+    paddingVertical: 14, 
+    borderBottomWidth: 3, 
+    borderBottomColor: 'transparent',
+    alignItems: 'center',
+  },
+  activeTab: { 
+    borderBottomWidth: 3,
+  },
+  tabContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  tabText: {
+    fontSize: 15,
+    fontWeight: '500',
+  },
+  badge: {
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 6,
+  },
+  badgeText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  content: { 
+    flex: 1, 
+    paddingHorizontal: 12, 
+    paddingTop: 16 
+  },
+  fullScreenView: { 
+    flex: 1, 
+    paddingTop: 60 
+  },
+  searchSection: { 
+    marginBottom: 16 
+  },
+  userCard: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    padding: 16, 
+    marginBottom: 12, 
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  userInfo: { 
+    flex: 1, 
+    marginLeft: 12 
+  },
+  username: { 
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  userHandle: {
+    opacity: 0.7,
+    marginBottom: 4,
+  },
+  schoolContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 2,
+  },
+  schoolText: {
+    opacity: 0.6,
+    fontSize: 12,
+  },
+  requestButtons: { 
+    flexDirection: 'row', 
+    gap: 8 
+  },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+    paddingHorizontal: 24,
+  },
+  emptyIcon: {
+    opacity: 0.3,
+    marginBottom: 16,
+  },
+  emptyTitle: {
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  emptyText: { 
+    textAlign: 'center',
+    opacity: 0.7,
+    lineHeight: 20,
+  },
+  emptyStateSmall: {
+    alignItems: 'center',
+    paddingVertical: 24,
+    paddingHorizontal: 16,
+    gap: 8,
+  },
+  emptyTextSmall: {
+    textAlign: 'center',
+    opacity: 0.6,
+  },
+  sectionTitle: { 
+    marginTop: 24, 
+    marginBottom: 12, 
+    paddingHorizontal: 4, 
+    fontWeight: '700',
+    fontSize: 16,
+  },
+  backButtonInline: { 
+    flexDirection: 'row', 
+    alignItems: 'center' 
+  },
+  profileHeader: { 
+    flexDirection: 'row', 
+    justifyContent: 'flex-start', 
+    alignItems: 'center', 
+    marginBottom: 20, 
+    paddingHorizontal: 20 
+  },
+  profileContent: { 
+    paddingVertical: 10 
+  },
+  profileInfoContainer: { 
+    alignItems: 'center', 
+    marginBottom: 30, 
+    paddingHorizontal: 20 
+  },
+  profileAvatar: { 
+    width: 100, 
+    height: 100, 
+    borderRadius: 50, 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    marginBottom: 15 
+  },
+  statsCard: { 
+    marginHorizontal: 20, 
+    padding: 20, 
+    borderRadius: 12 
+  },
+  statsTitle: { 
+    textAlign: 'center', 
+    marginBottom: 20 
+  },
+  statRow: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    paddingVertical: 12, 
+    borderBottomWidth: 1, 
+    borderBottomColor: '#e5e5e5' 
+  },
 });
