@@ -842,15 +842,19 @@ export async function ensureUserProfilesExist(userId: string, userData?: Profile
         }
       }
 
+      // Set first_name, display_name, and nickname all to the same value on signup
+      // The firstName field from signup contains the user's actual first name
+      const initialName = userData?.firstName || userData?.nickname || 'Player';
+      
       const randomAvatar = generateRandomAvatar();
       const { error: userProfileInsertError } = await supabase
         .from('user_profiles')
         .insert({
           id: userId,
           username: finalUsername.toLowerCase(),
-          display_name: userData?.nickname || 'Player',
-          nickname: userData?.nickname || 'Player',
-          first_name: userData?.firstName || userData?.nickname || 'Player',
+          first_name: initialName,    // Never changes after signup
+          display_name: initialName,  // Can be updated when nickname changes
+          nickname: initialName,      // Can be updated by user
           school: userData?.school || null,
           ...randomAvatar,
         });
