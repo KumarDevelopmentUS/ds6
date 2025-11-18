@@ -107,13 +107,12 @@ export default function MainMenuScreen() {
       // Fetch nickname from user_profiles table
       const { data: userProfile } = await supabase
         .from('user_profiles')
-        .select('nickname, display_name')
+        .select('nickname')
         .eq('id', session.user.id)
         .single();
       
       const displayName = 
         userProfile?.nickname || 
-        userProfile?.display_name || 
         session.user.user_metadata?.nickname ||
         'Player';
       setUserName(displayName);

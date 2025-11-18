@@ -161,7 +161,7 @@ export default function ResetPasswordScreen() {
                     Password reset email sent!
                   </ThemedText>
                   <ThemedText variant="caption" style={[styles.successSubtext, { color: theme.colors.textSecondary }]}>
-                    Check your email and click the link to reset your password. <ThemedText variant="caption" style={[styles.successSubtext, { color: theme.colors.textSecondary, fontWeight: 'bold' }]}>It may take up to a minute to receive the email.</ThemedText>
+                    Check your email and click the link to reset your password. <ThemedText variant="caption" style={[styles.successSubtext, { color: theme.colors.textSecondary, fontWeight: 'bold' }]}>It may take up to 60 seconds to receive the email.</ThemedText>
                   </ThemedText>
                 </View>
               </View>

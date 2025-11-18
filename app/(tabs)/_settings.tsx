@@ -30,7 +30,6 @@ export default function AccountScreen() {
   const { session } = useAuth();
   const [profile, setProfile] = useState<{
     id: string;
-    display_name: string;
     nickname: string;
     school: string;
     avatar_icon: keyof typeof Ionicons.glyphMap;
@@ -312,7 +311,7 @@ export default function AccountScreen() {
             </View>
           </TouchableOpacity>
           <ThemedText variant="subtitle" style={styles.userName}>
-            {profile.nickname || profile.display_name || 'Player'}
+            {profile.nickname || 'Player'}
           </ThemedText>
           {/* Username under nickname */}
           {session.user.user_metadata?.username && (

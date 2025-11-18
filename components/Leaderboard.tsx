@@ -10,7 +10,6 @@ import { ActivityIndicator, ScrollView, StyleSheet, TouchableOpacity, View } fro
 
 interface LeaderboardPlayer {
   id: string;
-  display_name: string | null;
   nickname: string | null;
   username: string | null;
   school: string | null;
@@ -116,7 +115,6 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
         .from('user_profiles')
         .select(`
           id,
-          display_name,
           nickname,
           username,
           school,
@@ -212,7 +210,7 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
   };
 
   const getDisplayName = (player: LeaderboardPlayer): string => {
-    return player.display_name || player.nickname || player.username || 'Anonymous';
+    return player.nickname || player.username || 'Anonymous';
   };
 
   const getSchoolDisplayName = (schoolValue: string | null): string => {

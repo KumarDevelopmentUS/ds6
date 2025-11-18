@@ -853,7 +853,6 @@ export async function ensureUserProfilesExist(userId: string, userData?: Profile
           id: userId,
           username: finalUsername.toLowerCase(),
           first_name: initialName,    // Never changes after signup
-          display_name: initialName,  // Can be updated when nickname changes
           nickname: initialName,      // Can be updated by user
           school: userData?.school || null,
           ...randomAvatar,
@@ -872,7 +871,6 @@ export async function ensureUserProfilesExist(userId: string, userData?: Profile
             .insert({
               id: userId,
               username: uniqueUsername,
-              display_name: userData?.nickname || 'Player',
               nickname: userData?.nickname || 'Player',
               first_name: userData?.firstName || userData?.nickname || 'Player',
               school: userData?.school || null,
@@ -920,7 +918,6 @@ export async function ensureUserProfilesExist(userId: string, userData?: Profile
           .from('user_profiles')
           .update({
             username: finalUsername.toLowerCase(),
-            display_name: userData.nickname || existingUserProfile.display_name || 'Player',
             nickname: userData.nickname || existingUserProfile.nickname || 'Player',
             first_name: userData.firstName || userData.nickname || existingUserProfile.first_name || 'Player',
             school: userData.school || existingUserProfile.school,

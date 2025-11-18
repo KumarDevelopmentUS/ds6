@@ -6,19 +6,22 @@ import { useQueryClient } from '@tanstack/react-query'; // 1. Import useQueryCli
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    Dimensions,
-    FlatList,
-    Image,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    TextInput,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+  FlatList,
+  Image,
+  ImageStyle,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  TextStyle,
+  TouchableOpacity,
+  View,
+  ViewStyle
 } from 'react-native';
 import { ThemedButton } from '../components/themed/ThemedButton';
 import { ThemedInput } from '../components/themed/ThemedInput';
@@ -77,7 +80,7 @@ export default function EditProfileScreen() {
     if (user) {
       const { data: userProfile, error } = await supabase
         .from('user_profiles')
-        .select('id, username, display_name, nickname, school, avatar_icon, avatar_icon_color, avatar_background_color, avatar_url')
+        .select('id, username, nickname, school, avatar_icon, avatar_icon_color, avatar_background_color, avatar_url')
         .eq('id', user.id)
         .single();
 
@@ -90,7 +93,7 @@ export default function EditProfileScreen() {
         setProfile({
           id: userProfile.id,
           username: userProfile.username,
-          nickname: userProfile.nickname || userProfile.display_name,
+          nickname: userProfile.nickname || 'Player',
           school: userProfile.school,
           schoolName: schoolObject ? schoolObject.name : '',
           email: user.email || null,
@@ -275,7 +278,6 @@ export default function EditProfileScreen() {
                   // Invalidate queries to ensure UI updates properly across the app
                   await queryClient.invalidateQueries({ queryKey: ['userCommunities'] });
                   await queryClient.invalidateQueries({ queryKey: ['profile', profile.id] });
-                  await queryClient.invalidateQueries({ queryKey: ['profile', profile.id] });
                   
                   // Force a refetch of the current profile data
                   await queryClient.refetchQueries({ queryKey: ['profile', profile.id] });
@@ -354,7 +356,6 @@ export default function EditProfileScreen() {
         avatar_icon, 
         avatar_icon_color, 
         avatar_background_color,
-        display_name: nickname,
         updated_at: new Date().toISOString()
       })
       .eq('id', profile.id);
@@ -542,7 +543,7 @@ export default function EditProfileScreen() {
             value={profile.nickname}
             onChangeText={handleNicknameChange}
             icon={<Ionicons name="person-circle-outline" size={20} color={theme.colors.textSecondary} />}
-            style={[styles.editableInput, { marginBottom: nicknameError ? 5 : 0 }]}
+            style={{ ...styles.editableInput, marginBottom: nicknameError ? 5 : 0 }}
             maxLength={15}
           />
           {nicknameError ? (
@@ -756,7 +757,56 @@ export default function EditProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = StyleSheet.create<{
+  container: ViewStyle;
+  loadingContainer: ViewStyle;
+  content: ViewStyle;
+  backButton: ViewStyle;
+  backText: TextStyle;
+  screenTitle: TextStyle;
+  avatarCustomizationCard: ViewStyle;
+  avatarSectionTitle: TextStyle;
+  avatarPreview: ViewStyle;
+  profileImage: ImageStyle;
+  iconAvatarContainer: ViewStyle;
+  removeProfilePictureButton: ViewStyle;
+  removeProfilePictureText: TextStyle;
+  iconCustomizationTitle: TextStyle;
+  selectionRow: ViewStyle;
+  selectionValueContainer: ViewStyle;
+  colorSwatch: ViewStyle;
+  formCard: ViewStyle;
+  disabledLabel: TextStyle;
+  disabledInput: ViewStyle;
+  disabledText: TextStyle;
+  editableInput: ViewStyle;
+  schoolSelector: ViewStyle;
+  schoolText: TextStyle;
+  modalOverlay: ViewStyle;
+  modalContent: ViewStyle;
+  modalHeader: ViewStyle;
+  modalScrollView: ViewStyle;
+  modalGridContent: ViewStyle;
+  iconGrid: ViewStyle;
+  iconItem: ViewStyle;
+  iconItemBox: ViewStyle;
+  selectedIconBox: ViewStyle;
+  colorGrid: ViewStyle;
+  colorItem: ViewStyle;
+  searchContainer: ViewStyle;
+  searchInput: TextStyle;
+  schoolItem: ViewStyle;
+  emptyContainer: ViewStyle;
+  modalTitle: TextStyle;
+  modalDescription: TextStyle;
+  modalInput: TextStyle;
+  modalButtons: ViewStyle;
+  modalButton: ViewStyle;
+  modalButtonSecondary: ViewStyle;
+  modalButtonPrimary: ViewStyle;
+  webOnlyMessage: ViewStyle;
+  webOnlyText: TextStyle;
+}>({
   container: { flex: 1 },
   loadingContainer: { justifyContent: 'center', alignItems: 'center' },
   content: { padding: 12, paddingBottom: 40, alignItems: 'center' },
@@ -820,7 +870,7 @@ const styles = StyleSheet.create({
   modalContent: { borderRadius: 20, padding: 20, maxHeight: '80%', width: '100%' },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
   modalScrollView: {
-    maxHeight: Platform.OS === 'web' ? '50vh' : 400,
+    maxHeight: Platform.OS === 'web' ? 400 : 400,
   },
   modalGridContent: {
     paddingVertical: 16,
@@ -853,10 +903,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 2,
-    ...(Platform.OS === 'web' && {
-      cursor: 'pointer' as any,
-      transition: 'all 0.2s ease',
-    }),
   },
   selectedIconBox: {
     borderWidth: 3,
@@ -884,10 +930,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 3,
     elevation: 3,
-    ...(Platform.OS === 'web' && {
-      cursor: 'pointer' as any,
-      transition: 'transform 0.2s ease',
-    }),
   },
   searchContainer: { flexDirection: 'row', alignItems: 'center', borderRadius: 8, paddingHorizontal: 16, paddingVertical: 12, marginBottom: 16, gap: 12 },
   searchInput: { flex: 1, fontSize: 16 },

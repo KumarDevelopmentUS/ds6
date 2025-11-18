@@ -16,28 +16,19 @@ const testScenarios = [
   { name: 'Sink with Catch (3pt)', throw: 'sink', defense: 'catch', expectedPoints: 0, expectedValidThrows: 1, expectedSpecialThrows: 1, sinkPoints: 3 },
   { name: 'Sink with Catch (5pt)', throw: 'sink', defense: 'catch', expectedPoints: 0, expectedValidThrows: 1, expectedSpecialThrows: 1, sinkPoints: 5 },
 
-  // === LINE HIT SCENARIOS ===
-  { name: 'Line with Miss', throw: 'line', defense: 'miss', expectedPoints: 0, expectedValidThrows: 1, expectedLineThrows: 1, allowsRetoss: true },
-  { name: 'Line with Catch', throw: 'line', defense: 'catch', expectedPoints: 0, expectedValidThrows: 1, expectedLineThrows: 1, allowsRetoss: true },
-  { name: 'Line with no defense', throw: 'line', defense: null, expectedPoints: 0, expectedValidThrows: 1, expectedLineThrows: 1, allowsRetoss: true },
+  // === LINE/TABLE HIT SCENARIOS ===
+  { name: 'Line/Table with Miss', throw: 'lineTable', defense: 'miss', expectedPoints: 0, expectedValidThrows: 1, expectedLineThrows: 1, expectedTableThrows: 1, allowsRetoss: true },
+  { name: 'Line/Table with Catch', throw: 'lineTable', defense: 'catch', expectedPoints: 0, expectedValidThrows: 1, expectedLineThrows: 1, expectedTableThrows: 1, allowsRetoss: true },
+  { name: 'Line/Table with no defense', throw: 'lineTable', defense: null, expectedPoints: 0, expectedValidThrows: 1, expectedLineThrows: 1, expectedTableThrows: 1, allowsRetoss: true },
 
   // === INVALID THROW SCENARIOS ===
   { name: 'Invalid throw basic', throw: 'invalid', defense: null, expectedPoints: 0, expectedValidThrows: 0, expectedInvalid: 1 },
   { name: 'Invalid throw with attempted defense', throw: 'invalid', defense: 'miss', expectedPoints: 0, expectedValidThrows: 0, expectedInvalid: 1 },
   { name: 'Invalid enables FIFA', throw: 'invalid', defense: null, expectedPoints: 0, expectedValidThrows: 0, fifaEnabled: true },
 
-  // === REDEMPTION SCENARIOS ===
-  { name: 'Successful Redemption with Miss', throw: 'successfulRedemption', defense: 'miss', expectedPoints: 0, expectedRedemptionShots: 1, reducesOpponentScore: 1 },
-  { name: 'Successful Redemption with Catch', throw: 'successfulRedemption', defense: 'catch', expectedPoints: 0, expectedRedemptionShots: 1, reducesOpponentScore: 0 },
-
-  // === FIFA SCENARIOS - BASIC ===
-  { name: 'FIFA Good Kick - Regular Game', throw: 'invalid', defense: null, fifaAction: 'goodKick', fifaKicker: 1, expectedFifaSuccess: 1, expectedGoodKicks: 1 },
-  { name: 'FIFA Bad Kick - Regular Game', throw: 'invalid', defense: null, fifaAction: 'badKick', fifaKicker: 1, expectedBadKicks: 1, expectedFifaAttempts: 1 },
-
-  // === FIFA OVERTIME SCENARIOS ===
-  { name: 'FIFA Overtime - Leading team gets 0 points', throw: 'invalid', defense: null, fifaAction: 'goodKick', expectedFifaPoints: 0, gameState: 'overtime', fifaTeamStatus: 'leading' },
-  { name: 'FIFA Overtime - Trailing team gets 1 point', throw: 'invalid', defense: null, fifaAction: 'goodKick', expectedFifaPoints: 1, gameState: 'overtime', fifaTeamStatus: 'trailing' },
-  { name: 'FIFA Overtime - Tied teams get 1 point', throw: 'invalid', defense: null, fifaAction: 'goodKick', expectedFifaPoints: 1, gameState: 'overtime', fifaTeamStatus: 'tied' },
+  // === FIFA SCENARIOS ===
+  { name: 'FIFA Good Kick - Always 1 point', throw: 'invalid', defense: null, fifaAction: 'goodKick', fifaKicker: 1, expectedFifaSuccess: 1, expectedGoodKicks: 1 },
+  { name: 'FIFA Bad Kick - 0 points', throw: 'invalid', defense: null, fifaAction: 'badKick', fifaKicker: 1, expectedBadKicks: 1, expectedFifaAttempts: 1 },
 
   // === STATISTICAL TRACKING SCENARIOS ===
   { name: 'Catch attempt tracking - Success', throw: 'hit', defense: 'catch', expectedPoints: 0, expectedCatchAttempts: 1, expectedSuccessfulCatches: 1 },
@@ -49,7 +40,7 @@ const testScenarios = [
   { name: 'Hit streak broken by invalid', throw: 'invalid', defense: null, expectedPoints: 0, expectedHitStreak: 0, expectedOnFire: false, prevHitStreak: 2 },
 
   // === VALIDATION SCENARIOS ===
-  { name: 'Line requires defending player', throw: 'line', defense: null, throwingPlayer: 1, defendingPlayer: null, expectedError: true },
+  { name: 'Line/Table requires defending player', throw: 'lineTable', defense: null, throwingPlayer: 1, defendingPlayer: null, expectedError: true },
   { name: 'FIFA only on invalid throws', throw: 'hit', defense: 'miss', fifaAction: 'goodKick', expectedError: true },
 ];
 
@@ -68,6 +59,7 @@ function createMockPlayerStats() {
     hitStreak: 0,
     specialThrows: 0,
     lineThrows: 0,
+    tableThrows: 0,
     goals: 0,
     onFireCount: 0,
     currentlyOnFire: false,
@@ -91,7 +83,6 @@ function createMockPlayerStats() {
     validThrows: 0,
     catchAttempts: 0,
     successfulCatches: 0,
-    redemptionShots: 0,
   };
 }
 
@@ -133,7 +124,7 @@ function simulatePlay(gameState, scenario) {
   gameState.sinkPoints = sinkPoints;
 
   // Apply Beer Die rules
-  const validThrows = ['line', 'hit', 'goal', 'dink', 'sink'];
+  const validThrows = ['lineTable', 'hit', 'goal', 'dink', 'sink'];
   const scoringThrows = ['hit', 'goal', 'dink', 'sink'];
   
   const isScoringThrow = scoringThrows.includes(throwResult);
@@ -170,9 +161,10 @@ function simulatePlay(gameState, scenario) {
     gameState.playerStats[throwingPlayer].hitStreak = 0;
   }
 
-  // Track line throws
-  if (throwResult === 'line') {
+  // Track line/table throws
+  if (throwResult === 'lineTable') {
     gameState.playerStats[throwingPlayer].lineThrows++;
+    gameState.playerStats[throwingPlayer].tableThrows++;
   }
 
   // Update on fire status
@@ -185,13 +177,12 @@ function simulatePlay(gameState, scenario) {
 
   // Beer Die scoring system
   const scoreMap = {
-    'line': 0,
+    'lineTable': 0,
     'hit': 1,
     'goal': 2,
     'dink': 2,
     'sink': sinkPoints,
     'invalid': 0,
-    'successfulRedemption': 0,
   };
   
   let pointsToAdd = scoreMap[throwResult] || 0;
@@ -211,22 +202,6 @@ function simulatePlay(gameState, scenario) {
         gameState.playerStats[defendingPlayer][defenseResult]++;
       }
     }
-  }
-
-  // Successful Redemption logic
-  if (throwResult === 'successfulRedemption') {
-    gameState.playerStats[throwingPlayer].redemptionShots++;
-    
-    const redeemingTeam = throwingPlayer <= 2 ? 1 : 2;
-    const opposingTeam = redeemingTeam === 1 ? 2 : 1;
-    const opposingTeamScore = calculateTeamScore(gameState, opposingTeam);
-    
-    if (!isCaught) {
-      // Reduce opponent score by 1 (teams can go negative)
-      gameState.teamPenalties[opposingTeam]++;
-    }
-    // Thrower gets 0 points regardless
-    pointsToAdd = 0;
   }
 
   // Apply points with catch nullification
@@ -338,6 +313,16 @@ function validateScenario(scenario, gameState, initialStats) {
     }
   }
 
+  // Check expected table throws
+  if (scenario.expectedTableThrows !== undefined) {
+    const actualTableThrows = gameState.playerStats[throwingPlayer].tableThrows - (initialStats[throwingPlayer]?.tableThrows || 0);
+    if (actualTableThrows !== scenario.expectedTableThrows) {
+      results.push(`❌ Expected ${scenario.expectedTableThrows} table throws, got ${actualTableThrows}`);
+    } else {
+      results.push(`✅ Table throws: ${actualTableThrows}`);
+    }
+  }
+
   // Check expected invalid throws
   if (scenario.expectedInvalid !== undefined) {
     const actualInvalid = gameState.playerStats[throwingPlayer].invalid - (initialStats[throwingPlayer]?.invalid || 0);
@@ -365,28 +350,6 @@ function validateScenario(scenario, gameState, initialStats) {
       results.push(`❌ Expected ${scenario.expectedSuccessfulCatches} successful catches, got ${actualSuccessfulCatches}`);
     } else {
       results.push(`✅ Successful catches: ${actualSuccessfulCatches}`);
-    }
-  }
-
-  // Check expected redemption shots
-  if (scenario.expectedRedemptionShots !== undefined) {
-    const actualRedemptionShots = gameState.playerStats[throwingPlayer].redemptionShots - (initialStats[throwingPlayer]?.redemptionShots || 0);
-    if (actualRedemptionShots !== scenario.expectedRedemptionShots) {
-      results.push(`❌ Expected ${scenario.expectedRedemptionShots} redemption shots, got ${actualRedemptionShots}`);
-    } else {
-      results.push(`✅ Redemption shots: ${actualRedemptionShots}`);
-    }
-  }
-
-  // Check opponent score reduction
-  if (scenario.reducesOpponentScore !== undefined) {
-    const throwingTeam = throwingPlayer <= 2 ? 1 : 2;
-    const opposingTeam = throwingTeam === 1 ? 2 : 1;
-    const actualPenalty = gameState.teamPenalties[opposingTeam];
-    if (actualPenalty !== scenario.reducesOpponentScore) {
-      results.push(`❌ Expected opponent penalty ${scenario.reducesOpponentScore}, got ${actualPenalty}`);
-    } else {
-      results.push(`✅ Opponent penalty: ${actualPenalty}`);
     }
   }
 
@@ -449,7 +412,7 @@ function validateScenario(scenario, gameState, initialStats) {
   // Check validation errors
   if (scenario.expectedError !== undefined) {
     // This would need to be implemented with actual validation logic
-    if (scenario.name.includes('Line requires defending player') && !scenario.defendingPlayer) {
+    if ((scenario.name.includes('Line requires defending player') || scenario.name.includes('Line/Table requires defending player')) && !scenario.defendingPlayer) {
       results.push(`✅ Validation error correctly caught`);
     } else if (scenario.name.includes('FIFA only on invalid') && scenario.throw !== 'invalid' && scenario.fifaAction) {
       results.push(`✅ Validation error correctly caught`);

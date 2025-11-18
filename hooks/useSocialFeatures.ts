@@ -53,7 +53,6 @@ export const useUserProfile = () => {
             id: user.id,
             username: username.toLowerCase(),
             nickname: user.user_metadata?.nickname || user.email?.split('@')[0] || 'Player',
-            display_name: user.user_metadata?.nickname || user.email?.split('@')[0] || 'Player',
             school: user.user_metadata?.school || null,
             ...randomAvatar,
           };
@@ -311,7 +310,7 @@ export const usePosts = (communityId?: number) => {
       let combinedPosts = posts.map((post: any) => {
         const profileData = profileMap[post.user_id];
         // Determine the best author name from profile data
-        const authorName = profileData?.nickname || profileData?.display_name || post.author_name || 'Anonymous';
+        const authorName = profileData?.nickname || post.author_name || 'Anonymous';
         
         const postData = {
           id: post.id, // Keep numeric ID

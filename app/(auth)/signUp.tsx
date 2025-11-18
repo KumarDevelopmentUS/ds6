@@ -507,7 +507,7 @@ export default function SignUpScreen() {
                 </ThemedText>
                 
                 <ThemedText variant="caption" style={[styles.emailSentNote, { color: theme.colors.textSecondary }]}>
-                  It may take up to a minute to receive the email. Check your spam folder if you don't see it.
+                  It may take up to 60 seconds to receive the email. Check your spam folder if you don't see it.
                 </ThemedText>
 
                 {cooldownTimer > 0 ? (

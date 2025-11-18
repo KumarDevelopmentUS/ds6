@@ -644,8 +644,8 @@ const DieStatsTracker: React.FC = () => {
     }
 
     // Additional Beer Die validation
-    if (throwResult === 'line' && (!defendingPlayer || defendingPlayer === 0)) {
-      setErrorMessage('Line throws require a defending player');
+    if (throwResult === 'lineTable' && (!defendingPlayer || defendingPlayer === 0)) {
+      setErrorMessage('Line/Table throws require a defending player');
       return;
     }
 
@@ -661,7 +661,7 @@ const DieStatsTracker: React.FC = () => {
     const updatedPenalties = { ...teamPenalties };
 
     // NEW: Beer Die throw result arrays
-    const validThrows = ['line', 'table', 'hit', 'goal', 'dink', 'sink', 'successfulRedemption'];
+    const validThrows = ['lineTable', 'hit', 'goal', 'dink', 'sink'];
     const scoringThrows = ['hit', 'goal', 'dink', 'sink'];
     
     const isScoringThrow = scoringThrows.includes(throwResult);
@@ -693,21 +693,13 @@ const DieStatsTracker: React.FC = () => {
       if (throwResult === 'goal') {
         updatedStats[throwingPlayer].goals++;
       }
-    } else if (throwResult === 'successfulRedemption') {
-      // Successful redemption counts as a good throw for hit streak purposes
-      updatedStats[throwingPlayer].hits++;
-      updatedStats[throwingPlayer].hitStreak++;
     } else {
       updatedStats[throwingPlayer].hitStreak = 0;
     }
 
-    // Track line throws
-    if (throwResult === 'line') {
+    // Track line/table throws
+    if (throwResult === 'lineTable') {
       updatedStats[throwingPlayer].lineThrows++;
-    }
-    
-    // Track table throws
-    if (throwResult === 'table') {
       updatedStats[throwingPlayer].tableThrows++;
     }
 
@@ -721,14 +713,12 @@ const DieStatsTracker: React.FC = () => {
 
     // NEW: Beer Die scoring system
     const scoreMap: { [key: string]: number } = {
-      'line': 0,
-      'table': 0,
+      'lineTable': 0,
       'hit': 1,
       'goal': 2,
       'dink': 2,
       'sink': matchSetup.sinkPoints,
       'invalid': 0,
-      'successfulRedemption': 0, // Special case handled separately
     };
     
     let pointsToAdd = scoreMap[throwResult] || 0;
@@ -749,28 +739,6 @@ const DieStatsTracker: React.FC = () => {
       }
     }
 
-    // NEW: Successful Redemption logic
-    if (throwResult === 'successfulRedemption') {
-      updatedStats[throwingPlayer].redemptionShots++;
-      
-      const redeemingTeam = getPlayerTeam(throwingPlayer);
-      const opposingTeam = redeemingTeam === 1 ? 2 : 1;
-      
-      console.log(`Redemption Debug: Redeeming team ${redeemingTeam}, Opposing team ${opposingTeam}`);
-      console.log(`Redemption Debug: Before - Team ${opposingTeam} penalty: ${updatedPenalties[opposingTeam as 1 | 2]}`);
-      
-      if (!isCaught) {
-        // Reduce opponent score by 1 (teams can go negative per Beer Die rules)
-        updatedPenalties[opposingTeam as 1 | 2]++;
-        console.log(`Redemption Debug: After - Team ${opposingTeam} penalty: ${updatedPenalties[opposingTeam as 1 | 2]}`);
-        console.log('Rule Applied: Successful redemption - opponents lose 1 point');
-      } else {
-        console.log('Redemption Debug: Caught - no penalty applied');
-      }
-      // Thrower gets 0 points regardless
-      pointsToAdd = 0;
-    }
-
     // NEW: Apply points with catch nullification
     if (isCaught) {
       // Caught throws score 0 points
@@ -783,35 +751,16 @@ const DieStatsTracker: React.FC = () => {
     // NEW: Beer Die FIFA logic
     if (fifaKicker && fifaAction && throwResult === 'invalid') {
       updatedStats[fifaKicker].fifaAttempts++;
-      const fifaTeam = getPlayerTeam(fifaKicker);
-      const opposingTeam = fifaTeam === 1 ? 2 : 1;
-      const gameState = getGameState();
-      
-      const fifaTeamScore = calculateTeamScore(fifaTeam);
-      const opposingScore = calculateTeamScore(opposingTeam);
 
       if (fifaAction === 'goodKick') {
         updatedStats[fifaKicker].fifaSuccess++;
         updatedStats[fifaKicker].goodKick++;
         
-        // FIFA Good Kick: Kicker gets stat credit, catching player gets the point
+        // FIFA Good Kick: Kicker gets stat credit, catching player gets 1 point (always)
         if (defendingPlayer && defendingPlayer > 0) {
           const catchingPlayerId = defendingPlayer as keyof typeof updatedStats;
-          const catchingTeamId = getPlayerTeam(catchingPlayerId);
-          const catchingTeamScore = calculateTeamScore(catchingTeamId);
-          const opponentTeamScore = calculateTeamScore(catchingTeamId === 1 ? 2 : 1);
-          
-          let fifaPoints = 1; // Default FIFA points
-          
-          // Overtime rule: Restrict points if catching team is leading
-          if (catchingTeamScore >= 10 || opponentTeamScore >= 10) {
-            if (catchingTeamScore > opponentTeamScore) {
-              fifaPoints = 0; // Leading team gets no points in overtime
-            }
-          }
-          
-          updatedStats[catchingPlayerId].score += fifaPoints;
-          console.log(`Rule Applied: FIFA Good Kick - ${fifaPoints} point(s) to catching player ${catchingPlayerId}`);
+          updatedStats[catchingPlayerId].score += 1; // Always award 1 point for successful FIFA
+          console.log(`Rule Applied: FIFA Good Kick - 1 point to catching player ${catchingPlayerId}`);
         }
       } else {
         updatedStats[fifaKicker].badKick++;
@@ -825,14 +774,14 @@ const DieStatsTracker: React.FC = () => {
     await updateLiveMatchData(updatedStats, updatedPenalties);
 
     // NEW: Beer Die form reset logic
-    const allowRetoss = throwResult === 'line';
+    const allowRetoss = throwResult === 'lineTable';
     
     if (allowRetoss) {
-      // Only reset defense fields for line throws
+      // Only reset defense fields for line/table throws
       setDefendingPlayer(null);
       setDefendingResult('');
     } else {
-      // Full reset for all other throws (including successful redemption)
+      // Full reset for all other throws
       setThrowingPlayer(null);
       setThrowResult('');
       setDefendingPlayer(null);
@@ -1520,29 +1469,41 @@ const DieStatsTracker: React.FC = () => {
                 </TouchableOpacity>
               </View>
 
-              {/* Row 2: Line, Table, Dink */}
+              {/* Row 2: Line/Table, Dink */}
               <View style={styles.throwResultRow}>
-                {['line', 'table', 'dink'].map((result) => (
-                  <TouchableOpacity
-                    key={result}
-                    style={[
-                      styles.throwResultButton,
-                      styles.goodResultOutline,
-                      throwResult === result && styles.goodResultSelected,
-                    ]}
-                    onPress={() => setThrowResult(result)}
-                  >
-                    <Text style={[
-                      styles.throwResultButtonText,
-                      throwResult === result && styles.selectedThrowText
-                    ]}>
-                      {result.charAt(0).toUpperCase() + result.slice(1)}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+                <TouchableOpacity
+                  style={[
+                    styles.throwResultButton,
+                    styles.goodResultOutline,
+                    throwResult === 'lineTable' && styles.goodResultSelected,
+                  ]}
+                  onPress={() => setThrowResult('lineTable')}
+                >
+                  <Text style={[
+                    styles.throwResultButtonText,
+                    throwResult === 'lineTable' && styles.selectedThrowText
+                  ]}>
+                    Line/Table
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.throwResultButton,
+                    styles.goodResultOutline,
+                    throwResult === 'dink' && styles.goodResultSelected,
+                  ]}
+                  onPress={() => setThrowResult('dink')}
+                >
+                  <Text style={[
+                    styles.throwResultButtonText,
+                    throwResult === 'dink' && styles.selectedThrowText
+                  ]}>
+                    Dink
+                  </Text>
+                </TouchableOpacity>
               </View>
 
-              {/* Row 3: Goal, Sink, Successful Redemption */}
+              {/* Row 3: Goal, Sink */}
               <View style={styles.throwResultRow}>
                 {['goal', 'sink'].map((result) => (
                   <TouchableOpacity
@@ -1562,21 +1523,6 @@ const DieStatsTracker: React.FC = () => {
                     </Text>
                   </TouchableOpacity>
                 ))}
-                <TouchableOpacity
-                  style={[
-                    styles.throwResultButton,
-                    styles.specialResultOutline,
-                    throwResult === 'successfulRedemption' && styles.specialResultSelected,
-                  ]}
-                  onPress={() => setThrowResult('successfulRedemption')}
-                >
-                  <Text style={[
-                    styles.throwResultButtonText,
-                    throwResult === 'successfulRedemption' && styles.selectedThrowText
-                  ]}>
-                    Successful Redemption
-                  </Text>
-                </TouchableOpacity>
               </View>
 
               {/* Defending Player Selection */}
@@ -1706,6 +1652,16 @@ const DieStatsTracker: React.FC = () => {
                     {showFifa ? 'Hide FIFA' : 'Show FIFA'}
                   </Text>
                 </TouchableOpacity>
+                {isHost && (
+                  <TouchableOpacity
+                    style={styles.actionButton}
+                    onPress={() => setShowManualAdjust(!showManualAdjust)}
+                  >
+                    <Text style={styles.actionButtonText}>
+                      {showManualAdjust ? 'Hide Manual' : 'Manual Score Adjust'}
+                    </Text>
+                  </TouchableOpacity>
+                )}
                 {/* NEW: Show Redemption button removed - redemption is now a throw result */}
                 {/* NEW: Self Sink button removed - not part of Beer Die ruleset */}
               </View>
@@ -1762,79 +1718,90 @@ const DieStatsTracker: React.FC = () => {
 
               {/* Manual Score Adjustment Section (conditionally rendered) */}
               {showManualAdjust && isHost && (
-                <View style={styles.nestedCard}>
-                  <View style={styles.adjustmentHeader}>
-                    <Text style={styles.sectionHeader}>Manual Score Adjustment:</Text>
-                    <TouchableOpacity
-                      style={styles.hideAdjustmentButton}
-                      onPress={() => setShowManualAdjust(false)}
-                    >
-                      <Text style={styles.hideAdjustmentButtonText}>Hide</Text>
-                    </TouchableOpacity>
-                  </View>
+                <View style={styles.manualAdjustCard}>
+                  <Text style={styles.manualAdjustTitle}>Manual Score Adjustment</Text>
+                  <Text style={styles.manualAdjustSubtitle}>
+                    Quickly adjust scores for tracking errors or house rules
+                  </Text>
                   
-                  {/* Team 1 Adjustment */}
-                  <View style={styles.adjustmentRow}>
-                    <Text style={styles.adjustmentLabel}>Team 1 ({matchSetup.teamNames[0]}):</Text>
-                    <View style={styles.adjustmentControls}>
-                      <TouchableOpacity
-                        style={styles.adjustmentButton}
-                        onPress={() => adjustTeamScore(1, -1)}
-                      >
-                        <Text style={styles.adjustmentButtonText}>-1</Text>
-                      </TouchableOpacity>
-                      <Text style={styles.adjustmentValue}>
-                        {manualAdjustments[1] || 0}
-                      </Text>
-                      <TouchableOpacity
-                        style={styles.adjustmentButton}
-                        onPress={() => adjustTeamScore(1, 1)}
-                      >
-                        <Text style={styles.adjustmentButtonText}>+1</Text>
-                      </TouchableOpacity>
+                  {/* Compact Team Adjustments */}
+                  <View style={styles.compactAdjustmentContainer}>
+                    {/* Team 1 */}
+                    <View style={styles.compactAdjustmentRow}>
+                      <View style={styles.teamNameContainer}>
+                        <Text style={styles.compactTeamName}>{matchSetup.teamNames[0]}</Text>
+                        {manualAdjustments[1] !== 0 && (
+                          <Text style={[
+                            styles.adjustmentBadge,
+                            { color: manualAdjustments[1] > 0 ? '#10b981' : '#ef4444' }
+                          ]}>
+                            {manualAdjustments[1] > 0 ? '+' : ''}{manualAdjustments[1]}
+                          </Text>
+                        )}
+                      </View>
+                      <View style={styles.compactControls}>
+                        <TouchableOpacity
+                          style={styles.compactButton}
+                          onPress={() => adjustTeamScore(1, -1)}
+                        >
+                          <Text style={styles.compactButtonText}>−</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.compactButton}
+                          onPress={() => adjustTeamScore(1, 1)}
+                        >
+                          <Text style={styles.compactButtonText}>+</Text>
+                        </TouchableOpacity>
+                      </View>
                     </View>
-                  </View>
 
-                  {/* Team 2 Adjustment */}
-                  <View style={styles.adjustmentRow}>
-                    <Text style={styles.adjustmentLabel}>Team 2 ({matchSetup.teamNames[1]}):</Text>
-                    <View style={styles.adjustmentControls}>
-                      <TouchableOpacity
-                        style={styles.adjustmentButton}
-                        onPress={() => adjustTeamScore(2, -1)}
-                      >
-                        <Text style={styles.adjustmentButtonText}>-1</Text>
-                      </TouchableOpacity>
-                      <Text style={styles.adjustmentValue}>
-                        {manualAdjustments[2] || 0}
-                      </Text>
-                      <TouchableOpacity
-                        style={styles.adjustmentButton}
-                        onPress={() => adjustTeamScore(2, 1)}
-                      >
-                        <Text style={styles.adjustmentButtonText}>+1</Text>
-                      </TouchableOpacity>
+                    {/* Team 2 */}
+                    <View style={styles.compactAdjustmentRow}>
+                      <View style={styles.teamNameContainer}>
+                        <Text style={styles.compactTeamName}>{matchSetup.teamNames[1]}</Text>
+                        {manualAdjustments[2] !== 0 && (
+                          <Text style={[
+                            styles.adjustmentBadge,
+                            { color: manualAdjustments[2] > 0 ? '#10b981' : '#ef4444' }
+                          ]}>
+                            {manualAdjustments[2] > 0 ? '+' : ''}{manualAdjustments[2]}
+                          </Text>
+                        )}
+                      </View>
+                      <View style={styles.compactControls}>
+                        <TouchableOpacity
+                          style={styles.compactButton}
+                          onPress={() => adjustTeamScore(2, -1)}
+                        >
+                          <Text style={styles.compactButtonText}>−</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.compactButton}
+                          onPress={() => adjustTeamScore(2, 1)}
+                        >
+                          <Text style={styles.compactButtonText}>+</Text>
+                        </TouchableOpacity>
+                      </View>
                     </View>
                   </View>
 
                   {/* Reset Button */}
-                  <TouchableOpacity
-                    style={styles.resetAdjustmentButton}
-                    onPress={resetManualAdjustments}
-                  >
-                    <Text style={styles.resetAdjustmentButtonText}>Reset Adjustments</Text>
-                  </TouchableOpacity>
-
-                  {/* Adjustment History */}
-                  {adjustmentHistory.length > 0 && (
-                    <View style={styles.adjustmentHistory}>
-                      <Text style={styles.adjustmentHistoryTitle}>Adjustment History:</Text>
-                      {adjustmentHistory.slice(-5).reverse().map((adjustment, index) => (
-                        <Text key={index} style={styles.adjustmentHistoryItem}>
-                          Team {adjustment.team}: {adjustment.amount > 0 ? '+' : ''}{adjustment.amount} ({adjustment.timestamp.toLocaleTimeString()})
-                        </Text>
-                      ))}
-                    </View>
+                  {(manualAdjustments[1] !== 0 || manualAdjustments[2] !== 0) && (
+                    <TouchableOpacity
+                      style={styles.compactResetButton}
+                      onPress={() => {
+                        Alert.alert(
+                          'Reset Adjustments',
+                          'Reset all manual score adjustments?',
+                          [
+                            { text: 'Cancel', style: 'cancel' },
+                            { text: 'Reset', style: 'destructive', onPress: resetManualAdjustments }
+                          ]
+                        );
+                      }}
+                    >
+                      <Text style={styles.compactResetButtonText}>Reset Adjustments</Text>
+                    </TouchableOpacity>
                   )}
                 </View>
               )}
@@ -1843,16 +1810,6 @@ const DieStatsTracker: React.FC = () => {
 
               {/* Action Buttons Row */}
               <View style={styles.actionButtonsRow}>
-                {isHost && (
-                  <TouchableOpacity
-                    style={styles.manualAdjustButton}
-                    onPress={() => setShowManualAdjust(!showManualAdjust)}
-                  >
-                    <Text style={styles.manualAdjustButtonText}>
-                      Manual Adjust
-                    </Text>
-                  </TouchableOpacity>
-                )}
                 <TouchableOpacity 
                   style={styles.clearSelectionButton} 
                   onPress={() => {
@@ -1883,16 +1840,16 @@ const DieStatsTracker: React.FC = () => {
           <View style={styles.card}>
             <View style={styles.actionButtonRow}>
               <TouchableOpacity
-                style={styles.actionButton}
+                style={styles.greenButton}
                 onPress={() => setShowStats(!showStats)}
               >
-                <Text style={styles.actionButtonText}>
+                <Text style={styles.greenButtonText}>
                   {showStats ? 'Hide Stats' : 'Show Stats'}
                 </Text>
               </TouchableOpacity>
               {!matchFinished && (
-                <TouchableOpacity style={styles.orangeButton} onPress={handleFinishMatch}>
-                  <Text style={styles.orangeButtonText}>Finish Match</Text>
+                <TouchableOpacity style={styles.redButton} onPress={handleFinishMatch}>
+                  <Text style={styles.redButtonText}>Finish Match</Text>
                 </TouchableOpacity>
               )}
               {matchFinished && (
@@ -2987,7 +2944,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center', // Center buttons in the row
   },
   actionButton: {
-    backgroundColor: '#8b5cf6', // Purple color for general actions
+    backgroundColor: '#fff7ed',
+    borderWidth: 2,
+    borderColor: '#f97316',
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 6,
@@ -2996,20 +2955,24 @@ const styles = StyleSheet.create({
     minHeight: 48,
   },
   actionButtonText: {
-    color: '#ffffff',
+    color: '#000000',
     fontSize: 16,
     fontWeight: '600',
   },
   redButton: {
-    backgroundColor: '#ef4444', // Red color for critical actions like Self Sink
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 4,
+    backgroundColor: '#dc2626', // Darker, less saturated red
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 48,
   },
   redButtonText: {
     color: '#ffffff',
-    fontWeight: 'bold',
-    fontSize: 14,
+    fontWeight: '600',
+    fontSize: 16,
+    textAlign: 'center',
   },
   nestedCard: {
     backgroundColor: '#f5f3ff', // Light purple for nested sections (e.g., FIFA)
@@ -3035,7 +2998,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     alignItems: 'center',
     justifyContent: 'center',
-    flex: 0.5, // 50% width
+    flex: 0.6, // 60% width
   },
   errorMessage: {
     color: '#ef4444', // Red for error messages
@@ -3058,10 +3021,19 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   greenButton: {
-    backgroundColor: '#22c55e', // Green for positive actions
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 4,
+    backgroundColor: '#16a34a', // Darker, less saturated green
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 48,
+  },
+  greenButtonText: {
+    color: '#ffffff',
+    fontWeight: '600',
+    fontSize: 16,
+    textAlign: 'center',
   },
   playerStatsCard: {
     backgroundColor: '#f9fafb', // Light background for individual player stats
@@ -3182,7 +3154,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     alignItems: 'center',
     justifyContent: 'center',
-    flex: 0.3, // 30% width
+    flex: 0.4, // 40% width
   },
   clearSelectionButtonText: {
     color: '#ffffff',
@@ -3222,106 +3194,91 @@ const styles = StyleSheet.create({
   teamStatsColumn: {
     flex: 1,
   },
-  // Manual adjustment styles
-  manualAdjustButton: {
-    backgroundColor: '#ef4444', // Red color for manual adjustments
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 4,
-    opacity: 0.8, // Make it less prominent
-    flex: 0.2, // 20% width
-    alignItems: 'center',
-    justifyContent: 'center',
+  // Manual adjustment styles - Compact design
+  manualAdjustCard: {
+    backgroundColor: '#f8f9fa',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
   },
-  manualAdjustButtonText: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '500',
+  manualAdjustTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1f2937',
+    marginBottom: 4,
+    textAlign: 'center',
   },
-  adjustmentRow: {
+  manualAdjustSubtitle: {
+    fontSize: 13,
+    color: '#6b7280',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  compactAdjustmentContainer: {
+    gap: 8,
+  },
+  compactAdjustmentRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
-    paddingVertical: 8,
+    backgroundColor: '#ffffff',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
   },
-  adjustmentLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#374151',
+  teamNameContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     flex: 1,
   },
-  adjustmentControls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  adjustmentButton: {
-    backgroundColor: '#6b7280',
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  adjustmentButtonText: {
-    color: '#ffffff',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  adjustmentValue: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1f2937',
-    minWidth: 30,
-    textAlign: 'center',
-  },
-  resetAdjustmentButton: {
-    backgroundColor: '#dc2626',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 4,
-    alignSelf: 'center',
-    marginTop: 8,
-  },
-  resetAdjustmentButtonText: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  adjustmentHistory: {
-    marginTop: 12,
-    padding: 8,
-    backgroundColor: '#f9fafb',
-    borderRadius: 4,
-  },
-  adjustmentHistoryTitle: {
-    fontSize: 14,
+  compactTeamName: {
+    fontSize: 16,
     fontWeight: '600',
     color: '#374151',
-    marginBottom: 4,
   },
-  adjustmentHistoryItem: {
-    fontSize: 12,
-    color: '#6b7280',
-    marginBottom: 2,
+  adjustmentBadge: {
+    fontSize: 14,
+    fontWeight: '700',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    backgroundColor: '#f3f4f6',
+    borderRadius: 12,
   },
-  adjustmentHeader: {
+  compactControls: {
     flexDirection: 'row',
+    gap: 8,
+  },
+  compactButton: {
+    backgroundColor: '#fff7ed',
+    borderWidth: 2,
+    borderColor: '#f97316',
+    width: 44,
+    height: 44,
+    borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
-    gap: 16,
   },
-  hideAdjustmentButton: {
-    backgroundColor: '#6b7280',
+  compactButtonText: {
+    color: '#000000',
+    fontSize: 24,
+    fontWeight: '600',
+  },
+  compactResetButton: {
+    backgroundColor: '#ef4444',
     paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 6,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignSelf: 'center',
+    marginTop: 12,
   },
-  hideAdjustmentButtonText: {
+  compactResetButtonText: {
     color: '#ffffff',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
   },
 
