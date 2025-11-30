@@ -15,18 +15,18 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  Dimensions,
-  FlatList,
-  Modal,
-  Platform,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Switch,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    Dimensions,
+    FlatList,
+    Modal,
+    Platform,
+    RefreshControl,
+    ScrollView,
+    StyleSheet,
+    Switch,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 
 const { width } = Dimensions.get('window');
@@ -926,7 +926,7 @@ export default function ManageCommunityScreen() {
                   variant="caption"
                   style={{ color: theme.colors.textSecondary, textAlign: 'center', marginTop: 4 }}
                 >
-                  All your friends are already members or you haven't added any friends yet
+                  All your friends are already members or you haven&apos;t added any friends yet
                 </ThemedText>
               </View>
             ) : (

@@ -689,7 +689,7 @@ export default function FriendsScreen() {
                   <View style={styles.emptyStateSmall}>
                     <Ionicons name="search-outline" size={32} color={theme.colors.textSecondary} />
                     <ThemedText variant="caption" style={styles.emptyTextSmall}>
-                      No users found matching "{searchQuery}"
+                      No users found matching &quot;{searchQuery}&quot;
                     </ThemedText>
                   </View>
                 )}

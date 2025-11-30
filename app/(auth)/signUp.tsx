@@ -9,16 +9,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    Alert,
-    FlatList,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    TextInput,
-    TouchableOpacity,
-    View
+  Alert,
+  FlatList,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { ThemedButton } from '../../components/themed/ThemedButton';
 import { ThemedInput } from '../../components/themed/ThemedInput';
@@ -507,7 +507,7 @@ export default function SignUpScreen() {
                 </ThemedText>
                 
                 <ThemedText variant="caption" style={[styles.emailSentNote, { color: theme.colors.textSecondary }]}>
-                  It may take up to 60 seconds to receive the email. Check your spam folder if you don't see it.
+                  It may take up to 60 seconds to receive the email. Check your spam folder if you don&apos;t see it.
                 </ThemedText>
 
                 {cooldownTimer > 0 ? (

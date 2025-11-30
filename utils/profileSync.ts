@@ -815,7 +815,7 @@ export async function ensureUserProfilesExist(userId: string, userData?: Profile
     // Check if user_profiles record exists
     const { data: existingUserProfile, error: userProfileFetchError } = await supabase
       .from('user_profiles')
-      .select('id, username')
+      .select('id, username, nickname, first_name, school')
       .eq('id', userId)
       .single();
 
