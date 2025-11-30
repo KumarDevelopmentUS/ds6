@@ -1,15 +1,19 @@
+import { CommunityIcon } from '@/components/CommunityIcon';
 import { getSchoolByValue } from '@/constants/schools';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/supabase';
 import { Ionicons } from '@expo/vector-icons';
-import React, { useRef, useState } from 'react';
+import { useRouter } from 'expo-router';
+import React, { useEffect, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   Animated,
   Dimensions,
   Modal,
   PanResponder,
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -17,6 +21,17 @@ import {
 } from 'react-native';
 
 const { height: screenHeight } = Dimensions.get('window');
+
+type CommunityDetails = {
+  id: number;
+  name: string;
+  type: string | null;
+  icon: string | null;
+  icon_color: string | null;
+  background_color: string | null;
+  is_private: boolean | null;
+  creator_id: string | null;
+};
 
 type CommunitySettingsPanelProps = {
   visible: boolean;
@@ -35,10 +50,16 @@ export function CommunitySettingsPanel({
   joinedAt,
   onLeaveCommunity,
 }: CommunitySettingsPanelProps) {
+  const router = useRouter();
   const { session } = useAuth();
   const currentUserId = session?.user?.id;
   const [showWebConfirm, setShowWebConfirm] = useState(false);
   const isWeb = Platform.OS === 'web';
+
+  // Community details state
+  const [communityDetails, setCommunityDetails] = useState<CommunityDetails | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [loadingDetails, setLoadingDetails] = useState(false);
 
   // Animation and gesture handling
   const pan = useRef(new Animated.ValueXY()).current;
@@ -106,25 +127,75 @@ export function CommunitySettingsPanel({
   ).current;
 
   // Sync internal state with external visible prop
-  React.useEffect(() => {
+  useEffect(() => {
     setInternalVisible(visible);
   }, [visible]);
 
   // Reset panel position when modal becomes visible
-  React.useEffect(() => {
+  useEffect(() => {
     if (visible) {
       pan.setValue({ x: 0, y: 0 });
       isClosing.current = false;
+      // Load community details when panel opens
+      loadCommunityDetails();
     }
-  }, [visible, pan]);
+  }, [visible, pan, communityId]);
+
+  const loadCommunityDetails = async () => {
+    if (!communityId || !currentUserId) return;
+    setLoadingDetails(true);
+
+    try {
+      // Load community details
+      const { data: community, error: communityError } = await supabase
+        .from('communities')
+        .select('id, name, type, icon, icon_color, background_color, is_private, creator_id')
+        .eq('id', communityId)
+        .single();
+
+      if (communityError) throw communityError;
+      setCommunityDetails(community);
+
+      // Load user's role
+      const { data: membership, error: membershipError } = await supabase
+        .from('user_communities')
+        .select('role')
+        .eq('community_id', communityId)
+        .eq('user_id', currentUserId)
+        .single();
+
+      if (membershipError && membershipError.code !== 'PGRST116') {
+        throw membershipError;
+      }
+      setUserRole(membership?.role || 'member');
+    } catch (error) {
+      console.error('Error loading community details:', error);
+    } finally {
+      setLoadingDetails(false);
+    }
+  };
 
   const handleLeaveCommunity = () => {
+    // Check if user is the owner of a private community
+    if (communityDetails?.is_private && userRole === 'owner') {
+      if (isWeb) {
+        alert('As the owner, you cannot leave this community. You can delete it from the Manage Community page.');
+      } else {
+        Alert.alert(
+          'Cannot Leave',
+          'As the owner, you cannot leave this community. You can delete it from the Manage Community page.',
+          [{ text: 'OK' }]
+        );
+      }
+      return;
+    }
+
     if (isWeb) {
       setShowWebConfirm(true);
     } else {
       Alert.alert(
         'Leave Community',
-        `Are you sure you want to leave ${communityName}? This action can not be undone.`,
+        `Are you sure you want to leave ${displayCommunityName}? This action can not be undone.`,
         [
           {
             text: 'Cancel',
@@ -179,13 +250,22 @@ export function CommunitySettingsPanel({
     }
   };
 
+  const handleManageCommunity = () => {
+    onClose();
+    router.push({
+      pathname: '/manage-community',
+      params: { communityId: String(communityId) }
+    });
+  };
+
   // Process community name to use proper school display name if needed
   const displayCommunityName = (() => {
-    if (communityName.includes('_') && communityName !== 'All Communities') {
-      const school = getSchoolByValue(communityName);
-      return school ? school.name : communityName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    const nameToProcess = communityDetails?.name || communityName;
+    if (nameToProcess.includes('_') && nameToProcess !== 'All Communities') {
+      const school = getSchoolByValue(nameToProcess);
+      return school ? school.name : nameToProcess.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
     }
-    return communityName;
+    return nameToProcess;
   })();
 
   const formatJoinedDate = (dateString: string) => {
@@ -198,6 +278,9 @@ export function CommunitySettingsPanel({
       day: 'numeric',
     });
   };
+
+  const isPrivateCommunity = communityDetails?.is_private || communityDetails?.type === 'private';
+  const isOwnerOrAdmin = userRole === 'owner' || userRole === 'admin';
 
   return (
     <>
@@ -239,49 +322,112 @@ export function CommunitySettingsPanel({
               </TouchableOpacity>
             </View>
 
-            {/* Content */}
-            <View style={styles.content}>
-              {/* Community Info Section */}
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Community Information</Text>
-                
-                <View style={styles.infoRow}>
-                  <View style={styles.infoIcon}>
-                    <Ionicons name="people" size={20} color="#007AFF" />
+            <ScrollView style={styles.scrollContent}>
+              {/* Content */}
+              <View style={styles.content}>
+                {loadingDetails ? (
+                  <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color="#007AFF" />
                   </View>
-                  <View style={styles.infoContent}>
-                    <Text style={styles.infoLabel}>Community Name</Text>
-                    <Text style={styles.infoValue}>{displayCommunityName}</Text>
-                  </View>
-                </View>
+                ) : (
+                  <>
+                    {/* Community Info Section */}
+                    <View style={styles.section}>
+                      <Text style={styles.sectionTitle}>Community Information</Text>
+                      
+                      {/* Community Icon for private communities */}
+                      {isPrivateCommunity && communityDetails && (
+                        <View style={styles.communityIconRow}>
+                          <CommunityIcon
+                            icon={communityDetails.icon}
+                            iconColor={communityDetails.icon_color}
+                            backgroundColor={communityDetails.background_color}
+                            size={60}
+                          />
+                          <View style={styles.communityIconInfo}>
+                            <Text style={styles.communityIconName}>{displayCommunityName}</Text>
+                            <View style={styles.privateBadge}>
+                              <Ionicons name="lock-closed" size={12} color="#007AFF" />
+                              <Text style={styles.privateBadgeText}>Private Community</Text>
+                            </View>
+                          </View>
+                        </View>
+                      )}
 
-                <View style={styles.infoRow}>
-                  <View style={styles.infoIcon}>
-                    <Ionicons name="calendar" size={20} color="#007AFF" />
-                  </View>
-                  <View style={styles.infoContent}>
-                    <Text style={styles.infoLabel}>Joined On</Text>
-                    <Text style={styles.infoValue}>{formatJoinedDate(joinedAt)}</Text>
-                  </View>
-                </View>
-              </View>
+                      {!isPrivateCommunity && (
+                        <View style={styles.infoRow}>
+                          <View style={styles.infoIcon}>
+                            <Ionicons name="people" size={20} color="#007AFF" />
+                          </View>
+                          <View style={styles.infoContent}>
+                            <Text style={styles.infoLabel}>Community Name</Text>
+                            <Text style={styles.infoValue}>{displayCommunityName}</Text>
+                          </View>
+                        </View>
+                      )}
 
-              {/* Actions Section */}
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Actions</Text>
-                
-                <TouchableOpacity
-                  style={styles.actionButton}
-                  onPress={handleLeaveCommunity}
-                >
-                  <View style={styles.actionIcon}>
-                    <Ionicons name="exit-outline" size={20} color="#FF3B30" />
-                  </View>
-                  <Text style={styles.actionText}>Leave Community</Text>
-                  <Ionicons name="chevron-forward" size={16} color="#666" />
-                </TouchableOpacity>
+                      <View style={styles.infoRow}>
+                        <View style={styles.infoIcon}>
+                          <Ionicons name="calendar" size={20} color="#007AFF" />
+                        </View>
+                        <View style={styles.infoContent}>
+                          <Text style={styles.infoLabel}>Joined On</Text>
+                          <Text style={styles.infoValue}>{formatJoinedDate(joinedAt)}</Text>
+                        </View>
+                      </View>
+
+                      {userRole && (
+                        <View style={styles.infoRow}>
+                          <View style={styles.infoIcon}>
+                            <Ionicons 
+                              name={userRole === 'owner' ? 'star' : userRole === 'admin' ? 'shield' : 'person'} 
+                              size={20} 
+                              color="#007AFF" 
+                            />
+                          </View>
+                          <View style={styles.infoContent}>
+                            <Text style={styles.infoLabel}>Your Role</Text>
+                            <Text style={styles.infoValue}>
+                              {userRole.charAt(0).toUpperCase() + userRole.slice(1)}
+                            </Text>
+                          </View>
+                        </View>
+                      )}
+                    </View>
+
+                    {/* Actions Section */}
+                    <View style={styles.section}>
+                      <Text style={styles.sectionTitle}>Actions</Text>
+                      
+                      {/* Manage Community (for owners/admins of private communities) */}
+                      {isPrivateCommunity && isOwnerOrAdmin && (
+                        <TouchableOpacity
+                          style={styles.manageButton}
+                          onPress={handleManageCommunity}
+                        >
+                          <View style={styles.actionIcon}>
+                            <Ionicons name="settings-outline" size={20} color="#007AFF" />
+                          </View>
+                          <Text style={styles.manageButtonText}>Manage Community</Text>
+                          <Ionicons name="chevron-forward" size={16} color="#666" />
+                        </TouchableOpacity>
+                      )}
+                      
+                      <TouchableOpacity
+                        style={styles.actionButton}
+                        onPress={handleLeaveCommunity}
+                      >
+                        <View style={styles.actionIcon}>
+                          <Ionicons name="exit-outline" size={20} color="#FF3B30" />
+                        </View>
+                        <Text style={styles.actionText}>Leave Community</Text>
+                        <Ionicons name="chevron-forward" size={16} color="#666" />
+                      </TouchableOpacity>
+                    </View>
+                  </>
+                )}
               </View>
-            </View>
+            </ScrollView>
           </Animated.View>
         </View>
       </Modal>
@@ -370,8 +516,15 @@ const styles = StyleSheet.create({
   closeButton: {
     padding: 4,
   },
+  scrollContent: {
+    maxHeight: screenHeight * 0.55,
+  },
   content: {
     padding: 20,
+  },
+  loadingContainer: {
+    padding: 40,
+    alignItems: 'center',
   },
   section: {
     marginBottom: 24,
@@ -381,6 +534,39 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#000',
     marginBottom: 16,
+  },
+  communityIconRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+    padding: 16,
+    backgroundColor: '#F8F9FA',
+    borderRadius: 12,
+  },
+  communityIconInfo: {
+    marginLeft: 16,
+    flex: 1,
+  },
+  communityIconName: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#000',
+    marginBottom: 4,
+  },
+  privateBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E8F4FD',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    alignSelf: 'flex-start',
+  },
+  privateBadgeText: {
+    fontSize: 12,
+    color: '#007AFF',
+    marginLeft: 4,
+    fontWeight: '500',
   },
   infoRow: {
     flexDirection: 'row',
@@ -409,6 +595,23 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#000',
   },
+  manageButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    backgroundColor: '#F0F8FF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E0EFFF',
+    marginBottom: 12,
+  },
+  manageButtonText: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#007AFF',
+  },
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -418,7 +621,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#FFE5E5',
-    marginTop: 8,
   },
   actionIcon: {
     marginRight: 12,

@@ -10,13 +10,15 @@ interface MenuCardProps {
   icon: string;
   color: string;
   onPress: () => void;
+  badge?: number;
 }
 
 export const MenuCard: React.FC<MenuCardProps> = ({ 
   title, 
   icon, 
   color, 
-  onPress 
+  onPress,
+  badge 
 }) => {
   const { theme } = useTheme();
 
@@ -34,6 +36,13 @@ export const MenuCard: React.FC<MenuCardProps> = ({
     >
       <View style={[styles.iconContainer, { backgroundColor: color + '20' }]}>
         <Ionicons name={icon as any} size={32} color={color} />
+        {badge !== undefined && badge > 0 && (
+          <View style={[styles.badge, { backgroundColor: theme.colors.error }]}>
+            <ThemedText style={styles.badgeText}>
+              {badge > 99 ? '99+' : badge}
+            </ThemedText>
+          </View>
+        )}
       </View>
       <ThemedText variant="body" style={styles.title}>
         {title}
@@ -58,6 +67,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
+    position: 'relative',
+  },
+  badge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    minWidth: 22,
+    height: 22,
+    borderRadius: 11,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 6,
+  },
+  badgeText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
   },
   title: {
     textAlign: 'center',

@@ -8,6 +8,7 @@ import React, { useEffect, useState } from 'react';
 import { Alert, Dimensions, Modal, Platform, SafeAreaView, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 
 
+import { CommunityIcon } from '../../components/CommunityIcon';
 import { CommunitySettingsPanel } from '../../components/CommunitySettingsPanel';
 import { UserAvatar } from '../../components/social/UserAvatar';
 import { ThemedButton } from '../../components/themed/ThemedButton';
@@ -380,54 +381,73 @@ export default function AccountScreen() {
                 <ThemedText variant="caption">Loading communities...</ThemedText>
               </View>
             ) : userCommunities && userCommunities.length > 0 ? (
-              userCommunities.map((membership, index) => (
-                <View
-                  key={membership.community_id}
-                  style={[
-                    styles.communityItem,
-                    index < userCommunities.length - 1 && styles.communityItemBorder,
-                    { borderColor: theme.colors.border }
-                  ]}
-                >
-                  <View style={styles.communityInfo}>
-                    <View style={[
-                      styles.communityIcon,
-                      { 
-                        backgroundColor: membership.communities.type === 'school' 
-                          ? theme.colors.warning 
-                          : theme.colors.info 
-                      }
-                    ]}>
-                      <Ionicons
-                        name={membership.communities.type === 'school' ? 'school-outline' : 'globe-outline'}
-                        size={20}
-                        color="#FFFFFF"
-                      />
+              userCommunities.map((membership, index) => {
+                const isPrivate = membership.communities.type === 'private' || membership.communities.is_private;
+                const isSchool = membership.communities.type === 'school';
+                
+                return (
+                  <View
+                    key={membership.community_id}
+                    style={[
+                      styles.communityItem,
+                      index < userCommunities.length - 1 && styles.communityItemBorder,
+                      { borderColor: theme.colors.border }
+                    ]}
+                  >
+                    <View style={styles.communityInfo}>
+                      {isPrivate ? (
+                        <CommunityIcon
+                          icon={membership.communities.icon}
+                          iconColor={membership.communities.icon_color}
+                          backgroundColor={membership.communities.background_color}
+                          size={40}
+                        />
+                      ) : (
+                        <View style={[
+                          styles.communityIcon,
+                          { 
+                            backgroundColor: isSchool 
+                              ? theme.colors.warning 
+                              : theme.colors.info 
+                          }
+                        ]}>
+                          <Ionicons
+                            name={isSchool ? 'school-outline' : 'globe-outline'}
+                            size={20}
+                            color="#FFFFFF"
+                          />
+                        </View>
+                      )}
+                      <View style={styles.communityText}>
+                        <View style={styles.communityNameRow}>
+                          <ThemedText variant="body" style={styles.communityName}>
+                            {isSchool 
+                              ? getSchoolByValue(membership.communities.name)?.name || membership.communities.name
+                              : membership.communities.name}
+                          </ThemedText>
+                          {isPrivate && (
+                            <Ionicons name="lock-closed" size={12} color={theme.colors.textSecondary} style={{ marginLeft: 4 }} />
+                          )}
+                        </View>
+                        <ThemedText variant="caption" style={styles.communityType}>
+                          {isPrivate ? 'Private Community' : isSchool ? 'School Community' : 'General Community'}
+                        </ThemedText>
+                      </View>
                     </View>
-                    <View style={styles.communityText}>
-                      <ThemedText variant="body" style={styles.communityName}>
-                        {membership.communities.type === 'school' 
-                          ? getSchoolByValue(membership.communities.name)?.name || membership.communities.name
-                          : membership.communities.name}
+                    <View style={styles.communityMeta}>
+                      <ThemedText variant="caption" style={styles.joinedDate}>
+                        Joined {new Date(membership.joined_at).toLocaleDateString()}
                       </ThemedText>
-                      <ThemedText variant="caption" style={styles.communityType}>
-                        {membership.communities.type === 'school' ? 'School Community' : 'General Community'}
-                      </ThemedText>
+                      <TouchableOpacity
+                        style={styles.communitySettingsButton}
+                        onPress={() => handleOpenCommunitySettings(membership)}
+                      >
+                        <Ionicons name="settings-outline" size={20} color={theme.colors.textSecondary} />
+                      </TouchableOpacity>
                     </View>
                   </View>
-                  <View style={styles.communityMeta}>
-                    <ThemedText variant="caption" style={styles.joinedDate}>
-                      Joined {new Date(membership.joined_at).toLocaleDateString()}
-                    </ThemedText>
-                    <TouchableOpacity
-                      style={styles.communitySettingsButton}
-                      onPress={() => handleOpenCommunitySettings(membership)}
-                    >
-                      <Ionicons name="settings-outline" size={20} color={theme.colors.textSecondary} />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              ))
+                );
+              })
             ) : (
               <View style={styles.noCommunities}>
                 <Ionicons
@@ -471,6 +491,25 @@ export default function AccountScreen() {
                 />
               </View>
             )}
+
+            {/* Create Community Button */}
+            <TouchableOpacity
+              style={[styles.createCommunityButton, { borderColor: theme.colors.primary }]}
+              onPress={() => router.push('/create-community')}
+            >
+              <View style={[styles.createCommunityIcon, { backgroundColor: theme.colors.primary + '15' }]}>
+                <Ionicons name="add-circle-outline" size={24} color={theme.colors.primary} />
+              </View>
+              <View style={styles.communityText}>
+                <ThemedText variant="body" style={[styles.communityName, { color: theme.colors.primary }]}>
+                  Create Community
+                </ThemedText>
+                <ThemedText variant="caption" style={styles.communityType}>
+                  Start your own private community
+                </ThemedText>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={theme.colors.primary} />
+            </TouchableOpacity>
           </ThemedView>
         </ThemedView>
       )}
@@ -844,6 +883,10 @@ const styles = StyleSheet.create({
   communityText: {
     flex: 1,
   },
+  communityNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   communityName: {
     fontWeight: '600',
     marginBottom: 2,
@@ -895,6 +938,23 @@ const styles = StyleSheet.create({
   },
   joinButton: {
     marginLeft: 12,
+  },
+  createCommunityButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    marginTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#e5e5e5',
+  },
+  createCommunityIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
   },
   communitySettingsButton: {
     padding: 4,

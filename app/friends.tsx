@@ -1,14 +1,16 @@
-// app/friends.tsx
+// app/friends.tsx (Social page)
+import { CommunityIcon } from '@/components/CommunityIcon';
 import { HapticBackButton } from '@/components/HapticBackButton';
 import { UserAvatar } from '@/components/social/UserAvatar';
 import { supabase } from '@/supabase';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
     FlatList,
+    Platform,
     ScrollView,
     SectionList,
     StyleSheet,
@@ -19,6 +21,7 @@ import { ThemedButton } from '../components/themed/ThemedButton';
 import { ThemedInput } from '../components/themed/ThemedInput';
 import { ThemedText } from '../components/themed/ThemedText';
 import { ThemedView } from '../components/themed/ThemedView';
+import { useFeed } from '../contexts/FeedContext';
 import { getSchoolByValue } from '../constants/schools';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -69,18 +72,93 @@ export default function FriendsScreen() {
   const [loadingProfileStats, setLoadingProfileStats] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
 
+  // Community invites state
+  const [communityInvites, setCommunityInvites] = useState<any[]>([]);
+  const [loadingInvites, setLoadingInvites] = useState(false);
+  const [respondingToInvite, setRespondingToInvite] = useState<Set<number>>(new Set());
+  const { refetch: refetchCommunities } = useFeed();
+
   useEffect(() => {
     const initialize = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setCurrentUser(user);
         fetchFriendsAndRequests(user.id);
+        fetchCommunityInvites();
       } else {
         setLoading(false);
       }
     };
     initialize();
   }, []);
+
+  // Refresh invites when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      if (currentUser) {
+        fetchCommunityInvites();
+      }
+    }, [currentUser])
+  );
+
+  const fetchCommunityInvites = async () => {
+    setLoadingInvites(true);
+    try {
+      const { data, error } = await supabase.rpc('get_pending_invites');
+      if (error) throw error;
+      setCommunityInvites(data || []);
+    } catch (error) {
+      console.error('Error loading community invites:', error);
+    } finally {
+      setLoadingInvites(false);
+    }
+  };
+
+  const handleRespondToInvite = async (communityId: number, accept: boolean) => {
+    setRespondingToInvite((prev) => new Set(prev).add(communityId));
+
+    try {
+      const { data, error } = await supabase.rpc('respond_to_invite', {
+        p_community_id: communityId,
+        p_accept: accept,
+      });
+
+      if (error) throw error;
+
+      const result = data as { success: boolean; error?: string };
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to respond to invite');
+      }
+
+      // Remove from local state
+      setCommunityInvites((prev) => prev.filter((inv) => inv.community_id !== communityId));
+
+      // Refresh communities if accepted
+      if (accept) {
+        refetchCommunities();
+      }
+
+      const message = accept ? 'You have joined the community!' : 'Invite declined.';
+      if (Platform.OS === 'web') {
+        alert(message);
+      } else {
+        Alert.alert('Success', message);
+      }
+    } catch (error: any) {
+      console.error('Error responding to invite:', error);
+      if (Platform.OS === 'web') {
+        alert(`Error: ${error.message}`);
+      } else {
+        Alert.alert('Error', error.message || 'Failed to respond to invite');
+      }
+    } finally {
+      setRespondingToInvite((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(communityId);
+        return newSet;
+      });
+    }
+  };
 
   useEffect(() => {
     if (currentTab === 'expand' && currentUser && schoolmates.length === 0 && friendsOfFriends.length === 0) {
@@ -462,34 +540,45 @@ export default function FriendsScreen() {
       />
 
       <View style={styles.tabContainer}>
-        {['friends', 'requests', 'expand'].map((tab) => (
-          <TouchableOpacity 
-            key={tab} 
-            style={[
-              styles.tab, 
-              currentTab === tab && styles.activeTab, 
-              currentTab === tab && { borderBottomColor: theme.colors.primary }
-            ]} 
-            onPress={() => setCurrentTab(tab as any)}
-          >
-            <View style={styles.tabContent}>
-              <ThemedText 
-                variant={currentTab === tab ? 'subtitle' : 'body'}
-                style={[
-                  styles.tabText,
-                  currentTab === tab && { color: theme.colors.primary }
-                ]}
-              >
-                {tab.charAt(0).toUpperCase() + tab.slice(1)}
-              </ThemedText>
-              {tab === 'requests' && friendRequests.length > 0 && (
-                <View style={[styles.badge, { backgroundColor: theme.colors.error }]}>
-                  <ThemedText style={styles.badgeText}>{friendRequests.length}</ThemedText>
-                </View>
-              )}
-            </View>
-          </TouchableOpacity>
-        ))}
+        {['friends', 'requests', 'invites', 'expand'].map((tab) => {
+          const incomingFriendRequests = friendRequests.filter(r => r.request_direction === 'incoming').length;
+          const getBadgeCount = () => {
+            if (tab === 'requests') return incomingFriendRequests;
+            if (tab === 'invites') return communityInvites.length;
+            return 0;
+          };
+          const badgeCount = getBadgeCount();
+          const tabLabel = tab === 'invites' ? 'Invites' : tab.charAt(0).toUpperCase() + tab.slice(1);
+          
+          return (
+            <TouchableOpacity 
+              key={tab} 
+              style={[
+                styles.tab, 
+                currentTab === tab && styles.activeTab, 
+                currentTab === tab && { borderBottomColor: theme.colors.primary }
+              ]} 
+              onPress={() => setCurrentTab(tab as any)}
+            >
+              <View style={styles.tabContent}>
+                <ThemedText 
+                  variant={currentTab === tab ? 'subtitle' : 'body'}
+                  style={[
+                    styles.tabText,
+                    currentTab === tab && { color: theme.colors.primary }
+                  ]}
+                >
+                  {tabLabel}
+                </ThemedText>
+                {badgeCount > 0 && (
+                  <View style={[styles.badge, { backgroundColor: theme.colors.error }]}>
+                    <ThemedText style={styles.badgeText}>{badgeCount}</ThemedText>
+                  </View>
+                )}
+              </View>
+            </TouchableOpacity>
+          );
+        })}
       </View>
 
       <View style={styles.content}>
@@ -533,6 +622,77 @@ export default function FriendsScreen() {
               </View>
             }
           />
+        )}
+
+        {currentTab === 'invites' && (
+          <View style={{flex: 1}}>
+            {loadingInvites ? (
+              <ActivityIndicator style={{ marginTop: 40 }} size="large" />
+            ) : communityInvites.length > 0 ? (
+              <FlatList
+                data={communityInvites}
+                keyExtractor={(item) => String(item.invite_id)}
+                renderItem={({ item }) => {
+                  const isResponding = respondingToInvite.has(item.community_id);
+                  return (
+                    <View style={[styles.inviteCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+                      <View style={styles.inviteContent}>
+                        <CommunityIcon
+                          icon={item.community_icon}
+                          iconColor={item.community_icon_color}
+                          backgroundColor={item.community_background_color}
+                          size={52}
+                        />
+                        <View style={styles.inviteInfo}>
+                          <ThemedText variant="body" style={styles.inviteCommunityName}>
+                            {item.community_name}
+                          </ThemedText>
+                          <ThemedText variant="caption" style={{ color: theme.colors.textSecondary }}>
+                            Invited by {item.inviter_name}
+                          </ThemedText>
+                          <ThemedText variant="caption" style={{ color: theme.colors.textSecondary, fontSize: 11, marginTop: 2 }}>
+                            {new Date(item.created_at).toLocaleDateString()}
+                          </ThemedText>
+                        </View>
+                      </View>
+                      <View style={styles.inviteActions}>
+                        <TouchableOpacity
+                          style={[styles.inviteDeclineButton, { borderColor: theme.colors.border }]}
+                          onPress={() => handleRespondToInvite(item.community_id, false)}
+                          disabled={isResponding}
+                        >
+                          {isResponding ? (
+                            <ActivityIndicator size="small" color={theme.colors.textSecondary} />
+                          ) : (
+                            <Ionicons name="close" size={20} color={theme.colors.textSecondary} />
+                          )}
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[styles.inviteAcceptButton, { backgroundColor: theme.colors.primary }]}
+                          onPress={() => handleRespondToInvite(item.community_id, true)}
+                          disabled={isResponding}
+                        >
+                          {isResponding ? (
+                            <ActivityIndicator size="small" color="#FFFFFF" />
+                          ) : (
+                            <Ionicons name="checkmark" size={20} color="#FFFFFF" />
+                          )}
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  );
+                }}
+              />
+            ) : (
+              <View style={styles.emptyState}>
+                <Ionicons name="home-outline" size={64} color={theme.colors.textSecondary} style={styles.emptyIcon} />
+                <ThemedText variant="subtitle" style={styles.emptyTitle}>No Community Invites</ThemedText>
+                <ThemedText variant="caption" style={styles.emptyText}>
+                  You don't have any pending community invitations
+                </ThemedText>
+              </View>
+            )}
+          </View>
         )}
         
         {currentTab === 'expand' && (
@@ -781,5 +941,48 @@ const styles = StyleSheet.create({
     paddingVertical: 12, 
     borderBottomWidth: 1, 
     borderBottomColor: '#e5e5e5' 
+  },
+  // Community invite styles
+  inviteCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    marginBottom: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  inviteContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  inviteInfo: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  inviteCommunityName: {
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  inviteActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  inviteDeclineButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  inviteAcceptButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

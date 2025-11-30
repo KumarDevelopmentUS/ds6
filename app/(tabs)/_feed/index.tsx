@@ -442,6 +442,7 @@ export default function FeedScreen() {
               const community = membership.communities;
               const school = community.type === 'school' ? getSchoolByValue(community.name) : undefined;
               const displayName = school ? school.display : community.name;
+              const isPrivate = community.type === 'private';
               
               return (
                 <TouchableOpacity
@@ -449,18 +450,42 @@ export default function FeedScreen() {
                   style={styles.dropdownItem}
                   onPress={() => selectCommunity(community.id)}
                 >
-                  <Text style={[
-                    styles.dropdownItemText,
-                    selectedCommunityId === community.id && styles.dropdownItemTextSelected
-                  ]}>
-                    {displayName}
-                  </Text>
+                  <View style={styles.dropdownItemContent}>
+                    {isPrivate && (
+                      <Ionicons name="lock-closed" size={14} color="#666" style={{ marginRight: 6 }} />
+                    )}
+                    <Text style={[
+                      styles.dropdownItemText,
+                      selectedCommunityId === community.id && styles.dropdownItemTextSelected
+                    ]}>
+                      {displayName}
+                    </Text>
+                  </View>
                   {selectedCommunityId === community.id && (
                     <Ionicons name="checkmark" size={20} color="#007AFF" />
                   )}
                 </TouchableOpacity>
               );
             })}
+
+            {/* Divider */}
+            <View style={styles.dropdownDivider} />
+
+            {/* Create Community Option */}
+            <TouchableOpacity
+              style={styles.dropdownItem}
+              onPress={() => {
+                setDropdownVisible(false);
+                router.push('/create-community');
+              }}
+            >
+              <View style={styles.dropdownItemContent}>
+                <Ionicons name="add-circle-outline" size={18} color="#007AFF" style={{ marginRight: 6 }} />
+                <Text style={[styles.dropdownItemText, { color: '#007AFF' }]}>
+                  Create Community
+                </Text>
+              </View>
+            </TouchableOpacity>
           </View>
         </Pressable>
       </Modal>
@@ -590,6 +615,16 @@ const styles = StyleSheet.create({
   dropdownItemTextSelected: {
     color: '#007AFF',
     fontWeight: '600',
+  },
+  dropdownItemContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  dropdownDivider: {
+    height: 1,
+    backgroundColor: '#E5E5E5',
+    marginVertical: 8,
+    marginHorizontal: 16,
   },
   listContent: {
     paddingVertical: 8,

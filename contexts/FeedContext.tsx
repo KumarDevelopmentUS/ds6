@@ -7,9 +7,16 @@ import { useAuth } from './AuthContext';
 interface Community {
   id: number;
   name: string;
-  type: 'general' | 'school';
+  type: 'general' | 'school' | 'private' | null;
   description?: string;
   created_at: string;
+  // New fields for private communities
+  icon?: string | null;
+  icon_color?: string | null;
+  background_color?: string | null;
+  is_private?: boolean | null;
+  creator_id?: string | null;
+  invite_code?: string | null;
 }
 
 // Define the shape of a single community membership object
@@ -18,6 +25,7 @@ export interface UserCommunityMembership {
   user_id: string;
   community_id: number;
   joined_at: string;
+  role?: string | null;
   communities: Community;
 }
 

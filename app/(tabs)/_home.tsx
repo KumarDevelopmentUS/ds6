@@ -12,8 +12,8 @@ import { supabase } from '@/supabase';
 import { debugFeedProvider, debugRLSPolicies, debugUserCommunities, forceFeedRefetch, joinCommunityManually, refreshFeedCache, testDatabaseConnection } from '@/utils/profileSync';
 import { testStorageSecurity } from '@/utils/storageSecurityTest';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Alert, Modal, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 // Custom room code generator that only uses capital letters
@@ -95,8 +95,47 @@ export default function MainMenuScreen() {
   // Auth required popup state
   const [showAuthPopup, setShowAuthPopup] = useState(false);
 
+  // Social notifications state (friend requests + community invites)
+  const [socialNotificationCount, setSocialNotificationCount] = useState(0);
+
+  // Load social notifications count
+  const loadSocialNotifications = useCallback(async () => {
+    if (!session?.user?.id) {
+      setSocialNotificationCount(0);
+      return;
+    }
+
+    try {
+      // Get pending friend requests (incoming only)
+      const { data: friendRequests, error: friendError } = await supabase
+        .from('friends')
+        .select('id')
+        .eq('user_id_2', session.user.id)
+        .eq('status', 'pending');
+
+      // Get pending community invites
+      const { data: communityInvites, error: inviteError } = await supabase.rpc('get_pending_invites');
+
+      const friendCount = friendError ? 0 : (friendRequests?.length || 0);
+      const inviteCount = inviteError ? 0 : (communityInvites?.length || 0);
+
+      setSocialNotificationCount(friendCount + inviteCount);
+    } catch (error) {
+      console.error('Error loading social notifications:', error);
+      setSocialNotificationCount(0);
+    }
+  }, [session?.user?.id]);
+
+  // Reload notifications when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      loadSocialNotifications();
+    }, [loadSocialNotifications])
+  );
+
   useEffect(() => {
     loadUserData();
+    loadSocialNotifications();
     // Select a random fact when component mounts
     const randomIndex = Math.floor(Math.random() * diceFacts.length);
     setRandomFact(diceFacts[randomIndex]);
@@ -504,13 +543,12 @@ export default function MainMenuScreen() {
             }}
           />
           <MenuCard
-            title="Friends"
+            title="Social"
             icon="people-outline"
             color={theme.colors.warning}
+            badge={socialNotificationCount > 0 ? socialNotificationCount : undefined}
             onPress={() => {
-              if (handleAuthRequired('view friends')) {
-                // Corrected action text
-                // CORRECTED: Use absolute path
+              if (handleAuthRequired('view social')) {
                 router.push('/friends');
               }
             }}

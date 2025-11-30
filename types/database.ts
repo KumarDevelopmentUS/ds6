@@ -80,27 +80,83 @@ export type Database = {
       }
       communities: {
         Row: {
+          background_color: string | null
           created_at: string | null
+          creator_id: string | null
           description: string | null
+          icon: string | null
+          icon_color: string | null
           id: number
+          invite_code: string | null
+          is_private: boolean | null
           name: string
           type: string | null
         }
         Insert: {
+          background_color?: string | null
           created_at?: string | null
+          creator_id?: string | null
           description?: string | null
+          icon?: string | null
+          icon_color?: string | null
           id?: number
+          invite_code?: string | null
+          is_private?: boolean | null
           name: string
           type?: string | null
         }
         Update: {
+          background_color?: string | null
           created_at?: string | null
+          creator_id?: string | null
           description?: string | null
+          icon?: string | null
+          icon_color?: string | null
           id?: number
+          invite_code?: string | null
+          is_private?: boolean | null
           name?: string
           type?: string | null
         }
         Relationships: []
+      }
+      community_invites: {
+        Row: {
+          community_id: number | null
+          created_at: string | null
+          id: number
+          invitee_id: string | null
+          inviter_id: string | null
+          responded_at: string | null
+          status: string | null
+        }
+        Insert: {
+          community_id?: number | null
+          created_at?: string | null
+          id?: number
+          invitee_id?: string | null
+          inviter_id?: string | null
+          responded_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          community_id?: number | null
+          created_at?: string | null
+          id?: number
+          invitee_id?: string | null
+          inviter_id?: string | null
+          responded_at?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_invites_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       friends: {
         Row: {
@@ -329,18 +385,21 @@ export type Database = {
           community_id: number | null
           id: number
           joined_at: string | null
+          role: string | null
           user_id: string | null
         }
         Insert: {
           community_id?: number | null
           id?: number
           joined_at?: string | null
+          role?: string | null
           user_id?: string | null
         }
         Update: {
           community_id?: number | null
           id?: number
           joined_at?: string | null
+          role?: string | null
           user_id?: string | null
         }
         Relationships: [
