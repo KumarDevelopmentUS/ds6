@@ -386,66 +386,68 @@ export default function AccountScreen() {
                 const isSchool = membership.communities.type === 'school';
                 
                 return (
-                  <View
-                    key={membership.community_id}
-                    style={[
-                      styles.communityItem,
-                      index < userCommunities.length - 1 && styles.communityItemBorder,
-                      { borderColor: theme.colors.border }
-                    ]}
-                  >
-                    <View style={styles.communityInfo}>
+                <View
+                  key={membership.community_id}
+                  style={[
+                    styles.communityItem,
+                    index < userCommunities.length - 1 && styles.communityItemBorder,
+                    { borderColor: theme.colors.border }
+                  ]}
+                >
+                  <View style={styles.communityInfo}>
                       {isPrivate ? (
-                        <CommunityIcon
-                          icon={membership.communities.icon}
-                          iconColor={membership.communities.icon_color}
-                          backgroundColor={membership.communities.background_color}
-                          size={40}
-                        />
-                      ) : (
-                        <View style={[
-                          styles.communityIcon,
-                          { 
-                            backgroundColor: isSchool 
-                              ? theme.colors.warning 
-                              : theme.colors.info 
-                          }
-                        ]}>
-                          <Ionicons
-                            name={isSchool ? 'school-outline' : 'globe-outline'}
-                            size={20}
-                            color="#FFFFFF"
+                        <View style={{ marginRight: 12 }}>
+                          <CommunityIcon
+                            icon={membership.communities.icon}
+                            iconColor={membership.communities.icon_color}
+                            backgroundColor={membership.communities.background_color}
+                            size={40}
                           />
                         </View>
+                      ) : (
+                    <View style={[
+                      styles.communityIcon,
+                      { 
+                            backgroundColor: isSchool 
+                          ? theme.colors.warning 
+                          : theme.colors.info 
+                      }
+                    ]}>
+                      <Ionicons
+                            name={isSchool ? 'school-outline' : 'globe-outline'}
+                        size={20}
+                        color="#FFFFFF"
+                      />
+                    </View>
                       )}
-                      <View style={styles.communityText}>
+                    <View style={styles.communityText}>
                         <View style={styles.communityNameRow}>
-                          <ThemedText variant="body" style={styles.communityName}>
+                      <ThemedText variant="body" style={styles.communityName}>
                             {isSchool 
-                              ? getSchoolByValue(membership.communities.name)?.name || membership.communities.name
-                              : membership.communities.name}
-                          </ThemedText>
+                          ? getSchoolByValue(membership.communities.name)?.name || membership.communities.name
+                          : membership.communities.name}
+                      </ThemedText>
                           {isPrivate && (
                             <Ionicons name="lock-closed" size={12} color={theme.colors.textSecondary} style={{ marginLeft: 4 }} />
                           )}
                         </View>
-                        <ThemedText variant="caption" style={styles.communityType}>
+                      <ThemedText variant="caption" style={styles.communityType}>
                           {isPrivate ? 'Private Community' : isSchool ? 'School Community' : 'General Community'}
-                        </ThemedText>
-                      </View>
-                    </View>
-                    <View style={styles.communityMeta}>
-                      <ThemedText variant="caption" style={styles.joinedDate}>
-                        Joined {new Date(membership.joined_at).toLocaleDateString()}
                       </ThemedText>
-                      <TouchableOpacity
-                        style={styles.communitySettingsButton}
-                        onPress={() => handleOpenCommunitySettings(membership)}
-                      >
-                        <Ionicons name="settings-outline" size={20} color={theme.colors.textSecondary} />
-                      </TouchableOpacity>
                     </View>
                   </View>
+                  <View style={styles.communityMeta}>
+                    <ThemedText variant="caption" style={styles.joinedDate}>
+                      Joined {new Date(membership.joined_at).toLocaleDateString()}
+                    </ThemedText>
+                    <TouchableOpacity
+                      style={styles.communitySettingsButton}
+                      onPress={() => handleOpenCommunitySettings(membership)}
+                    >
+                      <Ionicons name="settings-outline" size={20} color={theme.colors.textSecondary} />
+                    </TouchableOpacity>
+                  </View>
+                </View>
                 );
               })
             ) : (

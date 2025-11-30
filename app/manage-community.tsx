@@ -24,6 +24,7 @@ import {
   RefreshControl,
   ScrollView,
   StyleSheet,
+  Switch,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -59,6 +60,7 @@ type Community = {
   icon_color: string;
   background_color: string;
   invite_code: string | null;
+  invite_code_enabled: boolean;
   is_private: boolean;
   creator_id: string;
 };
@@ -118,6 +120,7 @@ export default function ManageCommunityScreen() {
   const [friends, setFriends] = useState<UserProfile[]>([]);
   const [loadingFriends, setLoadingFriends] = useState(false);
   const [invitingFriends, setInvitingFriends] = useState<Set<string>>(new Set());
+  const [togglingInviteCode, setTogglingInviteCode] = useState(false);
 
   useEffect(() => {
     if (communityId) {
@@ -137,7 +140,10 @@ export default function ManageCommunityScreen() {
         .eq('id', parseInt(communityId))
         .single();
 
-      if (communityError) throw communityError;
+      if (communityError) {
+        console.error('Error loading community:', communityError);
+        throw communityError;
+      }
       setCommunity(communityData);
 
       // Set edit values
@@ -146,7 +152,7 @@ export default function ManageCommunityScreen() {
       setEditIconColor(communityData.icon_color || '#FFFFFF');
       setEditBgColor(communityData.background_color || '#007AFF');
 
-      // Get user's role
+      // Get user's role - don't fail if this errors
       const { data: membership, error: membershipError } = await supabase
         .from('user_communities')
         .select('role')
@@ -154,17 +160,32 @@ export default function ManageCommunityScreen() {
         .eq('user_id', session.user.id)
         .single();
 
-      if (membershipError) throw membershipError;
-      setUserRole(membership.role || 'member');
+      if (membershipError) {
+        console.error('Error loading membership:', membershipError);
+        setUserRole('member'); // Default to member
+      } else {
+        setUserRole(membership.role || 'member');
+      }
 
-      // Load members using RPC
-      const { data: membersData, error: membersError } = await supabase.rpc(
-        'get_community_members',
-        { p_community_id: parseInt(communityId) }
-      );
+      // Load members - try RPC first, fallback to direct query
+      try {
+        const { data: membersData, error: membersError } = await supabase.rpc(
+          'get_community_members',
+          { p_community_id: parseInt(communityId) }
+        );
 
-      if (membersError) throw membersError;
-      setMembers(membersData || []);
+        if (membersError) {
+          console.error('RPC get_community_members failed:', membersError);
+          // Fallback to direct query
+          await loadMembersFallback(parseInt(communityId));
+        } else {
+          console.log('Members loaded via RPC:', membersData?.length || 0);
+          setMembers(membersData || []);
+        }
+      } catch (rpcError) {
+        console.error('RPC error:', rpcError);
+        await loadMembersFallback(parseInt(communityId));
+      }
     } catch (error) {
       console.error('Error loading community:', error);
       if (Platform.OS === 'web') {
@@ -174,6 +195,62 @@ export default function ManageCommunityScreen() {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadMembersFallback = async (commId: number) => {
+    try {
+      console.log('Loading members via fallback query for community:', commId);
+      const { data: fallbackMembers, error } = await supabase
+        .from('user_communities')
+        .select('user_id, role, joined_at')
+        .eq('community_id', commId);
+
+      if (error) {
+        console.error('Fallback members query failed:', error);
+        setMembers([]);
+        return;
+      }
+
+      console.log('Fallback found memberships:', fallbackMembers?.length || 0);
+
+      if (!fallbackMembers || fallbackMembers.length === 0) {
+        setMembers([]);
+        return;
+      }
+
+      // Get user profiles for these members
+      const userIds = fallbackMembers.map(m => m.user_id);
+      const { data: profiles, error: profilesError } = await supabase
+        .from('user_profiles')
+        .select('id, username, nickname, avatar_icon, avatar_icon_color, avatar_background_color')
+        .in('id', userIds);
+
+      if (profilesError) {
+        console.error('Error loading profiles:', profilesError);
+      }
+
+      const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+
+      const membersList = fallbackMembers.map((m: any) => {
+        const profile = profileMap.get(m.user_id);
+        return {
+          user_id: m.user_id,
+          username: profile?.username || 'Unknown',
+          nickname: profile?.nickname || profile?.username || 'Unknown',
+          avatar_icon: profile?.avatar_icon || 'person',
+          avatar_icon_color: profile?.avatar_icon_color || '#FFFFFF',
+          avatar_background_color: profile?.avatar_background_color || '#007AFF',
+          role: m.role || 'member',
+          joined_at: m.joined_at,
+        };
+      });
+
+      console.log('Members loaded via fallback:', membersList.length);
+      setMembers(membersList);
+    } catch (err) {
+      console.error('Fallback loading failed:', err);
+      setMembers([]);
     }
   };
 
@@ -283,6 +360,46 @@ export default function ManageCommunityScreen() {
       }
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleToggleInviteCode = async () => {
+    if (!community) return;
+    setTogglingInviteCode(true);
+
+    try {
+      const newEnabled = !community.invite_code_enabled;
+      const { data, error } = await supabase.rpc('toggle_invite_code', {
+        p_community_id: community.id,
+        p_enabled: newEnabled,
+      });
+
+      if (error) throw error;
+
+      const result = data as { success: boolean; error?: string; invite_code?: string };
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to update invite code setting');
+      }
+
+      // Update local state
+      setCommunity({
+        ...community,
+        invite_code_enabled: newEnabled,
+        invite_code: result.invite_code || community.invite_code,
+      });
+
+      if (Platform.OS !== 'web') {
+        Alert.alert('Success', newEnabled ? 'Invite code enabled' : 'Invite code disabled');
+      }
+    } catch (error: any) {
+      console.error('Error toggling invite code:', error);
+      if (Platform.OS === 'web') {
+        alert(`Failed to update: ${error.message}`);
+      } else {
+        Alert.alert('Error', error.message || 'Failed to update invite code setting');
+      }
+    } finally {
+      setTogglingInviteCode(false);
     }
   };
 
@@ -650,12 +767,37 @@ export default function ManageCommunityScreen() {
 
               {community.invite_code && userRole === 'owner' && (
                 <View style={[styles.inviteCodeSection, { backgroundColor: theme.colors.inputBackground }]}>
-                  <ThemedText variant="caption" style={{ color: theme.colors.textSecondary }}>
-                    Invite Code
-                  </ThemedText>
-                  <ThemedText variant="subtitle" style={styles.inviteCode}>
-                    {community.invite_code}
-                  </ThemedText>
+                  <View style={styles.inviteCodeHeader}>
+                    <View style={{ flex: 1 }}>
+                      <ThemedText variant="caption" style={{ color: theme.colors.textSecondary }}>
+                        Invite Code
+                      </ThemedText>
+                      <ThemedText variant="subtitle" style={styles.inviteCode}>
+                        {community.invite_code}
+                      </ThemedText>
+                    </View>
+                  </View>
+                  
+                  {/* Invite Code Toggle */}
+                  <View style={[styles.inviteCodeToggle, { borderTopColor: theme.colors.border }]}>
+                    <View style={styles.inviteCodeToggleInfo}>
+                      <ThemedText variant="body" style={{ fontWeight: '500' }}>
+                        Allow join via code
+                      </ThemedText>
+                      <ThemedText variant="caption" style={{ color: theme.colors.textSecondary }}>
+                        {community.invite_code_enabled 
+                          ? 'Anyone with the code can join' 
+                          : 'Only invited users can join'}
+                      </ThemedText>
+                    </View>
+                    <Switch
+                      value={community.invite_code_enabled}
+                      onValueChange={handleToggleInviteCode}
+                      disabled={togglingInviteCode}
+                      trackColor={{ false: theme.colors.border, true: theme.colors.primary + '50' }}
+                      thumbColor={community.invite_code_enabled ? theme.colors.primary : '#f4f3f4'}
+                    />
+                  </View>
                 </View>
               )}
             </>
@@ -859,11 +1001,26 @@ const styles = StyleSheet.create({
     marginTop: 20,
     padding: 16,
     borderRadius: 12,
+  },
+  inviteCodeHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
   },
   inviteCode: {
     letterSpacing: 2,
     marginTop: 4,
+  },
+  inviteCodeToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+  },
+  inviteCodeToggleInfo: {
+    flex: 1,
+    marginRight: 12,
   },
   section: {
     marginBottom: 24,

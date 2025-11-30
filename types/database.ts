@@ -88,6 +88,7 @@ export type Database = {
           icon_color: string | null
           id: number
           invite_code: string | null
+          invite_code_enabled: boolean | null
           is_private: boolean | null
           name: string
           type: string | null
@@ -101,6 +102,7 @@ export type Database = {
           icon_color?: string | null
           id?: number
           invite_code?: string | null
+          invite_code_enabled?: boolean | null
           is_private?: boolean | null
           name: string
           type?: string | null
@@ -114,6 +116,7 @@ export type Database = {
           icon_color?: string | null
           id?: number
           invite_code?: string | null
+          invite_code_enabled?: boolean | null
           is_private?: boolean | null
           name?: string
           type?: string | null

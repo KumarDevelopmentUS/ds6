@@ -454,12 +454,12 @@ export default function FeedScreen() {
                     {isPrivate && (
                       <Ionicons name="lock-closed" size={14} color="#666" style={{ marginRight: 6 }} />
                     )}
-                    <Text style={[
-                      styles.dropdownItemText,
-                      selectedCommunityId === community.id && styles.dropdownItemTextSelected
-                    ]}>
-                      {displayName}
-                    </Text>
+                  <Text style={[
+                    styles.dropdownItemText,
+                    selectedCommunityId === community.id && styles.dropdownItemTextSelected
+                  ]}>
+                    {displayName}
+                  </Text>
                   </View>
                   {selectedCommunityId === community.id && (
                     <Ionicons name="checkmark" size={20} color="#007AFF" />
@@ -483,6 +483,22 @@ export default function FeedScreen() {
                 <Ionicons name="add-circle-outline" size={18} color="#007AFF" style={{ marginRight: 6 }} />
                 <Text style={[styles.dropdownItemText, { color: '#007AFF' }]}>
                   Create Community
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            {/* Join Community Option */}
+            <TouchableOpacity
+              style={styles.dropdownItem}
+              onPress={() => {
+                setDropdownVisible(false);
+                router.push('/join-community');
+              }}
+            >
+              <View style={styles.dropdownItemContent}>
+                <Ionicons name="enter-outline" size={18} color="#007AFF" style={{ marginRight: 6 }} />
+                <Text style={[styles.dropdownItemText, { color: '#007AFF' }]}>
+                  Join Community
                 </Text>
               </View>
             </TouchableOpacity>

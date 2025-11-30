@@ -3,6 +3,15 @@
 -- Run this in the Supabase SQL Editor
 -- ============================================
 
+-- 0. Update the type constraint to include 'private'
+-- First, drop the existing constraint (if it exists)
+ALTER TABLE public.communities DROP CONSTRAINT IF EXISTS communities_type_check;
+
+-- Add new constraint that includes 'private'
+ALTER TABLE public.communities 
+ADD CONSTRAINT communities_type_check 
+CHECK (type IN ('general', 'school', 'private'));
+
 -- 1. Add new columns to communities table
 ALTER TABLE public.communities 
 ADD COLUMN IF NOT EXISTS creator_id uuid REFERENCES auth.users(id),
@@ -10,7 +19,8 @@ ADD COLUMN IF NOT EXISTS icon text DEFAULT 'people',
 ADD COLUMN IF NOT EXISTS icon_color text DEFAULT '#FFFFFF',
 ADD COLUMN IF NOT EXISTS background_color text DEFAULT '#007AFF',
 ADD COLUMN IF NOT EXISTS is_private boolean DEFAULT false,
-ADD COLUMN IF NOT EXISTS invite_code text UNIQUE;
+ADD COLUMN IF NOT EXISTS invite_code text UNIQUE,
+ADD COLUMN IF NOT EXISTS invite_code_enabled boolean DEFAULT true;
 
 -- 2. Add role column to user_communities table
 ALTER TABLE public.user_communities 
@@ -110,6 +120,15 @@ CREATE POLICY "Community owners can delete their communities" ON public.communit
 
 -- 8. Update user_communities RLS policies
 
+-- Enable RLS on user_communities if not already enabled
+ALTER TABLE public.user_communities ENABLE ROW LEVEL SECURITY;
+
+-- Allow users to see their own memberships (use RPC for viewing other members)
+DROP POLICY IF EXISTS "Users can view community members" ON public.user_communities;
+DROP POLICY IF EXISTS "Users can view own memberships" ON public.user_communities;
+CREATE POLICY "Users can view own memberships" ON public.user_communities
+    FOR SELECT USING (auth.uid() = user_id);
+
 -- Allow users to join public communities or accept private community invites
 DROP POLICY IF EXISTS "Users can join communities" ON public.user_communities;
 CREATE POLICY "Users can join communities" ON public.user_communities
@@ -135,21 +154,13 @@ CREATE POLICY "Users can join communities" ON public.user_communities
         )
     );
 
--- Allow community owners/admins to remove members
+-- Allow users to leave communities (remove their own membership)
+-- Note: Owner/admin kicking is handled via RPC with SECURITY DEFINER to avoid recursion
 DROP POLICY IF EXISTS "Community owners can remove members" ON public.user_communities;
-CREATE POLICY "Community owners and admins can remove members" ON public.user_communities
-    FOR DELETE USING (
-        -- User can leave themselves
-        auth.uid() = user_id
-        OR
-        -- Owner/admin can remove others (but not other owners)
-        EXISTS (
-            SELECT 1 FROM public.user_communities uc
-            WHERE uc.community_id = user_communities.community_id
-            AND uc.user_id = auth.uid()
-            AND uc.role IN ('owner', 'admin')
-        )
-    );
+DROP POLICY IF EXISTS "Community owners and admins can remove members" ON public.user_communities;
+DROP POLICY IF EXISTS "Users can leave communities" ON public.user_communities;
+CREATE POLICY "Users can leave communities" ON public.user_communities
+    FOR DELETE USING (auth.uid() = user_id);
 
 -- 9. Function to generate unique invite codes
 CREATE OR REPLACE FUNCTION generate_invite_code()
@@ -461,6 +472,83 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- 17. Function to join a community via invite code
+CREATE OR REPLACE FUNCTION join_community_by_code(p_invite_code text)
+RETURNS json AS $$
+DECLARE
+    v_user_id uuid;
+    v_community_id integer;
+    v_community_name text;
+    v_invite_enabled boolean;
+BEGIN
+    v_user_id := auth.uid();
+    
+    IF v_user_id IS NULL THEN
+        RETURN json_build_object('success', false, 'error', 'Not authenticated');
+    END IF;
+    
+    -- Find the community by invite code
+    SELECT id, name, invite_code_enabled INTO v_community_id, v_community_name, v_invite_enabled
+    FROM public.communities
+    WHERE invite_code = UPPER(p_invite_code) AND is_private = true;
+    
+    IF v_community_id IS NULL THEN
+        RETURN json_build_object('success', false, 'error', 'Invalid invite code');
+    END IF;
+    
+    -- Check if invite code is enabled
+    IF v_invite_enabled IS NOT TRUE THEN
+        RETURN json_build_object('success', false, 'error', 'This invite code is currently disabled. Ask the owner for an invite.');
+    END IF;
+    
+    -- Check if user is already a member
+    IF EXISTS (SELECT 1 FROM public.user_communities WHERE community_id = v_community_id AND user_id = v_user_id) THEN
+        RETURN json_build_object('success', false, 'error', 'You are already a member of this community');
+    END IF;
+    
+    -- Add user to community
+    INSERT INTO public.user_communities (user_id, community_id, role, joined_at)
+    VALUES (v_user_id, v_community_id, 'member', now());
+    
+    RETURN json_build_object(
+        'success', true,
+        'community_id', v_community_id,
+        'community_name', v_community_name
+    );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 18. Function to toggle invite code enabled/disabled
+CREATE OR REPLACE FUNCTION toggle_invite_code(p_community_id integer, p_enabled boolean)
+RETURNS json AS $$
+DECLARE
+    v_user_id uuid;
+    v_user_role text;
+BEGIN
+    v_user_id := auth.uid();
+    
+    IF v_user_id IS NULL THEN
+        RETURN json_build_object('success', false, 'error', 'Not authenticated');
+    END IF;
+    
+    -- Check if user is the owner
+    SELECT role INTO v_user_role
+    FROM public.user_communities
+    WHERE community_id = p_community_id AND user_id = v_user_id;
+    
+    IF v_user_role != 'owner' THEN
+        RETURN json_build_object('success', false, 'error', 'Only owners can change invite code settings');
+    END IF;
+    
+    -- Update the setting
+    UPDATE public.communities
+    SET invite_code_enabled = p_enabled
+    WHERE id = p_community_id;
+    
+    RETURN json_build_object('success', true, 'enabled', p_enabled);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- Grant execute permissions on functions
 GRANT EXECUTE ON FUNCTION create_private_community(text, text, text, text, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION invite_to_community(integer, uuid) TO authenticated;
@@ -469,4 +557,6 @@ GRANT EXECUTE ON FUNCTION kick_community_member(integer, uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION update_community(integer, text, text, text, text, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION get_pending_invites() TO authenticated;
 GRANT EXECUTE ON FUNCTION get_community_members(integer) TO authenticated;
+GRANT EXECUTE ON FUNCTION join_community_by_code(text) TO authenticated;
+GRANT EXECUTE ON FUNCTION toggle_invite_code(integer, boolean) TO authenticated;
 

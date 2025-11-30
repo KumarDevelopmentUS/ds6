@@ -7,22 +7,20 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    FlatList,
-    Platform,
-    ScrollView,
-    SectionList,
-    StyleSheet,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Alert,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { ThemedButton } from '../components/themed/ThemedButton';
 import { ThemedInput } from '../components/themed/ThemedInput';
 import { ThemedText } from '../components/themed/ThemedText';
 import { ThemedView } from '../components/themed/ThemedView';
-import { useFeed } from '../contexts/FeedContext';
 import { getSchoolByValue } from '../constants/schools';
+import { useFeed } from '../contexts/FeedContext';
 import { useTheme } from '../contexts/ThemeContext';
 
 type UserProfile = {
@@ -60,12 +58,16 @@ export default function FriendsScreen() {
   const [friends, setFriends] = useState<UserProfile[]>([]);
   const [friendRequests, setFriendRequests] = useState<FriendRequest[]>([]);
   const [pendingSentIds, setPendingSentIds] = useState<Set<string>>(new Set());
-  const [currentTab, setCurrentTab] = useState<'friends' | 'requests' | 'expand'>('friends');
+  const [currentTab, setCurrentTab] = useState<'friends' | 'invites'>('friends');
   const [currentUser, setCurrentUser] = useState<any>(null);
 
   const [schoolmates, setSchoolmates] = useState<UserProfile[]>([]);
   const [friendsOfFriends, setFriendsOfFriends] = useState<UserProfile[]>([]);
   const [loadingExpand, setLoadingExpand] = useState(false);
+  
+  // Dropdown state for expand sections
+  const [showFriendsOfFriends, setShowFriendsOfFriends] = useState(false);
+  const [showSchoolmates, setShowSchoolmates] = useState(false);
 
   const [viewingProfileOf, setViewingProfileOf] = useState<UserProfile | null>(null);
   const [viewingProfileStats, setViewingProfileStats] = useState<UserStats | null>(null);
@@ -85,6 +87,7 @@ export default function FriendsScreen() {
         setCurrentUser(user);
         fetchFriendsAndRequests(user.id);
         fetchCommunityInvites();
+        fetchExpandNetworkData(user.id);
       } else {
         setLoading(false);
       }
@@ -160,22 +163,14 @@ export default function FriendsScreen() {
     }
   };
 
-  useEffect(() => {
-    if (currentTab === 'expand' && currentUser && schoolmates.length === 0 && friendsOfFriends.length === 0) {
-      fetchExpandNetworkData(currentUser.id);
-    }
-  }, [currentTab, currentUser]);
-
   // Debounced search effect
   useEffect(() => {
-    if (currentTab !== 'expand') return;
-    
     const searchTimeout = setTimeout(() => {
       handleSearch();
-    }, 300); // 300ms delay for debouncing
+    }, 300);
 
     return () => clearTimeout(searchTimeout);
-  }, [searchQuery, currentTab, currentUser]);
+  }, [searchQuery, currentUser]);
 
   const combineProfileData = (userProfile: any): UserProfile => {
     return {
@@ -299,6 +294,21 @@ export default function FriendsScreen() {
     if (error) { Alert.alert('Error', 'Could not decline friend request.'); } 
     else { Alert.alert('Success', 'Friend request declined.'); fetchFriendsAndRequests(currentUser.id); }
   };
+
+  const handleCancelRequest = async (friendId: string) => {
+    if (!currentUser) return;
+    const { error } = await supabase.from('friends').delete().eq('user_id_1', currentUser.id).eq('user_id_2', friendId);
+    if (error) { Alert.alert('Error', 'Could not cancel friend request.'); } 
+    else { 
+      Alert.alert('Success', 'Friend request cancelled.'); 
+      setPendingSentIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(friendId);
+        return newSet;
+      });
+      fetchFriendsAndRequests(currentUser.id); 
+    }
+  };
   
   const mapRpcProfileData = (rpcProfile: any): UserProfile | null => {
     if (!rpcProfile) return null;
@@ -317,7 +327,6 @@ export default function FriendsScreen() {
     setLoadingExpand(true);
     
     try {
-      // First, get the current user's school
       const { data: currentUserProfile, error: userError } = await supabase
         .from('user_profiles')
         .select('school')
@@ -330,34 +339,25 @@ export default function FriendsScreen() {
         return;
       }
       
-      console.log("Loading user's school information...");
-      
-      // Try the RPC functions first
       const [schoolResponse, fofResponse] = await Promise.all([
         supabase.rpc('get_schoolmates', { input_user_id: userId }),
         supabase.rpc('get_friends_of_friends', { p_user_id: userId })
       ]);
       
-      console.log("Schoolmates RPC response:", schoolResponse);
-      console.log("Friends of friends RPC response:", fofResponse);
-      
       if (schoolResponse.error) {
         console.error("Error fetching schoolmates via RPC:", schoolResponse.error);
         
-        // Fallback: Direct query for schoolmates
         if (currentUserProfile?.school) {
-          console.log("Falling back to direct query for schoolmates...");
           const { data: directSchoolmates, error: directError } = await supabase
             .from('user_profiles')
             .select('id, username, nickname, school, avatar_icon, avatar_icon_color, avatar_background_color')
             .eq('school', currentUserProfile.school)
-            .neq('id', userId); // Exclude current user
+            .neq('id', userId);
           
           if (directError) {
             console.error("Error with direct schoolmates query:", directError);
             setSchoolmates([]);
           } else {
-            console.log("Direct schoolmates query result:", directSchoolmates);
             setSchoolmates(directSchoolmates?.map(mapRpcProfileData).filter(Boolean) as UserProfile[] || []);
           }
         } else {
@@ -369,44 +369,7 @@ export default function FriendsScreen() {
       
       if (fofResponse.error) {
         console.error("Error fetching friends of friends via RPC:", fofResponse.error);
-        
-        // Fallback: Direct query for friends of friends
-        console.log("Falling back to direct query for friends of friends...");
-        const { data: directFriendsOfFriends, error: directFofError } = await supabase
-          .from('user_profiles')
-          .select(`
-            id, username, nickname, school, avatar_icon, avatar_icon_color, avatar_background_color,
-            friends!friends_user_id_2_fkey(id)
-          `)
-          .neq('id', userId); // Exclude current user
-        
-        if (directFofError) {
-          console.error("Error with direct friends of friends query:", directFofError);
-          setFriendsOfFriends([]);
-        } else {
-          console.log("Direct friends of friends query result:", directFriendsOfFriends);
-          // Filter to only show users who are friends with the current user's friends
-          const { data: userFriends } = await supabase
-            .from('friends')
-            .select('user_id_1, user_id_2')
-            .or(`user_id_1.eq.${userId},user_id_2.eq.${userId}`)
-            .eq('status', 'accepted');
-          
-          if (userFriends) {
-            const friendIds = new Set(userFriends.map(f => 
-              f.user_id_1 === userId ? f.user_id_2 : f.user_id_1
-            ));
-            
-            const friendsOfFriends = directFriendsOfFriends?.filter(user => {
-              // Check if this user is friends with any of the current user's friends
-              return user.friends?.some((friend: any) => friendIds.has(friend.id));
-            }) || [];
-            
-            setFriendsOfFriends(friendsOfFriends.map(mapRpcProfileData).filter(Boolean) as UserProfile[]);
-          } else {
-            setFriendsOfFriends([]);
-          }
-        }
+        setFriendsOfFriends([]);
       } else {
         setFriendsOfFriends(fofResponse.data?.map(mapRpcProfileData).filter(Boolean) as UserProfile[] || []);
       }
@@ -430,12 +393,12 @@ export default function FriendsScreen() {
     } else if (data && data.length > 0) {
       setViewingProfileStats(data[0]);
     } else {
-      setViewingProfileStats(null); // No stats returned
+      setViewingProfileStats(null);
     }
     setLoadingProfileStats(false);
   };
 
-  const renderUserProfile = ({ item, from }: { item: UserProfile | FriendRequest, from: 'requests' | 'friends' | 'expand' }) => {
+  const renderUserCard = ({ item, showActions = false }: { item: UserProfile, showActions?: boolean }) => {
     const isFriend = friends.some(f => f.id === item.id);
     
     const renderActionButton = () => {
@@ -450,7 +413,6 @@ export default function FriendsScreen() {
 
     return (
       <TouchableOpacity 
-        disabled={from !== 'friends'} 
         onPress={() => router.push(`/user-profile/${item.id}`)}
         activeOpacity={0.7}
       >
@@ -474,19 +436,132 @@ export default function FriendsScreen() {
               </View>
             )}
           </View>
-          { from === 'expand' && renderActionButton() }
-          { 'request_direction' in item && item.request_direction === 'incoming' && (
-              <View style={styles.requestButtons}>
-                <ThemedButton title="Accept" size="small" variant="primary" onPress={() => handleAcceptRequest(item.id)} />
-                <ThemedButton title="Decline" size="small" variant="secondary" onPress={() => handleDeclineRequest(item.id)} />
-              </View>
-          )}
-          { 'request_direction' in item && item.request_direction === 'outgoing' && <ThemedButton title="Requested" size="small" disabled={true} /> }
-          { from === 'friends' && <Ionicons name="chevron-forward" size={22} color={theme.colors.textSecondary} /> }
+          {showActions ? renderActionButton() : <Ionicons name="chevron-forward" size={22} color={theme.colors.textSecondary} />}
         </ThemedView>
       </TouchableOpacity>
     );
   };
+
+  const renderFriendRequestCard = ({ item, type }: { item: FriendRequest, type: 'incoming' | 'outgoing' }) => {
+    return (
+      <ThemedView variant="card" style={styles.userCard}>
+        <UserAvatar
+          profilePictureUrl={null}
+          icon={item.avatar_icon}
+          iconColor={item.avatar_icon_color}
+          backgroundColor={item.avatar_background_color}
+          size={52}
+        />
+        <View style={styles.userInfo}>
+          <ThemedText variant="body" style={styles.username}>{item.nickname}</ThemedText>
+          <ThemedText variant="caption" style={styles.userHandle}>{`@${item.username}`}</ThemedText>
+        </View>
+        {type === 'incoming' ? (
+          <View style={styles.requestButtons}>
+            <ThemedButton title="Accept" size="small" variant="primary" onPress={() => handleAcceptRequest(item.id)} />
+            <ThemedButton title="Decline" size="small" variant="outline" onPress={() => handleDeclineRequest(item.id)} />
+          </View>
+        ) : (
+          <ThemedButton title="Cancel" size="small" variant="outline" onPress={() => handleCancelRequest(item.id)} />
+        )}
+      </ThemedView>
+    );
+  };
+
+  const renderCommunityInviteCard = (item: any) => {
+    const isResponding = respondingToInvite.has(item.community_id);
+    return (
+      <View style={[styles.inviteCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+        <View style={styles.inviteContent}>
+          <CommunityIcon
+            icon={item.community_icon}
+            iconColor={item.community_icon_color}
+            backgroundColor={item.community_background_color}
+            size={52}
+          />
+          <View style={styles.inviteInfo}>
+            <ThemedText variant="body" style={styles.inviteCommunityName}>
+              {item.community_name}
+            </ThemedText>
+            <ThemedText variant="caption" style={{ color: theme.colors.textSecondary }}>
+              Invited by {item.inviter_name}
+            </ThemedText>
+            <ThemedText variant="caption" style={{ color: theme.colors.textSecondary, fontSize: 11, marginTop: 2 }}>
+              {new Date(item.created_at).toLocaleDateString()}
+            </ThemedText>
+          </View>
+        </View>
+        <View style={styles.inviteActions}>
+          <TouchableOpacity
+            style={[styles.inviteDeclineButton, { borderColor: theme.colors.border }]}
+            onPress={() => handleRespondToInvite(item.community_id, false)}
+            disabled={isResponding}
+          >
+            {isResponding ? (
+              <ActivityIndicator size="small" color={theme.colors.textSecondary} />
+            ) : (
+              <Ionicons name="close" size={20} color={theme.colors.textSecondary} />
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.inviteAcceptButton, { backgroundColor: theme.colors.primary }]}
+            onPress={() => handleRespondToInvite(item.community_id, true)}
+            disabled={isResponding}
+          >
+            {isResponding ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <Ionicons name="checkmark" size={20} color="#FFFFFF" />
+            )}
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  };
+
+  const renderExpandSection = (title: string, data: UserProfile[], isOpen: boolean, onToggle: () => void, icon: keyof typeof Ionicons.glyphMap) => (
+    <View style={styles.expandSection}>
+      <TouchableOpacity 
+        style={[styles.expandHeader, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]} 
+        onPress={onToggle}
+        activeOpacity={0.7}
+      >
+        <View style={styles.expandHeaderLeft}>
+          <Ionicons name={icon} size={20} color={theme.colors.primary} />
+          <ThemedText variant="body" style={styles.expandHeaderText}>{title}</ThemedText>
+          <View style={[styles.countBadge, { backgroundColor: theme.colors.primary + '20' }]}>
+            <ThemedText variant="caption" style={{ color: theme.colors.primary, fontWeight: '600' }}>
+              {data.length}
+            </ThemedText>
+          </View>
+        </View>
+        <Ionicons 
+          name={isOpen ? "chevron-up" : "chevron-down"} 
+          size={20} 
+          color={theme.colors.textSecondary} 
+        />
+      </TouchableOpacity>
+      {isOpen && (
+        <View style={styles.expandContent}>
+          {loadingExpand ? (
+            <ActivityIndicator style={{ marginVertical: 20 }} size="small" />
+          ) : data.length > 0 ? (
+            data.map(item => (
+              <View key={item.id}>
+                {renderUserCard({ item, showActions: true })}
+              </View>
+            ))
+          ) : (
+            <View style={styles.emptyStateSmall}>
+              <ThemedText variant="caption" style={styles.emptyTextSmall}>
+                No users found
+              </ThemedText>
+            </View>
+          )}
+        </View>
+      )}
+    </View>
+  );
   
   const renderProfileStatsView = () => {
     const friend = viewingProfileOf!;
@@ -531,6 +606,10 @@ export default function FriendsScreen() {
     return <ThemedView style={styles.container}>{renderProfileStatsView()}</ThemedView>;
   }
 
+  const incomingRequests = friendRequests.filter(r => r.request_direction === 'incoming');
+  const outgoingRequests = friendRequests.filter(r => r.request_direction === 'outgoing');
+  const totalInvitesBadge = incomingRequests.length + communityInvites.length;
+
   return (
     <ThemedView style={styles.container}>
       <HapticBackButton
@@ -540,43 +619,37 @@ export default function FriendsScreen() {
       />
 
       <View style={styles.tabContainer}>
-        {['friends', 'requests', 'invites', 'expand'].map((tab) => {
-          const incomingFriendRequests = friendRequests.filter(r => r.request_direction === 'incoming').length;
-          const getBadgeCount = () => {
-            if (tab === 'requests') return incomingFriendRequests;
-            if (tab === 'invites') return communityInvites.length;
-            return 0;
-          };
-          const badgeCount = getBadgeCount();
-          const tabLabel = tab === 'invites' ? 'Invites' : tab.charAt(0).toUpperCase() + tab.slice(1);
+        {['friends', 'invites'].map((tab) => {
+          const badgeCount = tab === 'invites' ? totalInvitesBadge : 0;
+          const tabLabel = tab.charAt(0).toUpperCase() + tab.slice(1);
           
           return (
-            <TouchableOpacity 
-              key={tab} 
-              style={[
-                styles.tab, 
-                currentTab === tab && styles.activeTab, 
-                currentTab === tab && { borderBottomColor: theme.colors.primary }
-              ]} 
-              onPress={() => setCurrentTab(tab as any)}
-            >
-              <View style={styles.tabContent}>
-                <ThemedText 
-                  variant={currentTab === tab ? 'subtitle' : 'body'}
-                  style={[
-                    styles.tabText,
-                    currentTab === tab && { color: theme.colors.primary }
-                  ]}
-                >
+          <TouchableOpacity 
+            key={tab} 
+            style={[
+              styles.tab, 
+              currentTab === tab && styles.activeTab, 
+              currentTab === tab && { borderBottomColor: theme.colors.primary }
+            ]} 
+            onPress={() => setCurrentTab(tab as any)}
+          >
+            <View style={styles.tabContent}>
+              <ThemedText 
+                variant={currentTab === tab ? 'subtitle' : 'body'}
+                style={[
+                  styles.tabText,
+                  currentTab === tab && { color: theme.colors.primary }
+                ]}
+              >
                   {tabLabel}
-                </ThemedText>
+              </ThemedText>
                 {badgeCount > 0 && (
-                  <View style={[styles.badge, { backgroundColor: theme.colors.error }]}>
+                <View style={[styles.badge, { backgroundColor: theme.colors.error }]}>
                     <ThemedText style={styles.badgeText}>{badgeCount}</ThemedText>
-                  </View>
-                )}
-              </View>
-            </TouchableOpacity>
+                </View>
+              )}
+            </View>
+          </TouchableOpacity>
           );
         })}
       </View>
@@ -584,119 +657,10 @@ export default function FriendsScreen() {
       <View style={styles.content}>
         {loading && <ActivityIndicator style={{ marginTop: 20 }} size="large" />}
 
+        {/* FRIENDS TAB */}
         {currentTab === 'friends' && !loading && (
-            <FlatList 
-              data={friends} 
-              renderItem={(props) => renderUserProfile({...props, from: 'friends'})} 
-              keyExtractor={(item) => item.id} 
-              ListEmptyComponent={
-                <View style={styles.emptyState}>
-                  <Ionicons name="people-outline" size={64} color={theme.colors.textSecondary} style={styles.emptyIcon} />
-                  <ThemedText variant="subtitle" style={styles.emptyTitle}>No Friends Yet</ThemedText>
-                  <ThemedText variant="caption" style={styles.emptyText}>
-                    Start building your network by searching for friends in the Expand tab
-                  </ThemedText>
-                </View>
-              } 
-            />
-        )}
-
-        {currentTab === 'requests' && !loading && (
-          <SectionList
-            sections={[
-              { title: 'Incoming Requests', data: friendRequests.filter(r => r.request_direction === 'incoming') },
-              { title: 'Sent Requests', data: friendRequests.filter(r => r.request_direction === 'outgoing') },
-            ]}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => renderUserProfile({ item, from: 'requests' })}
-            renderSectionHeader={({ section: { title, data } }) => (
-                data.length > 0 ? <ThemedText variant="subtitle" style={styles.sectionTitle}>{title}</ThemedText> : null
-            )}
-            ListEmptyComponent={
-              <View style={styles.emptyState}>
-                <Ionicons name="mail-outline" size={64} color={theme.colors.textSecondary} style={styles.emptyIcon} />
-                <ThemedText variant="subtitle" style={styles.emptyTitle}>No Pending Requests</ThemedText>
-                <ThemedText variant="caption" style={styles.emptyText}>
-                  You don't have any friend requests at the moment
-                </ThemedText>
-              </View>
-            }
-          />
-        )}
-
-        {currentTab === 'invites' && (
-          <View style={{flex: 1}}>
-            {loadingInvites ? (
-              <ActivityIndicator style={{ marginTop: 40 }} size="large" />
-            ) : communityInvites.length > 0 ? (
-              <FlatList
-                data={communityInvites}
-                keyExtractor={(item) => String(item.invite_id)}
-                renderItem={({ item }) => {
-                  const isResponding = respondingToInvite.has(item.community_id);
-                  return (
-                    <View style={[styles.inviteCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
-                      <View style={styles.inviteContent}>
-                        <CommunityIcon
-                          icon={item.community_icon}
-                          iconColor={item.community_icon_color}
-                          backgroundColor={item.community_background_color}
-                          size={52}
-                        />
-                        <View style={styles.inviteInfo}>
-                          <ThemedText variant="body" style={styles.inviteCommunityName}>
-                            {item.community_name}
-                          </ThemedText>
-                          <ThemedText variant="caption" style={{ color: theme.colors.textSecondary }}>
-                            Invited by {item.inviter_name}
-                          </ThemedText>
-                          <ThemedText variant="caption" style={{ color: theme.colors.textSecondary, fontSize: 11, marginTop: 2 }}>
-                            {new Date(item.created_at).toLocaleDateString()}
-                          </ThemedText>
-                        </View>
-                      </View>
-                      <View style={styles.inviteActions}>
-                        <TouchableOpacity
-                          style={[styles.inviteDeclineButton, { borderColor: theme.colors.border }]}
-                          onPress={() => handleRespondToInvite(item.community_id, false)}
-                          disabled={isResponding}
-                        >
-                          {isResponding ? (
-                            <ActivityIndicator size="small" color={theme.colors.textSecondary} />
-                          ) : (
-                            <Ionicons name="close" size={20} color={theme.colors.textSecondary} />
-                          )}
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[styles.inviteAcceptButton, { backgroundColor: theme.colors.primary }]}
-                          onPress={() => handleRespondToInvite(item.community_id, true)}
-                          disabled={isResponding}
-                        >
-                          {isResponding ? (
-                            <ActivityIndicator size="small" color="#FFFFFF" />
-                          ) : (
-                            <Ionicons name="checkmark" size={20} color="#FFFFFF" />
-                          )}
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  );
-                }}
-              />
-            ) : (
-              <View style={styles.emptyState}>
-                <Ionicons name="home-outline" size={64} color={theme.colors.textSecondary} style={styles.emptyIcon} />
-                <ThemedText variant="subtitle" style={styles.emptyTitle}>No Community Invites</ThemedText>
-                <ThemedText variant="caption" style={styles.emptyText}>
-                  You don't have any pending community invitations
-                </ThemedText>
-              </View>
-            )}
-          </View>
-        )}
-        
-        {currentTab === 'expand' && (
-          <View style={{flex: 1}}>
+          <ScrollView showsVerticalScrollIndicator={false}>
+            {/* Search Bar */}
             <View style={styles.searchSection}>
               <ThemedInput 
                 placeholder="Search by username..." 
@@ -709,51 +673,132 @@ export default function FriendsScreen() {
               />
             </View>
 
-            {loadingExpand ? <ActivityIndicator style={{ marginTop: 40 }} size="large" /> : 
-              (searchResults.length > 0 || searchQuery) ? (
-                <FlatList 
-                  data={searchResults} 
-                  renderItem={(props) => renderUserProfile({...props, from: 'expand'})} 
-                  keyExtractor={(item) => item.id} 
-                  ListEmptyComponent={
-                    <View style={styles.emptyState}>
-                      <Ionicons name="search-outline" size={64} color={theme.colors.textSecondary} style={styles.emptyIcon} />
-                      <ThemedText variant="subtitle" style={styles.emptyTitle}>No Users Found</ThemedText>
-                      <ThemedText variant="caption" style={styles.emptyText}>
-                        Try searching with a different username
-                      </ThemedText>
+            {/* Search Results */}
+            {searchQuery.trim() ? (
+              <View>
+                <ThemedText variant="subtitle" style={styles.sectionTitle}>Search Results</ThemedText>
+                {searchLoading ? (
+                  <ActivityIndicator style={{ marginVertical: 20 }} size="small" />
+                ) : searchResults.length > 0 ? (
+                  searchResults.map(item => (
+                    <View key={item.id}>
+                      {renderUserCard({ item, showActions: true })}
                     </View>
-                  } 
-                />
-              ) : (
-                <ScrollView showsVerticalScrollIndicator={false}>
-                  <ThemedText variant="subtitle" style={styles.sectionTitle}>From Your School</ThemedText>
-                  {schoolmates.length > 0 ? (
-                    schoolmates.map(item => <View key={item.id}>{renderUserProfile({ item, from: 'expand' })}</View>)
-                  ) : (
-                    <View style={styles.emptyStateSmall}>
-                      <Ionicons name="school-outline" size={32} color={theme.colors.textSecondary} />
-                      <ThemedText variant="caption" style={styles.emptyTextSmall}>
-                        No new people found from your school
-                      </ThemedText>
+                  ))
+                ) : (
+                  <View style={styles.emptyStateSmall}>
+                    <Ionicons name="search-outline" size={32} color={theme.colors.textSecondary} />
+                    <ThemedText variant="caption" style={styles.emptyTextSmall}>
+                      No users found matching "{searchQuery}"
+                    </ThemedText>
+                  </View>
+                )}
+              </View>
+            ) : (
+              <>
+                {/* Friends List */}
+                <ThemedText variant="subtitle" style={styles.sectionTitle}>Friends</ThemedText>
+                {friends.length > 0 ? (
+                  friends.map(item => (
+                    <View key={item.id}>
+                      {renderUserCard({ item, showActions: false })}
                     </View>
-                  )}
-                  
-                  <ThemedText variant="subtitle" style={styles.sectionTitle}>Friends of Friends</ThemedText>
-                  {friendsOfFriends.length > 0 ? (
-                    friendsOfFriends.map(item => <View key={item.id}>{renderUserProfile({ item, from: 'expand' })}</View>)
-                  ) : (
-                    <View style={styles.emptyStateSmall}>
-                      <Ionicons name="git-network-outline" size={32} color={theme.colors.textSecondary} />
-                      <ThemedText variant="caption" style={styles.emptyTextSmall}>
-                        No friends of friends found
-                      </ThemedText>
-                    </View>
-                  )}
-                </ScrollView>
-              )
-            }
-          </View>
+                  ))
+                ) : (
+                  <View style={styles.emptyState}>
+                    <Ionicons name="people-outline" size={64} color={theme.colors.textSecondary} style={styles.emptyIcon} />
+                    <ThemedText variant="subtitle" style={styles.emptyTitle}>No Friends Yet</ThemedText>
+                    <ThemedText variant="caption" style={styles.emptyText}>
+                      Search for friends above or expand your network below
+                    </ThemedText>
+                  </View>
+                )}
+
+                {/* Expand Network Dropdowns */}
+                <ThemedText variant="subtitle" style={[styles.sectionTitle, { marginTop: 24 }]}>
+                  Expand Your Network
+                </ThemedText>
+                
+                {renderExpandSection(
+                  'Friends of Friends',
+                  friendsOfFriends,
+                  showFriendsOfFriends,
+                  () => setShowFriendsOfFriends(!showFriendsOfFriends),
+                  'git-network-outline'
+                )}
+                
+                {renderExpandSection(
+                  'From Your School',
+                  schoolmates,
+                  showSchoolmates,
+                  () => setShowSchoolmates(!showSchoolmates),
+                  'school-outline'
+                )}
+                
+                <View style={{ height: 40 }} />
+              </>
+            )}
+          </ScrollView>
+        )}
+
+        {/* INVITES TAB */}
+        {currentTab === 'invites' && !loading && (
+          <ScrollView showsVerticalScrollIndicator={false}>
+            {/* Community Invites */}
+            <ThemedText variant="subtitle" style={styles.sectionTitle}>Community Invites</ThemedText>
+            {loadingInvites ? (
+              <ActivityIndicator style={{ marginVertical: 20 }} size="small" />
+            ) : communityInvites.length > 0 ? (
+              communityInvites.map(item => (
+                <View key={item.invite_id}>
+                  {renderCommunityInviteCard(item)}
+                </View>
+              ))
+            ) : (
+              <View style={styles.emptyStateSmall}>
+                <Ionicons name="home-outline" size={32} color={theme.colors.textSecondary} />
+                <ThemedText variant="caption" style={styles.emptyTextSmall}>
+                  No pending community invites
+                </ThemedText>
+              </View>
+            )}
+
+            {/* Incoming Friend Requests */}
+            <ThemedText variant="subtitle" style={[styles.sectionTitle, { marginTop: 24 }]}>Friend Requests</ThemedText>
+            {incomingRequests.length > 0 ? (
+              incomingRequests.map(item => (
+                <View key={item.id}>
+                  {renderFriendRequestCard({ item, type: 'incoming' })}
+                </View>
+              ))
+            ) : (
+              <View style={styles.emptyStateSmall}>
+                <Ionicons name="mail-outline" size={32} color={theme.colors.textSecondary} />
+                <ThemedText variant="caption" style={styles.emptyTextSmall}>
+                  No incoming friend requests
+                </ThemedText>
+              </View>
+            )}
+
+            {/* Sent Friend Requests */}
+            <ThemedText variant="subtitle" style={[styles.sectionTitle, { marginTop: 24 }]}>Sent Requests</ThemedText>
+            {outgoingRequests.length > 0 ? (
+              outgoingRequests.map(item => (
+                <View key={item.id}>
+                  {renderFriendRequestCard({ item, type: 'outgoing' })}
+                </View>
+              ))
+            ) : (
+              <View style={styles.emptyStateSmall}>
+                <Ionicons name="paper-plane-outline" size={32} color={theme.colors.textSecondary} />
+                <ThemedText variant="caption" style={styles.emptyTextSmall}>
+                  No pending sent requests
+                </ThemedText>
+              </View>
+            )}
+            
+            <View style={{ height: 40 }} />
+          </ScrollView>
         )}
       </View>
     </ThemedView>
@@ -866,7 +911,7 @@ const styles = StyleSheet.create({
   emptyState: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 60,
+    paddingVertical: 40,
     paddingHorizontal: 24,
   },
   emptyIcon: {
@@ -893,7 +938,6 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   sectionTitle: { 
-    marginTop: 24, 
     marginBottom: 12, 
     paddingHorizontal: 4, 
     fontWeight: '700',
@@ -941,6 +985,35 @@ const styles = StyleSheet.create({
     paddingVertical: 12, 
     borderBottomWidth: 1, 
     borderBottomColor: '#e5e5e5' 
+  },
+  // Expand section styles
+  expandSection: {
+    marginBottom: 12,
+  },
+  expandHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  expandHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  expandHeaderText: {
+    fontWeight: '500',
+  },
+  countBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  expandContent: {
+    marginTop: 8,
+    paddingLeft: 8,
   },
   // Community invite styles
   inviteCard: {

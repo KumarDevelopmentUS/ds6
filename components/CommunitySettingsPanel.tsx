@@ -323,18 +323,18 @@ export function CommunitySettingsPanel({
             </View>
 
             <ScrollView style={styles.scrollContent}>
-              {/* Content */}
-              <View style={styles.content}>
+            {/* Content */}
+            <View style={styles.content}>
                 {loadingDetails ? (
                   <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color="#007AFF" />
                   </View>
                 ) : (
                   <>
-                    {/* Community Info Section */}
-                    <View style={styles.section}>
-                      <Text style={styles.sectionTitle}>Community Information</Text>
-                      
+              {/* Community Info Section */}
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Community Information</Text>
+                
                       {/* Community Icon for private communities */}
                       {isPrivateCommunity && communityDetails && (
                         <View style={styles.communityIconRow}>
@@ -355,26 +355,26 @@ export function CommunitySettingsPanel({
                       )}
 
                       {!isPrivateCommunity && (
-                        <View style={styles.infoRow}>
-                          <View style={styles.infoIcon}>
-                            <Ionicons name="people" size={20} color="#007AFF" />
-                          </View>
-                          <View style={styles.infoContent}>
-                            <Text style={styles.infoLabel}>Community Name</Text>
-                            <Text style={styles.infoValue}>{displayCommunityName}</Text>
-                          </View>
-                        </View>
+                <View style={styles.infoRow}>
+                  <View style={styles.infoIcon}>
+                    <Ionicons name="people" size={20} color="#007AFF" />
+                  </View>
+                  <View style={styles.infoContent}>
+                    <Text style={styles.infoLabel}>Community Name</Text>
+                    <Text style={styles.infoValue}>{displayCommunityName}</Text>
+                  </View>
+                </View>
                       )}
 
-                      <View style={styles.infoRow}>
-                        <View style={styles.infoIcon}>
-                          <Ionicons name="calendar" size={20} color="#007AFF" />
-                        </View>
-                        <View style={styles.infoContent}>
-                          <Text style={styles.infoLabel}>Joined On</Text>
-                          <Text style={styles.infoValue}>{formatJoinedDate(joinedAt)}</Text>
-                        </View>
-                      </View>
+                <View style={styles.infoRow}>
+                  <View style={styles.infoIcon}>
+                    <Ionicons name="calendar" size={20} color="#007AFF" />
+                  </View>
+                  <View style={styles.infoContent}>
+                    <Text style={styles.infoLabel}>Joined On</Text>
+                    <Text style={styles.infoValue}>{formatJoinedDate(joinedAt)}</Text>
+                  </View>
+                </View>
 
                       {userRole && (
                         <View style={styles.infoRow}>
@@ -393,11 +393,11 @@ export function CommunitySettingsPanel({
                           </View>
                         </View>
                       )}
-                    </View>
+              </View>
 
-                    {/* Actions Section */}
-                    <View style={styles.section}>
-                      <Text style={styles.sectionTitle}>Actions</Text>
+              {/* Actions Section */}
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Actions</Text>
                       
                       {/* Manage Community (for owners/admins of private communities) */}
                       {isPrivateCommunity && isOwnerOrAdmin && (
@@ -412,21 +412,21 @@ export function CommunitySettingsPanel({
                           <Ionicons name="chevron-forward" size={16} color="#666" />
                         </TouchableOpacity>
                       )}
-                      
-                      <TouchableOpacity
-                        style={styles.actionButton}
-                        onPress={handleLeaveCommunity}
-                      >
-                        <View style={styles.actionIcon}>
-                          <Ionicons name="exit-outline" size={20} color="#FF3B30" />
-                        </View>
-                        <Text style={styles.actionText}>Leave Community</Text>
-                        <Ionicons name="chevron-forward" size={16} color="#666" />
-                      </TouchableOpacity>
-                    </View>
+                
+                <TouchableOpacity
+                  style={styles.actionButton}
+                  onPress={handleLeaveCommunity}
+                >
+                  <View style={styles.actionIcon}>
+                    <Ionicons name="exit-outline" size={20} color="#FF3B30" />
+                  </View>
+                  <Text style={styles.actionText}>Leave Community</Text>
+                  <Ionicons name="chevron-forward" size={16} color="#666" />
+                </TouchableOpacity>
+              </View>
                   </>
                 )}
-              </View>
+            </View>
             </ScrollView>
           </Animated.View>
         </View>
