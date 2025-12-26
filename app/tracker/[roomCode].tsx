@@ -574,11 +574,19 @@ const DieStatsTracker: React.FC = () => {
     }
 
     try {
+      // Validate penalties before syncing
+      const statsToSync = updatedPlayerStats || playerStats;
+      const penaltiesToSync = updatedTeamPenalties || teamPenalties;
+      const validatedPenalties = {
+        1: Math.max(0, penaltiesToSync[1] || 0),
+        2: Math.max(0, penaltiesToSync[2] || 0),
+      };
+
       const { error } = await supabase
         .from('live_matches')
         .update({
-          livePlayerStats: updatedPlayerStats || playerStats,
-          liveTeamPenalties: updatedTeamPenalties || teamPenalties,
+          livePlayerStats: statsToSync,
+          liveTeamPenalties: validatedPenalties,
           manual_adjustments: updatedManualAdjustments || manualAdjustments,
           adjustment_history: updatedAdjustmentHistory || adjustmentHistory,
           userSlotMap: userSlotMap,
@@ -889,6 +897,56 @@ const DieStatsTracker: React.FC = () => {
     return Math.min(105, baseScore + awards);
   };
 
+  // Validates and sanitizes player stats to ensure no invalid values
+  const validatePlayerStats = (stats: { [key: number]: PlayerStats }): { [key: number]: PlayerStats } => {
+    const validatedStats: { [key: number]: PlayerStats } = {};
+    
+    Object.entries(stats).forEach(([key, player]) => {
+      const playerId = parseInt(key);
+      validatedStats[playerId] = {
+        ...player,
+        throws: Math.max(0, player.throws || 0),
+        hits: Math.max(0, player.hits || 0),
+        blunders: Math.max(0, player.blunders || 0),
+        catches: Math.max(0, player.catches || 0),
+        score: Math.max(0, player.score || 0),
+        aura: Math.max(0, player.aura || 0),
+        fifaAttempts: Math.max(0, player.fifaAttempts || 0),
+        fifaSuccess: Math.max(0, player.fifaSuccess || 0),
+        hitStreak: Math.max(0, player.hitStreak || 0),
+        specialThrows: Math.max(0, player.specialThrows || 0),
+        lineThrows: Math.max(0, player.lineThrows || 0),
+        tableThrows: Math.max(0, player.tableThrows || 0),
+        goals: Math.max(0, player.goals || 0),
+        onFireCount: Math.max(0, player.onFireCount || 0),
+        line: Math.max(0, player.line || 0),
+        hit: Math.max(0, player.hit || 0),
+        goal: Math.max(0, player.goal || 0),
+        dink: Math.max(0, player.dink || 0),
+        sink: Math.max(0, player.sink || 0),
+        invalid: Math.max(0, player.invalid || 0),
+        miss: Math.max(0, player.miss || 0),
+        goodKick: Math.max(0, player.goodKick || 0),
+        badKick: Math.max(0, player.badKick || 0),
+        validThrows: Math.max(0, player.validThrows || 0),
+        catchAttempts: Math.max(0, player.catchAttempts || 0),
+        successfulCatches: Math.max(0, player.successfulCatches || 0),
+        redemptionShots: Math.max(0, player.redemptionShots || 0),
+      };
+    });
+    
+    return validatedStats;
+  };
+
+  // Validates and sanitizes match setup to ensure valid game settings
+  const validateMatchSetup = (setup: MatchSetup): MatchSetup => {
+    return {
+      ...setup,
+      gameScoreLimit: Math.max(1, Math.min(99, setup.gameScoreLimit || 11)), // Min 1, Max 99
+      sinkPoints: Math.max(1, Math.min(10, setup.sinkPoints || 3)), // Min 1, Max 10
+    };
+  };
+
   // Handles finishing the match, determining the winner and updating live session status
   const handleFinishMatch = () => {
     setShowFinishConfirmation(true);
@@ -927,6 +985,9 @@ const DieStatsTracker: React.FC = () => {
         console.error('Error updating match status:', error);
       }
     }
+
+    // Automatically save the match after finishing
+    await handleSaveStats();
   };
 
   const cancelFinishMatch = () => {
@@ -966,19 +1027,35 @@ const DieStatsTracker: React.FC = () => {
   
     setIsLoading(true);
     try {
+      // Validate and sanitize all match data
+      const validatedStats = validatePlayerStats(playerStats);
+      const validatedSetup = validateMatchSetup(matchSetup);
+      
+      // Validate team penalties (no negative values)
+      const validatedPenalties = {
+        1: Math.max(0, teamPenalties[1] || 0),
+        2: Math.max(0, teamPenalties[2] || 0),
+      };
+
+      // Validate match duration (no negative values)
+      const matchDuration = matchStartTime
+        ? Math.max(0, Math.floor((Date.now() - matchStartTime.getTime()) / 1000))
+        : 0;
+
+      // Validate winner team
+      const validatedWinner = (winnerTeam === 1 || winnerTeam === 2 || winnerTeam === 0) ? winnerTeam : 0;
+
       const matchData = {
         userId: savingUserId, // Use the determined saving user's ID
         roomCode: roomCodeString,
-        matchSetup: matchSetup,
-        playerStats: playerStats,
-        teamPenalties: teamPenalties,
+        matchSetup: validatedSetup,
+        playerStats: validatedStats,
+        teamPenalties: validatedPenalties,
         manual_adjustments: manualAdjustments,
         adjustment_history: adjustmentHistory,
         matchStartTime: matchStartTime?.toISOString(),
-        winnerTeam: winnerTeam,
-        matchDuration: matchStartTime
-          ? Math.max(0, Math.floor((Date.now() - matchStartTime.getTime()) / 1000))
-          : 0,
+        winnerTeam: validatedWinner,
+        matchDuration: matchDuration,
         userSlotMap: userSlotMap,
       };
   
@@ -1836,7 +1913,7 @@ const DieStatsTracker: React.FC = () => {
             </View>
           )}
 
-          {/* Match Controls Section (Show/Hide Stats, Finish, Save, New Game, Show/Hide Setup) */}
+          {/* Match Controls Section (Show/Hide Stats, Finish, New Game, Show/Hide Setup) */}
           <View style={styles.card}>
             <View style={styles.actionButtonRow}>
               <TouchableOpacity
@@ -1847,19 +1924,15 @@ const DieStatsTracker: React.FC = () => {
                   {showStats ? 'Hide Stats' : 'Show Stats'}
                 </Text>
               </TouchableOpacity>
-              {!matchFinished && (
+              {!matchFinished && !isLoading && (
                 <TouchableOpacity style={styles.redButton} onPress={handleFinishMatch}>
                   <Text style={styles.redButtonText}>Finish Match</Text>
                 </TouchableOpacity>
               )}
-              {matchFinished && (
-                <TouchableOpacity
-                  style={[styles.primaryButton, isLoading && styles.disabledButton]}
-                  onPress={handleSaveStats}
-                  disabled={isLoading}
-                >
-                  <Text style={styles.buttonText}>{isLoading ? 'Saving...' : 'Save Stats'}</Text>
-                </TouchableOpacity>
+              {isLoading && (
+                <View style={[styles.primaryButton, styles.disabledButton]}>
+                  <Text style={styles.buttonText}>Saving...</Text>
+                </View>
               )}
 
               
@@ -2374,7 +2447,7 @@ const DieStatsTracker: React.FC = () => {
             </View>
             <View style={styles.modalContent}>
               <Text style={styles.modalMessage}>
-                Are you sure you want to finish this match? This action cannot be undone.
+                Are you sure you want to finish and save this match? The match will be automatically saved and this action cannot be undone.
               </Text>
             </View>
             <View style={styles.modalActions}>

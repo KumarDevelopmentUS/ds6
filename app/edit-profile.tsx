@@ -583,11 +583,22 @@ export default function EditProfileScreen() {
 
         {/* --- Modals for selection --- */}
         <Modal visible={showIconPicker} animationType="slide" transparent={true} onRequestClose={() => setShowIconPicker(false)}>
-          <View style={styles.modalOverlay}>
-            <View style={[styles.modalContent, { backgroundColor: theme.colors.background }]}>
+          <TouchableOpacity 
+            style={styles.modalOverlay} 
+            activeOpacity={1} 
+            onPress={() => setShowIconPicker(false)}
+          >
+            <TouchableOpacity 
+              activeOpacity={1} 
+              onPress={(e) => e.stopPropagation()}
+              style={[styles.modalContent, { backgroundColor: theme.colors.background }]}
+            >
               <View style={styles.modalHeader}>
                 <ThemedText variant="subtitle">Select Icon</ThemedText>
-                <TouchableOpacity onPress={() => setShowIconPicker(false)}>
+                <TouchableOpacity 
+                  onPress={() => setShowIconPicker(false)}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
                   <Ionicons name="close" size={24} color={theme.colors.text} />
                 </TouchableOpacity>
               </View>
@@ -595,14 +606,19 @@ export default function EditProfileScreen() {
                 style={styles.modalScrollView}
                 contentContainerStyle={styles.modalGridContent}
                 showsVerticalScrollIndicator={true}
+                bounces={true}
               >
                 <View style={styles.iconGrid}>
                   {FUN_AVATAR_ICONS.map((item) => (
                     <TouchableOpacity 
                       key={item.name}
                       style={styles.iconItem} 
-                      onPress={() => selectIcon(item.name)}
-                      activeOpacity={0.7}
+                      onPress={() => {
+                        console.log('Icon selected:', item.name);
+                        selectIcon(item.name);
+                      }}
+                      activeOpacity={0.6}
+                      hitSlop={{ top: 5, bottom: 5, left: 5, right: 5 }}
                     >
                       <View style={[
                         styles.iconItemBox,
@@ -618,16 +634,27 @@ export default function EditProfileScreen() {
                   ))}
                 </View>
               </ScrollView>
-            </View>
-          </View>
+            </TouchableOpacity>
+          </TouchableOpacity>
         </Modal>
         
         <Modal visible={showIconColorPicker} animationType="slide" transparent={true} onRequestClose={() => setShowIconColorPicker(false)}>
-           <View style={styles.modalOverlay}>
-            <View style={[styles.modalContent, { backgroundColor: theme.colors.background }]}>
+          <TouchableOpacity 
+            style={styles.modalOverlay} 
+            activeOpacity={1} 
+            onPress={() => setShowIconColorPicker(false)}
+          >
+            <TouchableOpacity 
+              activeOpacity={1} 
+              onPress={(e) => e.stopPropagation()}
+              style={[styles.modalContent, { backgroundColor: theme.colors.background }]}
+            >
               <View style={styles.modalHeader}>
                 <ThemedText variant="subtitle">Select Icon Color</ThemedText>
-                <TouchableOpacity onPress={() => setShowIconColorPicker(false)}>
+                <TouchableOpacity 
+                  onPress={() => setShowIconColorPicker(false)}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
                   <Ionicons name="close" size={24} color={theme.colors.text} />
                 </TouchableOpacity>
               </View>
@@ -635,14 +662,19 @@ export default function EditProfileScreen() {
                 style={styles.modalScrollView}
                 contentContainerStyle={styles.modalGridContent}
                 showsVerticalScrollIndicator={true}
+                bounces={true}
               >
                 <View style={styles.colorGrid}>
                   {AVATAR_COLORS.map((item) => (
                     <TouchableOpacity 
                       key={item}
                       style={[styles.colorItem, { backgroundColor: item }]} 
-                      onPress={() => selectIconColor(item)}
-                      activeOpacity={0.7}
+                      onPress={() => {
+                        console.log('Color selected:', item);
+                        selectIconColor(item);
+                      }}
+                      activeOpacity={0.6}
+                      hitSlop={{ top: 5, bottom: 5, left: 5, right: 5 }}
                     >
                       {profile.avatar_icon_color === item && (
                         <Ionicons name="checkmark-circle" size={32} color={item === '#FFFFFF' || item === '#f59e0b' ? '#000' : '#FFF'} />
@@ -651,16 +683,27 @@ export default function EditProfileScreen() {
                   ))}
                 </View>
               </ScrollView>
-            </View>
-          </View>
+            </TouchableOpacity>
+          </TouchableOpacity>
         </Modal>
 
         <Modal visible={showBgColorPicker} animationType="slide" transparent={true} onRequestClose={() => setShowBgColorPicker(false)}>
-          <View style={styles.modalOverlay}>
-            <View style={[styles.modalContent, { backgroundColor: theme.colors.background }]}>
+          <TouchableOpacity 
+            style={styles.modalOverlay} 
+            activeOpacity={1} 
+            onPress={() => setShowBgColorPicker(false)}
+          >
+            <TouchableOpacity 
+              activeOpacity={1} 
+              onPress={(e) => e.stopPropagation()}
+              style={[styles.modalContent, { backgroundColor: theme.colors.background }]}
+            >
               <View style={styles.modalHeader}>
                 <ThemedText variant="subtitle">Select Background Color</ThemedText>
-                <TouchableOpacity onPress={() => setShowBgColorPicker(false)}>
+                <TouchableOpacity 
+                  onPress={() => setShowBgColorPicker(false)}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
                   <Ionicons name="close" size={24} color={theme.colors.text} />
                 </TouchableOpacity>
               </View>
@@ -668,14 +711,19 @@ export default function EditProfileScreen() {
                 style={styles.modalScrollView}
                 contentContainerStyle={styles.modalGridContent}
                 showsVerticalScrollIndicator={true}
+                bounces={true}
               >
                 <View style={styles.colorGrid}>
                   {AVATAR_COLORS.map((item) => (
                     <TouchableOpacity 
                       key={item}
                       style={[styles.colorItem, { backgroundColor: item }]} 
-                      onPress={() => selectBgColor(item)}
-                      activeOpacity={0.7}
+                      onPress={() => {
+                        console.log('Background color selected:', item);
+                        selectBgColor(item);
+                      }}
+                      activeOpacity={0.6}
+                      hitSlop={{ top: 5, bottom: 5, left: 5, right: 5 }}
                     >
                       {profile.avatar_background_color === item && (
                         <Ionicons name="checkmark-circle" size={32} color={item === '#FFFFFF' || item === '#f59e0b' ? '#000' : '#FFF'} />
@@ -684,8 +732,8 @@ export default function EditProfileScreen() {
                   ))}
                 </View>
               </ScrollView>
-            </View>
-          </View>
+            </TouchableOpacity>
+          </TouchableOpacity>
         </Modal>
         
         <Modal visible={showSchoolPicker} animationType="slide" transparent={true} onRequestClose={() => setShowSchoolPicker(false)}>
@@ -881,16 +929,18 @@ const styles = StyleSheet.create<{
     flexWrap: 'wrap',
     justifyContent: 'space-around',
     paddingHorizontal: 8,
+    gap: Platform.OS === 'web' ? 12 : 8,
   },
   iconItem: { 
-    width: Platform.OS === 'web' ? 110 : (width - 120) / 3,
+    width: Platform.OS === 'web' ? 110 : Math.floor((width - 100) / 3),
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 20,
     paddingHorizontal: 4,
+    paddingVertical: 8,
   },
   iconItemBox: {
-    width: Platform.OS === 'web' ? 90 : 85,
-    height: Platform.OS === 'web' ? 90 : 85,
+    width: Platform.OS === 'web' ? 90 : Math.min(90, Math.floor((width - 120) / 3)),
+    height: Platform.OS === 'web' ? 90 : Math.min(90, Math.floor((width - 120) / 3)),
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
@@ -909,18 +959,19 @@ const styles = StyleSheet.create<{
     shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 4,
+    transform: [{ scale: 1.05 }],
   },
   colorGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
     paddingHorizontal: 16,
-    gap: 16,
+    gap: Platform.OS === 'web' ? 16 : 14,
   },
   colorItem: { 
-    width: Platform.OS === 'web' ? 70 : 65,
-    height: Platform.OS === 'web' ? 70 : 65,
-    borderRadius: Platform.OS === 'web' ? 35 : 32.5,
+    width: Platform.OS === 'web' ? 70 : 70,
+    height: Platform.OS === 'web' ? 70 : 70,
+    borderRadius: 35,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 3,
@@ -930,6 +981,7 @@ const styles = StyleSheet.create<{
     shadowOpacity: 0.2,
     shadowRadius: 3,
     elevation: 3,
+    marginBottom: Platform.OS === 'web' ? 0 : 8,
   },
   searchContainer: { flexDirection: 'row', alignItems: 'center', borderRadius: 8, paddingHorizontal: 16, paddingVertical: 12, marginBottom: 16, gap: 12 },
   searchInput: { flex: 1, fontSize: 16 },

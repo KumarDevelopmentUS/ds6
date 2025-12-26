@@ -643,12 +643,23 @@ export default function AccountScreen() {
         transparent={true} 
         onRequestClose={() => setShowAvatarCustomizer(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: theme.colors.background }]}>
+        <TouchableOpacity 
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowAvatarCustomizer(false)}
+        >
+          <TouchableOpacity
+            activeOpacity={1}
+            onPress={(e) => e.stopPropagation()}
+            style={[styles.modalContent, { backgroundColor: theme.colors.background }]}
+          >
             {/* Modal Header */}
             <View style={styles.modalHeader}>
               <ThemedText variant="subtitle">Customize Avatar</ThemedText>
-              <TouchableOpacity onPress={() => setShowAvatarCustomizer(false)}>
+              <TouchableOpacity 
+                onPress={() => setShowAvatarCustomizer(false)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
                 <Ionicons name="close" size={24} color={theme.colors.text} />
               </TouchableOpacity>
             </View>
@@ -701,14 +712,19 @@ export default function AccountScreen() {
                   style={styles.scrollView}
                   contentContainerStyle={styles.gridContent}
                   showsVerticalScrollIndicator={true}
+                  bounces={true}
                 >
                   <View style={styles.iconGrid}>
                     {FUN_AVATAR_ICONS.map((item) => (
                       <TouchableOpacity 
                         key={item.name}
                         style={styles.iconItem} 
-                        onPress={() => handleSelectIcon(item.name)}
-                        activeOpacity={0.7}
+                        onPress={() => {
+                          console.log('Icon selected in settings:', item.name);
+                          handleSelectIcon(item.name);
+                        }}
+                        activeOpacity={0.6}
+                        hitSlop={{ top: 5, bottom: 5, left: 5, right: 5 }}
                       >
                         <View style={[
                           styles.iconItemContainer,
@@ -731,14 +747,19 @@ export default function AccountScreen() {
                   style={styles.scrollView}
                   contentContainerStyle={styles.gridContent}
                   showsVerticalScrollIndicator={true}
+                  bounces={true}
                 >
                   <View style={styles.colorGrid}>
                     {AVATAR_COLORS.map((item) => (
                       <TouchableOpacity 
                         key={item}
                         style={[styles.colorItem, { backgroundColor: item }]} 
-                        onPress={() => handleSelectIconColor(item)}
-                        activeOpacity={0.7}
+                        onPress={() => {
+                          console.log('Icon color selected in settings:', item);
+                          handleSelectIconColor(item);
+                        }}
+                        activeOpacity={0.6}
+                        hitSlop={{ top: 5, bottom: 5, left: 5, right: 5 }}
                       >
                         {profile?.avatar_icon_color === item && (
                           <View style={styles.colorCheckmark}>
@@ -756,14 +777,19 @@ export default function AccountScreen() {
                   style={styles.scrollView}
                   contentContainerStyle={styles.gridContent}
                   showsVerticalScrollIndicator={true}
+                  bounces={true}
                 >
                   <View style={styles.colorGrid}>
                     {AVATAR_COLORS.map((item) => (
                       <TouchableOpacity 
                         key={item}
                         style={[styles.colorItem, { backgroundColor: item }]} 
-                        onPress={() => handleSelectBackgroundColor(item)}
-                        activeOpacity={0.7}
+                        onPress={() => {
+                          console.log('Background color selected in settings:', item);
+                          handleSelectBackgroundColor(item);
+                        }}
+                        activeOpacity={0.6}
+                        hitSlop={{ top: 5, bottom: 5, left: 5, right: 5 }}
                       >
                         {profile?.avatar_background_color === item && (
                           <View style={styles.colorCheckmark}>
@@ -776,8 +802,8 @@ export default function AccountScreen() {
                 </ScrollView>
               )}
             </View>
-          </View>
-        </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
       </Modal>
     </ScrollView>
     </SafeAreaView>
@@ -1097,16 +1123,18 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'space-around',
     paddingHorizontal: 8,
+    gap: Platform.OS === 'web' ? 12 : 8,
   },
   iconItem: {
-    width: Platform.OS === 'web' ? 110 : (width - 120) / 3,
+    width: Platform.OS === 'web' ? 110 : Math.floor((width - 100) / 3),
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 20,
     paddingHorizontal: 4,
+    paddingVertical: 8,
   },
   iconItemContainer: {
-    width: Platform.OS === 'web' ? 90 : 85,
-    height: Platform.OS === 'web' ? 90 : 85,
+    width: Platform.OS === 'web' ? 90 : Math.min(90, Math.floor((width - 120) / 3)),
+    height: Platform.OS === 'web' ? 90 : Math.min(90, Math.floor((width - 120) / 3)),
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
@@ -1129,6 +1157,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 4,
+    transform: [{ scale: 1.05 }],
   },
   iconLabel: {
     textAlign: 'center',
@@ -1140,12 +1169,12 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'center',
     paddingHorizontal: 16,
-    gap: 16,
+    gap: Platform.OS === 'web' ? 16 : 14,
   },
   colorItem: {
-    width: Platform.OS === 'web' ? 70 : 65,
-    height: Platform.OS === 'web' ? 70 : 65,
-    borderRadius: Platform.OS === 'web' ? 35 : 32.5,
+    width: Platform.OS === 'web' ? 70 : 70,
+    height: Platform.OS === 'web' ? 70 : 70,
+    borderRadius: 35,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 3,
@@ -1155,6 +1184,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 3,
     elevation: 3,
+    marginBottom: Platform.OS === 'web' ? 0 : 8,
     ...(Platform.OS === 'web' && {
       cursor: 'pointer' as any,
       transition: 'transform 0.2s ease',
