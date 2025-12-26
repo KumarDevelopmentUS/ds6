@@ -1,12 +1,13 @@
 // app/stats.tsx
 import { HapticBackButton } from '@/components/HapticBackButton';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { Skeleton } from '@/components/ui/Skeleton';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
     Dimensions,
     ScrollView,
     StyleSheet,
@@ -768,18 +769,13 @@ export default function StatisticsScreen() {
         <Stack.Screen options={{ headerShown: false }} />
         <ThemedView style={styles.container}>
           <BackButton />
-          <View style={styles.emptyState}>
-            <Ionicons name="stats-chart" size={64} color={theme.colors.text} />
-            <ThemedText variant="subtitle" style={styles.emptyStateText}>
-              Sign in to view your statistics
-            </ThemedText>
-            <ThemedButton
-              title="Sign In"
-              onPress={() => router.push('/(auth)/login')}
-              size="medium"
-              style={{ marginTop: 20 }}
-            />
-          </View>
+          <EmptyState
+            type="stats"
+            title="Sign in to view your statistics"
+            description="Track your performance across all your matches"
+            actionLabel="Sign In"
+            onAction={() => router.push('/(auth)/login')}
+          />
         </ThemedView>
       </>
     );
@@ -791,7 +787,18 @@ export default function StatisticsScreen() {
         <Stack.Screen options={{ headerShown: false }} />
         <ThemedView style={styles.container}>
           <BackButton />
-          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <ScrollView contentContainerStyle={{ padding: 20, gap: 16 }}>
+            <ThemedText variant="title" style={{ marginTop: 60, marginBottom: 16 }}>Statistics</ThemedText>
+            <View style={{ gap: 12 }}>
+              <Skeleton height={120} borderRadius={12} />
+              <View style={{ flexDirection: 'row', gap: 12 }}>
+                <View style={{ flex: 1 }}><Skeleton height={80} borderRadius={12} /></View>
+                <View style={{ flex: 1 }}><Skeleton height={80} borderRadius={12} /></View>
+              </View>
+              <Skeleton height={200} borderRadius={12} />
+              <Skeleton height={150} borderRadius={12} />
+            </View>
+          </ScrollView>
         </ThemedView>
       </>
     );
@@ -803,15 +810,13 @@ export default function StatisticsScreen() {
         <Stack.Screen options={{ headerShown: false }} />
         <ThemedView style={styles.container}>
           <BackButton />
-          <View style={styles.emptyState}>
-            <Ionicons name="stats-chart-outline" size={64} color={theme.colors.text} />
-            <ThemedText variant="subtitle" style={styles.emptyStateText}>
-              No statistics available yet
-            </ThemedText>
-            <ThemedText variant="caption" style={styles.emptyStateSubtext}>
-              Join a match as a player to see your stats!
-            </ThemedText>
-          </View>
+          <EmptyState
+            type="stats"
+            title="No statistics available yet"
+            description="Join a match as a player to start building your stats profile!"
+            actionLabel="Start a Match"
+            onAction={() => router.push('/tracker/join')}
+          />
         </ThemedView>
       </>
     );

@@ -1,12 +1,13 @@
 // app/history.tsx
 import { HapticBackButton } from '@/components/HapticBackButton';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { SkeletonMatchCard } from '@/components/ui/Skeleton';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
     Alert,
     RefreshControl,
     ScrollView,
@@ -276,7 +277,24 @@ export default function GameHistoryScreen() {
           }}
         />
         <ThemedView style={styles.container}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+            <HapticBackButton 
+              onPress={() => router.back()} 
+              style={styles.backButton}
+              color="#3b82f6"
+            />
+            <ThemedView style={styles.header}>
+              <ThemedText variant="title">Game History</ThemedText>
+              <ThemedText variant="caption" style={styles.headerCaption}>
+                Loading your matches...
+              </ThemedText>
+            </ThemedView>
+            <View style={{ padding: 16, gap: 12 }}>
+              <SkeletonMatchCard />
+              <SkeletonMatchCard />
+              <SkeletonMatchCard />
+            </View>
+          </ScrollView>
         </ThemedView>
       </>
     );
@@ -346,22 +364,19 @@ export default function GameHistoryScreen() {
 
         {/* Match List */}
         {filteredMatches.length === 0 ? (
-          <ThemedView variant="card" style={styles.emptyCard}>
-            <Ionicons 
-              name={matches.length === 0 ? "game-controller-outline" : "filter-outline"} 
-              size={64} 
-              color={theme.colors.textSecondary} 
-              style={styles.emptyIcon} 
-            />
-            <ThemedText variant="subtitle" style={styles.emptyTitle}>
-              {matches.length === 0 ? "No Matches Yet" : "No Matches Found"}
-            </ThemedText>
-            <ThemedText variant="body" style={styles.emptyText}>
-              {matches.length === 0 
-                ? "Join a game as a player to start building your match history!"
-                : "Try a different filter to see more matches"}
-            </ThemedText>
-          </ThemedView>
+          <EmptyState
+            type="history"
+            title={matches.length === 0 ? "No Matches Yet" : "No Matches Found"}
+            description={matches.length === 0 
+              ? "Join a game as a player to start building your match history!"
+              : "Try a different filter to see more matches"}
+            icon={matches.length === 0 ? "game-controller-outline" : "filter-outline"}
+            actionLabel={matches.length === 0 ? "Start a Match" : "Clear Filter"}
+            onAction={() => matches.length === 0 
+              ? router.push('/tracker/join') 
+              : setFilter('all')
+            }
+          />
         ) : (
           filteredMatches.map((match) => {
             const team1Score = calculateTeamScore(match, 1);

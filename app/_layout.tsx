@@ -1,4 +1,5 @@
 // app/_layout.tsx
+import { ToastProvider } from '@/components/ui/Toast';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { FeedProvider } from '@/contexts/FeedContext';
 import { HapticsProvider } from '@/contexts/HapticsContext';
@@ -11,6 +12,7 @@ import { SplashScreen, Stack, useRouter, useSegments } from 'expo-router';
 import React, { useEffect } from 'react';
 import { Platform, Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 // Conditionally import Vercel Analytics only for web
 const Analytics = Platform.OS === 'web' ? require('@vercel/analytics/react').Analytics : () => null;
@@ -235,18 +237,22 @@ export default function RootLayout() {
     return (
       <ErrorBoundary>
         <GestureHandlerRootView style={{ flex: 1 }}>
-          <QueryClientProvider client={queryClient}>
-            <ThemeProvider>
-              <HapticsProvider>
-                <AuthProvider>
-                  <FeedProvider>
-                    <RootLayoutNav />
-                    {Platform.OS === 'web' && <Analytics />}
-                  </FeedProvider>
-                </AuthProvider>
-              </HapticsProvider>
-            </ThemeProvider>
-          </QueryClientProvider>
+          <SafeAreaProvider>
+            <QueryClientProvider client={queryClient}>
+              <ThemeProvider>
+                <HapticsProvider>
+                  <AuthProvider>
+                    <FeedProvider>
+                      <ToastProvider>
+                        <RootLayoutNav />
+                        {Platform.OS === 'web' && <Analytics />}
+                      </ToastProvider>
+                    </FeedProvider>
+                  </AuthProvider>
+                </HapticsProvider>
+              </ThemeProvider>
+            </QueryClientProvider>
+          </SafeAreaProvider>
         </GestureHandlerRootView>
       </ErrorBoundary>
     );

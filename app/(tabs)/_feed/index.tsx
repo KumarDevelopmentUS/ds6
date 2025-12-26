@@ -3,6 +3,8 @@ import { CommunitySettingsPanel } from '@/components/CommunitySettingsPanel';
 import { PostCard } from '@/components/social/PostCard';
 import { ThemedText } from '@/components/themed/ThemedText';
 import { ThemedView } from '@/components/themed/ThemedView';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { SkeletonCard } from '@/components/ui/Skeleton';
 import { getSchoolByValue } from '@/constants/schools';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFeed } from '@/contexts/FeedContext';
@@ -13,7 +15,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
     Alert,
     FlatList,
     Modal,
@@ -219,12 +220,17 @@ export default function FeedScreen() {
   if (isCommunitiesLoading) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" />
-          <Text style={styles.loadingText}>Loading communities...</Text>
+        <View style={styles.header}>
+          <View style={styles.communitySelector}>
+            <Text style={styles.selectorLabel}>Loading...</Text>
+          </View>
         </View>
+        <ScrollView contentContainerStyle={styles.listContent}>
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+        </ScrollView>
       </SafeAreaView>
-
     );
   }
 
@@ -256,30 +262,16 @@ export default function FeedScreen() {
   if (!communities || communities.length === 0) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.emptyContainer}>
-          <Ionicons name="home-outline" size={64} color="#666" />
-          <Text style={styles.emptyText}>You haven&apos;t joined any communities yet.</Text>
-          <Text style={styles.emptySubtext}>
-            Join a community to start seeing posts and connecting with others!
-          </Text>
-          
-          <View style={{ marginTop: 30, gap: 12, width: '100%', maxWidth: 300 }}>
-            <TouchableOpacity 
-              style={{ backgroundColor: '#007AFF', padding: 16, borderRadius: 8 }}
-              onPress={fixCommunityMembership}
-            >
-              <Text style={{ color: 'white', textAlign: 'center', fontWeight: 'bold', fontSize: 16 }}>
-                🏘️ Join General Community
-              </Text>
-            </TouchableOpacity>
-
-            <Text style={{ color: '#666', textAlign: 'center', marginTop: 8, fontSize: 14, paddingHorizontal: 20 }}>
-              Or join a school community by selecting a school in the Edit Profile section of the Settings tab
-            </Text>
-          </View>
-        </View>
+        <EmptyState
+          type="communities"
+          title="No Communities Yet"
+          description="Join a community to start seeing posts and connecting with other players!"
+          actionLabel="Join General Community"
+          onAction={fixCommunityMembership}
+          secondaryActionLabel="Edit Profile"
+          onSecondaryAction={() => router.push('/edit-profile')}
+        />
       </SafeAreaView>
-
     );
   }
 
@@ -524,13 +516,15 @@ export default function FeedScreen() {
         }
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>
-              {selectedCommunity
-                ? `No posts in ${selectedCommunityDisplayName || ''} yet. Be the first to share!`
-                : 'No posts yet. Be the first to share!'}
-            </Text>
-          </View>
+          <EmptyState
+            type="posts"
+            title="No posts yet"
+            description={selectedCommunity
+              ? `Be the first to share something in ${selectedCommunityDisplayName || 'this community'}!`
+              : 'Select a community and start sharing with others!'}
+            actionLabel="Create Post"
+            onAction={handleCreatePost}
+          />
         }
       />
 
