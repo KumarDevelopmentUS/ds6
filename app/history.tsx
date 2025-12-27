@@ -368,8 +368,8 @@ export default function GameHistoryScreen() {
             type="history"
             title={matches.length === 0 ? "No Matches Yet" : "No Matches Found"}
             description={matches.length === 0 
-              ? "Join a game as a player to start building your match history!"
-              : "Try a different filter to see more matches"}
+                ? "Join a game as a player to start building your match history!"
+                : "Try a different filter to see more matches"}
             icon={matches.length === 0 ? "game-controller-outline" : "filter-outline"}
             actionLabel={matches.length === 0 ? "Start a Match" : "Clear Filter"}
             onAction={() => matches.length === 0 

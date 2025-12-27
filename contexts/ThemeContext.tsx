@@ -261,7 +261,7 @@ const lightTheme: Theme = {
       shadowOpacity: 0.1,
       shadowRadius: 4,
       elevation: 2,
-    },
+  },
     lg: {
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 4 },
@@ -275,7 +275,7 @@ const lightTheme: Theme = {
       shadowOpacity: 0.2,
       shadowRadius: 16,
       elevation: 8,
-    },
+  },
   },
   touchTargets: sharedTouchTargets,
 };

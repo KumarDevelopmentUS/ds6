@@ -121,31 +121,31 @@ export const ThemedButton: React.FC<ThemedButtonProps> = ({
     <Animated.View style={{ transform: [{ scale: scaleAnim }], width: fullWidth ? '100%' : undefined }}>
       <Pressable
         style={({ pressed }) => [
-          styles.button,
-          sizeStyles[size],
-          {
+        styles.button,
+        sizeStyles[size],
+        { 
             backgroundColor: variantStyle.bg,
             borderColor: variantStyle.border,
             borderWidth: variant === 'outline' ? 2 : 0,
-            borderRadius: theme.borderRadius.md,
+          borderRadius: theme.borderRadius.md,
             opacity: isDisabled ? 0.5 : pressed ? 0.9 : 1,
             width: fullWidth ? '100%' : undefined,
-          },
+        },
           Platform.OS === 'web' && !isDisabled && styles.webHover,
           style,
-        ]}
+      ]}
         disabled={isDisabled}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         onPress={handlePress}
         accessibilityRole="button"
         accessibilityState={{ disabled: isDisabled, busy: loading }}
-        {...props}
-      >
-        <View style={styles.content}>
-          {loading ? (
+      {...props}
+    >
+      <View style={styles.content}>
+        {loading ? (
             <>
-              <ActivityIndicator 
+          <ActivityIndicator 
                 color={variantStyle.text} 
                 size="small"
               />
@@ -158,19 +158,19 @@ export const ThemedButton: React.FC<ThemedButtonProps> = ({
                 </ThemedText>
               )}
             </>
-          ) : (
-            <>
+        ) : (
+          <>
               {icon && iconPosition === 'left' && <View style={styles.iconLeft}>{icon}</View>}
-              <ThemedText 
-                variant="button" 
+            <ThemedText 
+              variant="button" 
                 style={{ color: variantStyle.text, fontSize: textSize, fontWeight: '600' }}
-              >
-                {title}
-              </ThemedText>
+            >
+              {title}
+            </ThemedText>
               {icon && iconPosition === 'right' && <View style={styles.iconRight}>{icon}</View>}
-            </>
-          )}
-        </View>
+          </>
+        )}
+      </View>
       </Pressable>
     </Animated.View>
   );

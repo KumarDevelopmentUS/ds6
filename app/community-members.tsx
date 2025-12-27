@@ -234,6 +234,7 @@ export default function CommunityMembersScreen() {
   const renderMember = ({ item }: { item: UserProfile }) => {
     const isFriend = friends.has(item.id);
     const isPending = pendingRequests.has(item.id);
+    const isCurrentUser = item.id === currentUserId;
 
     return (
       <TouchableOpacity onPress={() => router.push(`/user-profile/${item.id}`)}>
@@ -277,7 +278,11 @@ export default function CommunityMembersScreen() {
             </View>
           </View>
 
-          {isFriend ? (
+          {isCurrentUser ? (
+            <View style={[styles.statusButton, styles.youButton]}>
+              <Text style={styles.youButtonText}>You</Text>
+            </View>
+          ) : isFriend ? (
             <View style={[styles.statusButton, styles.friendButton]}>
               <Text style={styles.friendButtonText}>Friends</Text>
             </View>
@@ -465,6 +470,16 @@ const styles = StyleSheet.create({
   },
   pendingButtonText: {
     color: '#666',
+    fontWeight: '500',
+    fontSize: 14,
+  },
+  youButton: {
+    backgroundColor: '#f0f0f0',
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  youButtonText: {
+    color: '#888',
     fontWeight: '500',
     fontSize: 14,
   },

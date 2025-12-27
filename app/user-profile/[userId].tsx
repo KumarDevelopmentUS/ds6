@@ -1,6 +1,7 @@
 // app/user-profile/[userId].tsx
 import { HapticBackButton } from '@/components/HapticBackButton';
 import { supabase } from '@/supabase';
+import { Achievement, getTopAchievements, MEDAL_COLORS } from '@/utils/achievements';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -60,6 +61,8 @@ export default function UserProfileScreen() {
   const [friendshipStatus, setFriendshipStatus] = useState<FriendshipStatus>({ status: 'none' });
   const [loadingStats, setLoadingStats] = useState(true);
   const [loadingFriendship, setLoadingFriendship] = useState(true);
+  const [achievements, setAchievements] = useState<Achievement[]>([]);
+  const [loadingAchievements, setLoadingAchievements] = useState(true);
 
   useEffect(() => {
     if (userId) {
@@ -72,8 +75,23 @@ export default function UserProfileScreen() {
       loadUserProfile();
       loadUserStats();
       loadFriendshipStatus();
+      loadAchievements();
     }
   }, [userId, session]);
+
+  const loadAchievements = async () => {
+    if (!userId || typeof userId !== 'string') return;
+    
+    setLoadingAchievements(true);
+    try {
+      const topAchievements = await getTopAchievements(userId, 4);
+      setAchievements(topAchievements);
+    } catch (error) {
+      console.error('Error loading achievements:', error);
+    } finally {
+      setLoadingAchievements(false);
+    }
+  };
 
   const loadUserProfile = async () => {
     if (!userId || typeof userId !== 'string') return;
@@ -408,6 +426,38 @@ export default function UserProfileScreen() {
                     <ThemedText variant="body" color="primary">{stats.totalCatches}</ThemedText>
                   </View>
                 </ThemedView>
+
+                {/* Top Achievements */}
+                {!loadingAchievements && achievements.length > 0 && (
+                  <ThemedView variant="card" style={styles.achievementsCard}>
+                    <ThemedText variant="subtitle" style={styles.sectionTitle}>
+                      Top Achievements
+                    </ThemedText>
+                    
+                    <View style={styles.achievementsGrid}>
+                      {achievements.map((achievement) => (
+                        <View key={achievement.id} style={styles.achievementItem}>
+                          <View style={[
+                            styles.achievementIcon,
+                            { backgroundColor: MEDAL_COLORS[achievement.tier] }
+                          ]}>
+                            <Ionicons
+                              name={achievement.icon}
+                              size={20}
+                              color="#ffffff"
+                            />
+                          </View>
+                          <ThemedText variant="caption" style={styles.achievementTitle}>
+                            {achievement.title}
+                          </ThemedText>
+                          <ThemedText variant="caption" style={styles.achievementTier}>
+                            {achievement.tier}
+                          </ThemedText>
+                        </View>
+                      ))}
+                    </View>
+                  </ThemedView>
+                )}
               </>
             ) : (
               <ThemedView variant="card" style={styles.emptyStatsCard}>
@@ -558,5 +608,42 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#6b7280',
     fontSize: 16,
+  },
+  // Achievements styles
+  achievementsCard: {
+    marginBottom: 16,
+    borderRadius: 12,
+  },
+  achievementsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  achievementItem: {
+    width: '47%',
+    alignItems: 'center',
+    padding: 12,
+    backgroundColor: '#f9fafb',
+    borderRadius: 12,
+  },
+  achievementIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  achievementTitle: {
+    textAlign: 'center',
+    fontWeight: '600',
+    fontSize: 12,
+    marginBottom: 2,
+  },
+  achievementTier: {
+    textAlign: 'center',
+    fontSize: 11,
+    color: '#6b7280',
   },
 });

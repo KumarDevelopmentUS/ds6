@@ -572,6 +572,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+  communitySelector: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  selectorLabel: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#666',
+  },
   dropdownButton: {
     flexDirection: 'row',
     alignItems: 'center',

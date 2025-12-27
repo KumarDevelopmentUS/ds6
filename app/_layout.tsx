@@ -238,20 +238,20 @@ export default function RootLayout() {
       <ErrorBoundary>
         <GestureHandlerRootView style={{ flex: 1 }}>
           <SafeAreaProvider>
-            <QueryClientProvider client={queryClient}>
-              <ThemeProvider>
-                <HapticsProvider>
-                  <AuthProvider>
-                    <FeedProvider>
+          <QueryClientProvider client={queryClient}>
+            <ThemeProvider>
+              <HapticsProvider>
+                <AuthProvider>
+                  <FeedProvider>
                       <ToastProvider>
-                        <RootLayoutNav />
-                        {Platform.OS === 'web' && <Analytics />}
+                    <RootLayoutNav />
+                    {Platform.OS === 'web' && <Analytics />}
                       </ToastProvider>
-                    </FeedProvider>
-                  </AuthProvider>
-                </HapticsProvider>
-              </ThemeProvider>
-            </QueryClientProvider>
+                  </FeedProvider>
+                </AuthProvider>
+              </HapticsProvider>
+            </ThemeProvider>
+          </QueryClientProvider>
           </SafeAreaProvider>
         </GestureHandlerRootView>
       </ErrorBoundary>

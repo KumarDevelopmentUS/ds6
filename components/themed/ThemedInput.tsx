@@ -93,23 +93,23 @@ export const ThemedInput: React.FC<ThemedInputProps> = ({
           style,
         ]}
       > 
-        {icon && (
-          <View style={styles.iconContainer}>{icon}</View>
-        )}
-        <TextInput
-          style={[
-            styles.input,
-            { 
-              color: theme.colors.text,
-            }
-          ]}
+      {icon && (
+        <View style={styles.iconContainer}>{icon}</View>
+      )}
+      <TextInput
+        style={[
+          styles.input,
+          { 
+            color: theme.colors.text,
+          }
+        ]}
           placeholderTextColor={theme.colors.textTertiary}
           value={value}
           onChangeText={onChangeText}
           onFocus={handleFocus}
           onBlur={handleBlur}
-          {...props}
-        />
+        {...props}
+      />
         {showClearButton && value && String(value).length > 0 && (
           <TouchableOpacity 
             onPress={handleClear} 

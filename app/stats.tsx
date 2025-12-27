@@ -4,6 +4,16 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/supabase';
+import {
+    calculateHeadToHeadStats,
+    calculatePersonalRecords,
+    calculateStreakInfo,
+    calculateTeammateStats,
+    HeadToHeadStats,
+    PersonalRecords,
+    StreakInfo,
+    TeammateStats,
+} from '@/utils/playerRelationshipStats';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -111,14 +121,50 @@ export default function StatisticsScreen() {
   const [achievements, setAchievements] = useState<AchievementData[]>([]);
 
   const [recentForm, setRecentForm] = useState<('W' | 'L' | 'D')[]>([]);
+  
+  // New state for head-to-head, teammate stats, streaks, and records
+  const [headToHeadStats, setHeadToHeadStats] = useState<HeadToHeadStats[]>([]);
+  const [teammateStats, setTeammateStats] = useState<TeammateStats[]>([]);
+  const [streakInfo, setStreakInfo] = useState<StreakInfo | null>(null);
+  const [personalRecords, setPersonalRecords] = useState<PersonalRecords | null>(null);
+  const [loadingRelationshipStats, setLoadingRelationshipStats] = useState(true);
+  
+  // Collapsible section states
+  const [showAllOpponents, setShowAllOpponents] = useState(false);
+  const [showAllTeammates, setShowAllTeammates] = useState(false);
 
   useEffect(() => {
     if (session?.user) {
       loadStatistics();
+      loadRelationshipStats();
     } else {
       setLoading(false);
+      setLoadingRelationshipStats(false);
     }
   }, [session]);
+
+  const loadRelationshipStats = async () => {
+    if (!session?.user) return;
+    
+    setLoadingRelationshipStats(true);
+    try {
+      const [h2h, teammates, streaks, records] = await Promise.all([
+        calculateHeadToHeadStats(session.user.id),
+        calculateTeammateStats(session.user.id),
+        calculateStreakInfo(session.user.id),
+        calculatePersonalRecords(session.user.id),
+      ]);
+      
+      setHeadToHeadStats(h2h);
+      setTeammateStats(teammates);
+      setStreakInfo(streaks);
+      setPersonalRecords(records);
+    } catch (error) {
+      console.error('Error loading relationship stats:', error);
+    } finally {
+      setLoadingRelationshipStats(false);
+    }
+  };
 
   const loadStatistics = async () => {
     if (!session?.user) return;
@@ -775,7 +821,7 @@ export default function StatisticsScreen() {
             description="Track your performance across all your matches"
             actionLabel="Sign In"
             onAction={() => router.push('/(auth)/login')}
-          />
+            />
         </ThemedView>
       </>
     );
@@ -1138,6 +1184,244 @@ export default function StatisticsScreen() {
           )}
         </ThemedView>
 
+        {/* Current Streak & Personal Records */}
+        {!loadingRelationshipStats && streakInfo && (
+          <ThemedView variant="card" style={styles.streakCard}>
+            <ThemedText variant="subtitle" style={styles.sectionTitle}>
+              Streaks & Records
+            </ThemedText>
+            
+            {/* Current Streak */}
+            <View style={styles.streakContainer}>
+              <View style={[
+                styles.streakBadge,
+                streakInfo.currentStreakType === 'win' ? styles.winStreakBadge : 
+                streakInfo.currentStreakType === 'loss' ? styles.lossStreakBadge : styles.neutralStreakBadge
+              ]}>
+                <Ionicons 
+                  name={streakInfo.currentStreakType === 'win' ? 'flame' : streakInfo.currentStreakType === 'loss' ? 'trending-down' : 'remove'} 
+                  size={24} 
+                  color="#fff" 
+                />
+                <ThemedText variant="title" style={styles.streakNumber}>
+                  {Math.abs(streakInfo.currentStreak)}
+                </ThemedText>
+                <ThemedText variant="caption" style={styles.streakLabel}>
+                  {streakInfo.currentStreakType === 'win' ? 'Win Streak' : 
+                   streakInfo.currentStreakType === 'loss' ? 'Loss Streak' : 'No Streak'}
+                </ThemedText>
+              </View>
+              
+              <View style={styles.streakStats}>
+                <View style={styles.streakStatRow}>
+                  <Ionicons name="trophy" size={16} color={theme.colors.success} />
+                  <ThemedText variant="body"> Best Win Streak: </ThemedText>
+                  <ThemedText variant="body" color="success">{streakInfo.longestWinStreak}</ThemedText>
+                </View>
+                <View style={styles.streakStatRow}>
+                  <Ionicons name="close-circle" size={16} color={theme.colors.error} />
+                  <ThemedText variant="body"> Worst Loss Streak: </ThemedText>
+                  <ThemedText variant="body" color="error">{streakInfo.longestLossStreak}</ThemedText>
+                </View>
+              </View>
+            </View>
+
+            {/* Personal Records */}
+            {personalRecords && (
+              <View style={styles.recordsGrid}>
+                {personalRecords.highestScore && (
+                  <View style={styles.recordItem}>
+                    <Ionicons name="star" size={20} color={theme.colors.warning} />
+                    <ThemedText variant="caption">Highest Score</ThemedText>
+                    <ThemedText variant="body" color="warning">{personalRecords.highestScore.value}</ThemedText>
+                  </View>
+                )}
+                {personalRecords.mostSinksInMatch && personalRecords.mostSinksInMatch.value > 0 && (
+                  <View style={styles.recordItem}>
+                    <Ionicons name="water" size={20} color="#06b6d4" />
+                    <ThemedText variant="caption">Most Sinks</ThemedText>
+                    <ThemedText variant="body" style={{ color: '#06b6d4' }}>{personalRecords.mostSinksInMatch.value}</ThemedText>
+                  </View>
+                )}
+                {personalRecords.mostGoalsInMatch && personalRecords.mostGoalsInMatch.value > 0 && (
+                  <View style={styles.recordItem}>
+                    <Ionicons name="football" size={20} color={theme.colors.primary} />
+                    <ThemedText variant="caption">Most Goals</ThemedText>
+                    <ThemedText variant="body" color="primary">{personalRecords.mostGoalsInMatch.value}</ThemedText>
+                  </View>
+                )}
+                {personalRecords.bestHitRateMatch && (
+                  <View style={styles.recordItem}>
+                    <Ionicons name="locate" size={20} color={theme.colors.error} />
+                    <ThemedText variant="caption">Best Hit Rate</ThemedText>
+                    <ThemedText variant="body" color="error">{personalRecords.bestHitRateMatch.value}%</ThemedText>
+                  </View>
+                )}
+                {personalRecords.bestCatchRateMatch && (
+                  <View style={styles.recordItem}>
+                    <Ionicons name="hand-left" size={20} color={theme.colors.success} />
+                    <ThemedText variant="caption">Best Catch Rate</ThemedText>
+                    <ThemedText variant="body" color="success">{personalRecords.bestCatchRateMatch.value}%</ThemedText>
+                  </View>
+                )}
+                {personalRecords.fastestWin && (
+                  <View style={styles.recordItem}>
+                    <Ionicons name="flash" size={20} color="#f59e0b" />
+                    <ThemedText variant="caption">Fastest Win</ThemedText>
+                    <ThemedText variant="body" style={{ color: '#f59e0b' }}>
+                      {Math.floor(personalRecords.fastestWin.durationSeconds / 60)}:{String(personalRecords.fastestWin.durationSeconds % 60).padStart(2, '0')}
+                    </ThemedText>
+                  </View>
+                )}
+              </View>
+            )}
+          </ThemedView>
+        )}
+
+        {/* Head-to-Head Stats */}
+        {!loadingRelationshipStats && headToHeadStats.length > 0 && (
+          <ThemedView variant="card" style={styles.relationshipCard}>
+            <View style={styles.sectionHeader}>
+              <ThemedText variant="subtitle" style={styles.sectionTitle}>
+                Head-to-Head Records
+              </ThemedText>
+              <ThemedText variant="caption" style={{ marginBottom: 8 }}>
+                Your record against opponents
+              </ThemedText>
+            </View>
+            
+            {(showAllOpponents ? headToHeadStats : headToHeadStats.slice(0, 3)).map((h2h, index) => (
+              <TouchableOpacity 
+                key={h2h.opponent.odId}
+                style={styles.playerRelationshipRow}
+                onPress={() => h2h.opponent.isRegisteredUser && router.push(`/user-profile/${h2h.opponent.odId}`)}
+                activeOpacity={h2h.opponent.isRegisteredUser ? 0.7 : 1}
+              >
+                <View style={[
+                  styles.playerAvatar,
+                  { backgroundColor: h2h.opponent.avatarBackgroundColor || theme.colors.primary }
+                ]}>
+                  <Ionicons 
+                    name={(h2h.opponent.avatarIcon as keyof typeof Ionicons.glyphMap) || 'person'} 
+                    size={20} 
+                    color={h2h.opponent.avatarIconColor || '#fff'} 
+                  />
+                </View>
+                <View style={styles.playerInfo}>
+                  <ThemedText variant="body" style={styles.playerName}>
+                    {h2h.opponent.name}
+                    {!h2h.opponent.isRegisteredUser && <ThemedText variant="caption"> (Guest)</ThemedText>}
+                  </ThemedText>
+                  <View style={styles.recordContainer}>
+                    <ThemedText variant="caption" color="success">{h2h.wins}W</ThemedText>
+                    <ThemedText variant="caption"> - </ThemedText>
+                    <ThemedText variant="caption" color="error">{h2h.losses}L</ThemedText>
+                    <ThemedText variant="caption" style={{ marginLeft: 8 }}>
+                      ({h2h.winRate.toFixed(0)}%)
+                    </ThemedText>
+                  </View>
+                </View>
+                <View style={styles.streakIndicator}>
+                  {h2h.currentStreak !== 0 && (
+                    <View style={[
+                      styles.miniStreakBadge,
+                      h2h.currentStreak > 0 ? styles.winStreakMini : styles.lossStreakMini
+                    ]}>
+                      <ThemedText variant="caption" style={styles.miniStreakText}>
+                        {h2h.currentStreak > 0 ? `${h2h.currentStreak}🔥` : `${Math.abs(h2h.currentStreak)}❄️`}
+                      </ThemedText>
+                    </View>
+                  )}
+                </View>
+              </TouchableOpacity>
+            ))}
+            
+            {headToHeadStats.length > 3 && (
+              <TouchableOpacity 
+                style={styles.showMoreButton}
+                onPress={() => setShowAllOpponents(!showAllOpponents)}
+              >
+                <ThemedText variant="body" color="primary">
+                  {showAllOpponents ? 'Show Less' : `Show All (${headToHeadStats.length})`}
+                </ThemedText>
+                <Ionicons 
+                  name={showAllOpponents ? 'chevron-up' : 'chevron-down'} 
+                  size={16} 
+                  color={theme.colors.primary} 
+                />
+              </TouchableOpacity>
+            )}
+          </ThemedView>
+        )}
+
+        {/* Teammate Stats */}
+        {!loadingRelationshipStats && teammateStats.length > 0 && (
+          <ThemedView variant="card" style={styles.relationshipCard}>
+            <View style={styles.sectionHeader}>
+              <ThemedText variant="subtitle" style={styles.sectionTitle}>
+                Teammate Records
+              </ThemedText>
+              <ThemedText variant="caption" style={{ marginBottom: 8 }}>
+                Your record with partners
+              </ThemedText>
+            </View>
+            
+            {(showAllTeammates ? teammateStats : teammateStats.slice(0, 3)).map((tm, index) => (
+              <TouchableOpacity 
+                key={tm.teammate.odId}
+                style={styles.playerRelationshipRow}
+                onPress={() => tm.teammate.isRegisteredUser && router.push(`/user-profile/${tm.teammate.odId}`)}
+                activeOpacity={tm.teammate.isRegisteredUser ? 0.7 : 1}
+              >
+                <View style={[
+                  styles.playerAvatar,
+                  { backgroundColor: tm.teammate.avatarBackgroundColor || theme.colors.success }
+                ]}>
+                  <Ionicons 
+                    name={(tm.teammate.avatarIcon as keyof typeof Ionicons.glyphMap) || 'person'} 
+                    size={20} 
+                    color={tm.teammate.avatarIconColor || '#fff'} 
+                  />
+                </View>
+                <View style={styles.playerInfo}>
+                  <ThemedText variant="body" style={styles.playerName}>
+                    {tm.teammate.name}
+                    {!tm.teammate.isRegisteredUser && <ThemedText variant="caption"> (Guest)</ThemedText>}
+                  </ThemedText>
+                  <View style={styles.recordContainer}>
+                    <ThemedText variant="caption" color="success">{tm.wins}W</ThemedText>
+                    <ThemedText variant="caption"> - </ThemedText>
+                    <ThemedText variant="caption" color="error">{tm.losses}L</ThemedText>
+                    <ThemedText variant="caption" style={{ marginLeft: 8 }}>
+                      ({tm.winRate.toFixed(0)}% WR)
+                    </ThemedText>
+                  </View>
+                </View>
+                <View style={styles.teammateExtra}>
+                  <ThemedText variant="caption">Avg Score</ThemedText>
+                  <ThemedText variant="body" color="primary">{tm.avgCombinedScore.toFixed(1)}</ThemedText>
+                </View>
+              </TouchableOpacity>
+            ))}
+            
+            {teammateStats.length > 3 && (
+              <TouchableOpacity 
+                style={styles.showMoreButton}
+                onPress={() => setShowAllTeammates(!showAllTeammates)}
+              >
+                <ThemedText variant="body" color="primary">
+                  {showAllTeammates ? 'Show Less' : `Show All (${teammateStats.length})`}
+                </ThemedText>
+                <Ionicons 
+                  name={showAllTeammates ? 'chevron-up' : 'chevron-down'} 
+                  size={16} 
+                  color={theme.colors.primary} 
+                />
+              </TouchableOpacity>
+            )}
+          </ThemedView>
+        )}
+
         {/* Achievements */}
         <ThemedView variant="card" style={styles.achievementsCard}>
           <ThemedText variant="subtitle" style={styles.sectionTitle}>
@@ -1440,5 +1724,124 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     opacity: 0.7,
     fontSize: 12,
+  },
+  // Streak & Records styles
+  streakCard: {
+    marginBottom: 16,
+  },
+  streakContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  streakBadge: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16,
+  },
+  winStreakBadge: {
+    backgroundColor: '#22c55e',
+  },
+  lossStreakBadge: {
+    backgroundColor: '#ef4444',
+  },
+  neutralStreakBadge: {
+    backgroundColor: '#6b7280',
+  },
+  streakNumber: {
+    color: '#fff',
+    fontSize: 28,
+    fontWeight: 'bold',
+  },
+  streakLabel: {
+    color: '#fff',
+    fontSize: 10,
+    textAlign: 'center',
+  },
+  streakStats: {
+    flex: 1,
+    gap: 8,
+  },
+  streakStatRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  recordsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginTop: 8,
+  },
+  recordItem: {
+    width: '30%',
+    alignItems: 'center',
+    padding: 12,
+    backgroundColor: '#f9fafb',
+    borderRadius: 12,
+    gap: 4,
+  },
+  // Relationship stats styles
+  relationshipCard: {
+    marginBottom: 16,
+  },
+  sectionHeader: {
+    marginBottom: 8,
+  },
+  playerRelationshipRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  playerAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  playerInfo: {
+    flex: 1,
+  },
+  playerName: {
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  recordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  streakIndicator: {
+    alignItems: 'flex-end',
+  },
+  miniStreakBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  winStreakMini: {
+    backgroundColor: '#dcfce7',
+  },
+  lossStreakMini: {
+    backgroundColor: '#fee2e2',
+  },
+  miniStreakText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  teammateExtra: {
+    alignItems: 'center',
+  },
+  showMoreButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    gap: 4,
   },
 });
