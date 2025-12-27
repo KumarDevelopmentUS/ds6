@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { supabase } from '@/supabase';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
@@ -45,6 +46,7 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
 }) => {
   const { theme } = useTheme();
   const { session } = useAuth();
+  const router = useRouter();
   const [players, setPlayers] = useState<LeaderboardPlayer[]>([]);
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState<SortType>('average_rating');
@@ -432,7 +434,12 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
           </View>
 
           {players.map((player, index) => (
-            <View key={player.id} style={styles.playerRow}>
+            <TouchableOpacity 
+              key={player.id} 
+              style={styles.playerRow}
+              onPress={() => router.push(`/user-profile/${player.id}`)}
+              activeOpacity={0.7}
+            >
               {/* Rank */}
               <View style={styles.rankContainer}>
                 <View style={[
@@ -491,7 +498,7 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
                   {player.total_matches_played} games
                 </ThemedText>
               </View>
-            </View>
+            </TouchableOpacity>
           ))}
         </View>
       )}
