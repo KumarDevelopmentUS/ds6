@@ -31,8 +31,8 @@ export default function JoinCommunityScreen() {
   const [error, setError] = useState('');
 
   const handleCodeChange = (text: string) => {
-    // Only allow uppercase letters and numbers, max 8 characters
-    const cleaned = text.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
+    // Only allow uppercase letters, max 6 characters (same as room codes)
+    const cleaned = text.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 6);
     setInviteCode(cleaned);
     setError('');
   };
@@ -117,11 +117,11 @@ export default function JoinCommunityScreen() {
               style={[styles.codeInput, { color: theme.colors.text }]}
               value={inviteCode}
               onChangeText={handleCodeChange}
-              placeholder="XXXXXXXX"
+              placeholder="XXXXXX"
               placeholderTextColor={theme.colors.textSecondary}
               autoCapitalize="characters"
               autoCorrect={false}
-              maxLength={8}
+              maxLength={6}
               autoFocus
             />
           </View>
@@ -135,7 +135,7 @@ export default function JoinCommunityScreen() {
             </View>
           ) : (
             <ThemedText variant="caption" style={[styles.hintText, { color: theme.colors.textSecondary }]}>
-              Invite codes are 8 characters (letters and numbers)
+              Invite codes are 6 capital letters
             </ThemedText>
           )}
 
@@ -144,7 +144,7 @@ export default function JoinCommunityScreen() {
             title={joining ? 'Joining...' : 'Join Community'}
             onPress={handleJoin}
             loading={joining}
-            disabled={joining || inviteCode.length < 8}
+            disabled={joining || inviteCode.length < 6}
             style={styles.joinButton}
           />
         </View>

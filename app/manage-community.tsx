@@ -767,19 +767,22 @@ export default function ManageCommunityScreen() {
 
               {community.invite_code && userRole === 'owner' && (
                 <View style={[styles.inviteCodeSection, { backgroundColor: theme.colors.inputBackground }]}>
-                  <View style={styles.inviteCodeHeader}>
-                    <View style={{ flex: 1 }}>
-                      <ThemedText variant="caption" style={{ color: theme.colors.textSecondary }}>
-                        Invite Code
-                      </ThemedText>
-                      <ThemedText variant="subtitle" style={styles.inviteCode}>
-                        {community.invite_code}
-                      </ThemedText>
+                  {/* Only show invite code when enabled */}
+                  {community.invite_code_enabled && (
+                    <View style={styles.inviteCodeHeader}>
+                      <View style={{ flex: 1 }}>
+                        <ThemedText variant="caption" style={{ color: theme.colors.textSecondary }}>
+                          Invite Code
+                        </ThemedText>
+                        <ThemedText variant="subtitle" style={styles.inviteCode}>
+                          {community.invite_code}
+                        </ThemedText>
+                      </View>
                     </View>
-                  </View>
+                  )}
                   
-                  {/* Invite Code Toggle */}
-                  <View style={[styles.inviteCodeToggle, { borderTopColor: theme.colors.border }]}>
+                  {/* Invite Code Toggle - always visible */}
+                  <View style={[styles.inviteCodeToggle, { borderTopColor: community.invite_code_enabled ? theme.colors.border : 'transparent', borderTopWidth: community.invite_code_enabled ? 1 : 0, marginTop: community.invite_code_enabled ? 16 : 0, paddingTop: community.invite_code_enabled ? 16 : 0 }]}>
                     <View style={styles.inviteCodeToggleInfo}>
                       <ThemedText variant="body" style={{ fontWeight: '500' }}>
                         Allow join via code
@@ -787,7 +790,7 @@ export default function ManageCommunityScreen() {
                       <ThemedText variant="caption" style={{ color: theme.colors.textSecondary }}>
                         {community.invite_code_enabled 
                           ? 'Anyone with the code can join' 
-                          : 'Only invited users can join'}
+                          : 'Code is hidden. Enable to share.'}
                       </ThemedText>
                     </View>
                     <Switch
