@@ -338,7 +338,7 @@ export default function MainMenuScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
@@ -689,7 +689,7 @@ export default function MainMenuScreen() {
               />
               <View style={styles.modalButtons}>
                 <TouchableOpacity
-                  style={[styles.modalButton, styles.modalButtonSecondary]}
+                  style={[styles.modalButton, styles.modalButtonSecondary, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}
                   onPress={() => {
                     setShowJoinModal(false);
                     setRoomCodeInput('');

@@ -319,7 +319,7 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
               >
                 <ThemedText 
                   variant="caption" 
-                  style={[styles.filterText, { color: filterBy === 'global' ? '#fff' : theme.colors.text }]}
+                  style={[styles.filterText, { color: filterBy === 'global' ? theme.colors.textOnPrimary : theme.colors.text }]}
                 >
                   Global
                 </ThemedText>
@@ -332,7 +332,7 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
                 >
                   <ThemedText 
                     variant="caption" 
-                    style={[styles.filterText, { color: filterBy === 'school' ? '#fff' : theme.colors.text }]}
+                    style={[styles.filterText, { color: filterBy === 'school' ? theme.colors.textOnPrimary : theme.colors.text }]}
                   >
                     My School
                   </ThemedText>
@@ -346,7 +346,7 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
                 >
                   <ThemedText 
                     variant="caption" 
-                    style={[styles.filterText, { color: filterBy === 'friends' ? '#fff' : theme.colors.text }]}
+                    style={[styles.filterText, { color: filterBy === 'friends' ? theme.colors.textOnPrimary : theme.colors.text }]}
                   >
                     Friends
                   </ThemedText>
@@ -362,7 +362,7 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
               >
                 <ThemedText 
                   variant="caption" 
-                  style={[styles.sortText, { color: sortBy === 'average_rating' ? '#fff' : theme.colors.text }]}
+                  style={[styles.sortText, { color: sortBy === 'average_rating' ? theme.colors.textOnPrimary : theme.colors.text }]}
                 >
                   Avg Rating
                 </ThemedText>
@@ -374,7 +374,7 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
               >
                 <ThemedText 
                   variant="caption" 
-                  style={[styles.sortText, { color: sortBy === 'total_hits' ? '#fff' : theme.colors.text }]}
+                  style={[styles.sortText, { color: sortBy === 'total_hits' ? theme.colors.textOnPrimary : theme.colors.text }]}
                 >
                   Total Points
                 </ThemedText>
@@ -386,7 +386,7 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
               >
                 <ThemedText 
                   variant="caption" 
-                  style={[styles.sortText, { color: sortBy === 'total_wins' ? '#fff' : theme.colors.text }]}
+                  style={[styles.sortText, { color: sortBy === 'total_wins' ? theme.colors.textOnPrimary : theme.colors.text }]}
                 >
                   Number of Wins
                 </ThemedText>

@@ -437,7 +437,7 @@ export default function EditProfileScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView
@@ -561,7 +561,7 @@ export default function EditProfileScreen() {
           ) : null}
           
           <ThemedText style={{ marginTop: theme.spacing.md, marginBottom: 4 }}>School</ThemedText>
-          <TouchableOpacity style={styles.schoolSelector} onPress={() => setShowSchoolPicker(true)}>
+          <TouchableOpacity style={[styles.schoolSelector, { backgroundColor: theme.colors.inputBackground, borderColor: theme.colors.inputBorder }]} onPress={() => setShowSchoolPicker(true)}>
             <Ionicons name="school-outline" size={20} color={theme.colors.textSecondary} />
             <ThemedText style={styles.schoolText} numberOfLines={1}>
               {profile.schoolName || 'Select School'}
@@ -787,22 +787,22 @@ export default function EditProfileScreen() {
                 onSubmitEditing={handlePasswordSubmit}
               />
               {passwordError ? (
-                <ThemedText style={{ color: '#ef4444', marginTop: 8, textAlign: 'center', marginBottom: 20 }}>
+                <ThemedText style={{ color: theme.colors.error, marginTop: 8, textAlign: 'center', marginBottom: 20 }}>
                   {passwordError}
                 </ThemedText>
               ) : null}
               <View style={styles.modalButtons}>
                 <TouchableOpacity
-                  style={[styles.modalButton, styles.modalButtonSecondary]}
+                  style={[styles.modalButton, { backgroundColor: theme.colors.card, borderColor: theme.colors.border, borderWidth: 1 }]}
                   onPress={handlePasswordCancel}
                 >
                   <ThemedText variant="body">Cancel</ThemedText>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.modalButton, styles.modalButtonPrimary]}
+                  style={[styles.modalButton, { backgroundColor: theme.colors.primary }]}
                   onPress={handlePasswordSubmit}
                 >
-                  <ThemedText variant="body" style={{ color: '#fff' }}>Submit</ThemedText>
+                  <ThemedText variant="body" style={{ color: theme.colors.textOnPrimary }}>Submit</ThemedText>
                 </TouchableOpacity>
               </View>
             </ThemedView>

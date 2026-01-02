@@ -181,7 +181,7 @@ export default function FeedScreen() {
   // If user is not logged in, show login prompt
   if (!session) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
         <ScrollView
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
@@ -221,8 +221,8 @@ export default function FeedScreen() {
   // Handle the loading state for fetching communities
   if (isCommunitiesLoading) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+        <View style={[styles.header, { backgroundColor: theme.colors.card }]}>
           <View style={styles.communitySelector}>
             <Text style={styles.selectorLabel}>Loading...</Text>
           </View>
@@ -239,8 +239,8 @@ export default function FeedScreen() {
   // Handle any errors that occurred while fetching communities
   if (communitiesError) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.emptyContainer}>
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+        <View style={[styles.emptyContainer, { backgroundColor: theme.colors.background }]}>
           <Text style={styles.emptyText}>Error loading communities: {communitiesError.message}</Text>
           
           {/* Fix button */}
@@ -263,7 +263,7 @@ export default function FeedScreen() {
   // If communities array is empty, show fix option
   if (!communities || communities.length === 0) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
         <EmptyState
           type="communities"
           title="No Communities Yet"
@@ -338,9 +338,9 @@ export default function FeedScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
         {/* Header with Dropdown */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: theme.colors.card }]}>
         <TouchableOpacity
           style={[
             styles.headerButton,
@@ -364,14 +364,14 @@ export default function FeedScreen() {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.dropdownButton}
+          style={[styles.dropdownButton, { backgroundColor: theme.colors.backgroundTertiary }]}
           onPress={toggleDropdown}
           activeOpacity={0.7}
         >
           {/* Spacer to balance the icon on the right and center the text */}
           <View style={{ width: 20 }} />
 
-          <Text style={styles.dropdownButtonText}>
+          <Text style={[styles.dropdownButtonText, { color: theme.colors.text }]}>
             {selectedCommunity ? selectedCommunityDisplayName : 'All Communities'}
           </Text>
 
@@ -416,13 +416,14 @@ export default function FeedScreen() {
           style={styles.modalOverlay}
           onPress={() => setDropdownVisible(false)}
         >
-          <View style={styles.dropdownContainer}>
+          <View style={[styles.dropdownContainer, { backgroundColor: theme.colors.card }]}>
             <TouchableOpacity
               style={styles.dropdownItem}
               onPress={() => selectCommunity(null)}
             >
               <Text style={[
                 styles.dropdownItemText,
+                { color: theme.colors.text },
                 selectedCommunityId === null && { color: theme.colors.primary, fontWeight: '600' }
               ]}>
                 All Communities
@@ -450,6 +451,7 @@ export default function FeedScreen() {
                     )}
                   <Text style={[
                     styles.dropdownItemText,
+                    { color: theme.colors.text },
                     selectedCommunityId === community.id && { color: theme.colors.primary, fontWeight: '600' }
                   ]}>
                     {displayName}

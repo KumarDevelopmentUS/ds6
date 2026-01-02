@@ -15,7 +15,7 @@ export default function LeaderboardScreen() {
     <HapticBackButton
       onPress={() => router.back()}
       style={styles.backButton}
-      color="#3b82f6"
+      color={theme.colors.primary}
     />
   );
 
@@ -23,7 +23,7 @@ export default function LeaderboardScreen() {
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <ScrollView
-        style={styles.container}
+        style={[styles.container, { backgroundColor: theme.colors.background }]}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
