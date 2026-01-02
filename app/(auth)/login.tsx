@@ -165,7 +165,7 @@ export default function LoginScreen() {
         <HapticBackButton
           onPress={handleBack}
           style={styles.backButton}
-          color="#3b82f6"
+          color={theme.colors.primary}
           text="Home"
         />
 

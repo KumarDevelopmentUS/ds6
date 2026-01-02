@@ -8,6 +8,7 @@ import { SkeletonCard } from '@/components/ui/Skeleton';
 import { getSchoolByValue } from '@/constants/schools';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFeed } from '@/contexts/FeedContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { usePosts, useRealtimeUpdates } from '@/hooks/useSocialFeatures';
 import { supabase } from '@/supabase';
 import { debugFeedProvider, debugUserCommunities, fixUserCommunityMembership } from '@/utils/profileSync';
@@ -31,6 +32,7 @@ import {
 export default function FeedScreen() {
   const router = useRouter();
   const { session } = useAuth();
+  const { theme } = useTheme();
   const { communities, isLoading: isCommunitiesLoading, error: communitiesError, refetch } = useFeed();
   const [selectedCommunityId, setSelectedCommunityId] = useState<number | null>(null);
   const [dropdownVisible, setDropdownVisible] = useState(false);
@@ -196,14 +198,14 @@ export default function FeedScreen() {
               
               <View style={styles.loginButtons}>
                 <TouchableOpacity 
-                  style={styles.signInButton}
+                  style={[styles.signInButton, { backgroundColor: theme.colors.primary }]}
                   onPress={() => router.push('/(auth)/login')}
                 >
                   <Text style={styles.buttonText}>Sign In</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity 
-                  style={styles.createAccountButton}
+                  style={[styles.createAccountButton, { backgroundColor: theme.colors.primary }]}
                   onPress={() => router.push('/(auth)/signUp')}
                 >
                   <Text style={styles.buttonText}>Create Account</Text>
@@ -357,7 +359,7 @@ export default function FeedScreen() {
           <Ionicons 
             name="settings-outline" 
             size={24} 
-            color={selectedCommunityId ? "#007AFF" : "#CCCCCC"} 
+            color={selectedCommunityId ? theme.colors.primary : theme.colors.textTertiary} 
           />
         </TouchableOpacity>
 
@@ -376,7 +378,7 @@ export default function FeedScreen() {
           <Ionicons
             name={dropdownVisible ? "chevron-up" : "chevron-down"}
             size={20}
-            color="#007AFF"
+            color={theme.colors.primary}
           />
         </TouchableOpacity>
 
@@ -398,7 +400,7 @@ export default function FeedScreen() {
           <Ionicons 
             name="people" 
             size={24} 
-            color={selectedCommunityId ? "#007AFF" : "#CCCCCC"} 
+            color={selectedCommunityId ? theme.colors.primary : theme.colors.textTertiary} 
           />
         </TouchableOpacity>
       </View>
@@ -421,12 +423,12 @@ export default function FeedScreen() {
             >
               <Text style={[
                 styles.dropdownItemText,
-                selectedCommunityId === null && styles.dropdownItemTextSelected
+                selectedCommunityId === null && { color: theme.colors.primary, fontWeight: '600' }
               ]}>
                 All Communities
               </Text>
               {selectedCommunityId === null && (
-                <Ionicons name="checkmark" size={20} color="#007AFF" />
+                <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
               )}
             </TouchableOpacity>
 
@@ -448,13 +450,13 @@ export default function FeedScreen() {
                     )}
                   <Text style={[
                     styles.dropdownItemText,
-                    selectedCommunityId === community.id && styles.dropdownItemTextSelected
+                    selectedCommunityId === community.id && { color: theme.colors.primary, fontWeight: '600' }
                   ]}>
                     {displayName}
                   </Text>
                   </View>
                   {selectedCommunityId === community.id && (
-                    <Ionicons name="checkmark" size={20} color="#007AFF" />
+                    <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
                   )}
                 </TouchableOpacity>
               );
@@ -472,8 +474,8 @@ export default function FeedScreen() {
               }}
             >
               <View style={styles.dropdownItemContent}>
-                <Ionicons name="add-circle-outline" size={18} color="#007AFF" style={{ marginRight: 6 }} />
-                <Text style={[styles.dropdownItemText, { color: '#007AFF' }]}>
+                <Ionicons name="add-circle-outline" size={18} color={theme.colors.primary} style={{ marginRight: 6 }} />
+                <Text style={[styles.dropdownItemText, { color: theme.colors.primary }]}>
                   Create Community
                 </Text>
               </View>
@@ -488,8 +490,8 @@ export default function FeedScreen() {
               }}
             >
               <View style={styles.dropdownItemContent}>
-                <Ionicons name="enter-outline" size={18} color="#007AFF" style={{ marginRight: 6 }} />
-                <Text style={[styles.dropdownItemText, { color: '#007AFF' }]}>
+                <Ionicons name="enter-outline" size={18} color={theme.colors.primary} style={{ marginRight: 6 }} />
+                <Text style={[styles.dropdownItemText, { color: theme.colors.primary }]}>
                   Join Community
                 </Text>
               </View>
@@ -511,7 +513,7 @@ export default function FeedScreen() {
               setRealtimeEnabled(true);
               refetchPosts();
             }}
-            tintColor="#007AFF"
+            tintColor={theme.colors.primary}
           />
         }
         contentContainerStyle={styles.listContent}

@@ -356,14 +356,14 @@ export default function MainMenuScreen() {
             
             <View style={styles.headerActions}>
               <TouchableOpacity 
-                style={styles.signInButton}
+                style={[styles.signInButton, { backgroundColor: theme.colors.primary }]}
                 onPress={() => router.push('/(auth)/login')}
               >
                 <Text style={styles.buttonText}>Sign In</Text>
               </TouchableOpacity>
 
               <TouchableOpacity 
-                style={styles.createAccountButton}
+                style={[styles.createAccountButton, { backgroundColor: theme.colors.primary }]}
                 onPress={() => router.push('/(auth)/signUp')}
               >
                 <Text style={styles.buttonText}>Create Account</Text>
@@ -698,10 +698,10 @@ export default function MainMenuScreen() {
                   <ThemedText variant="body">Cancel</ThemedText>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.modalButton, styles.modalButtonPrimary]}
+                  style={[styles.modalButton, { backgroundColor: theme.colors.primary }]}
                   onPress={handleWebJoinRoom}
                 >
-                  <ThemedText variant="body" style={{ color: '#fff' }}>Join</ThemedText>
+                  <ThemedText variant="body" style={{ color: theme.colors.textOnPrimary }}>Join</ThemedText>
                 </TouchableOpacity>
               </View>
             </ThemedView>

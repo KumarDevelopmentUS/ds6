@@ -1,6 +1,16 @@
 // contexts/ThemeContext.tsx
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import {
+  ColorPrimitives,
+  SemanticColors,
+  SpacingTokens,
+  BorderRadiusTokens,
+  TypographyTokens,
+  ShadowTokens,
+  ShadowTokensDark,
+  TouchTargetTokens,
+} from '../constants/designTokens';
 
 // Function to apply Dark Reader-style CSS filter for web
 const applyDarkModeFilter = (isDark: boolean) => {
@@ -115,18 +125,34 @@ export interface TouchTargets {
 export interface Theme {
   dark: boolean;
   colors: {
+    // Primary brand
     primary: string;
     primaryHover: string;
     primaryPressed: string;
+    
+    // Backgrounds
     background: string;
     backgroundSecondary: string;
+    backgroundTertiary: string;
+    
+    // Surfaces
     card: string;
     cardHover: string;
+    cardPressed: string;
+    
+    // Text
     text: string;
     textSecondary: string;
     textTertiary: string;
+    textInverse: string;
+    textOnPrimary: string;
+    
+    // Borders
     border: string;
     borderFocused: string;
+    borderHover: string;
+    
+    // Status colors
     notification: string;
     error: string;
     errorBackground: string;
@@ -136,17 +162,37 @@ export interface Theme {
     warningBackground: string;
     info: string;
     infoBackground: string;
+    
+    // Navigation
     tabBar: string;
     tabBarActive: string;
+    tabBarInactive: string;
     headerBackground: string;
+    
+    // Inputs
     inputBackground: string;
     inputBorder: string;
     inputFocused: string;
+    inputPlaceholder: string;
+    
+    // Buttons
     buttonPrimary: string;
     buttonSecondary: string;
+    buttonDisabled: string;
+    
+    // Skeleton loading
     skeleton: string;
     skeletonHighlight: string;
+    
+    // Overlay
     overlay: string;
+    
+    // Game-specific
+    team1: string;
+    team2: string;
+    gold: string;
+    silver: string;
+    bronze: string;
   };
   spacing: {
     xs: number;
@@ -167,191 +213,113 @@ export interface Theme {
   typography: Typography;
   shadows: Shadows;
   touchTargets: TouchTargets;
+  
+  // Access to raw primitives for special cases
+  primitives: typeof ColorPrimitives;
 }
 
-// Shared design tokens
-const sharedTypography: Typography = {
-  hero: { fontSize: 34, fontWeight: '700', lineHeight: 41 },
-  title1: { fontSize: 28, fontWeight: '700', lineHeight: 34 },
-  title2: { fontSize: 22, fontWeight: '600', lineHeight: 28 },
-  title3: { fontSize: 20, fontWeight: '600', lineHeight: 25 },
-  headline: { fontSize: 17, fontWeight: '600', lineHeight: 22 },
-  body: { fontSize: 17, fontWeight: '400', lineHeight: 22 },
-  callout: { fontSize: 16, fontWeight: '400', lineHeight: 21 },
-  subhead: { fontSize: 15, fontWeight: '400', lineHeight: 20 },
-  footnote: { fontSize: 13, fontWeight: '400', lineHeight: 18 },
-  caption: { fontSize: 12, fontWeight: '400', lineHeight: 16 },
+// Build theme from design tokens
+const buildTheme = (mode: 'light' | 'dark'): Theme => {
+  const semanticColors = SemanticColors[mode];
+  const shadows = mode === 'dark' ? ShadowTokensDark : ShadowTokens;
+  
+  return {
+    dark: mode === 'dark',
+    colors: {
+      // Primary brand
+      primary: semanticColors.interactive,
+      primaryHover: semanticColors.interactiveHover,
+      primaryPressed: semanticColors.interactivePressed,
+      
+      // Backgrounds
+      background: semanticColors.background,
+      backgroundSecondary: semanticColors.backgroundSecondary,
+      backgroundTertiary: semanticColors.backgroundTertiary,
+      
+      // Surfaces
+      card: semanticColors.surface,
+      cardHover: semanticColors.surfaceHover,
+      cardPressed: semanticColors.surfacePressed,
+      
+      // Text
+      text: semanticColors.textPrimary,
+      textSecondary: semanticColors.textSecondary,
+      textTertiary: semanticColors.textTertiary,
+      textInverse: semanticColors.textInverse,
+      textOnPrimary: semanticColors.textOnPrimary,
+      
+      // Borders
+      border: semanticColors.border,
+      borderFocused: semanticColors.borderFocused,
+      borderHover: semanticColors.borderHover,
+      
+      // Status colors
+      notification: semanticColors.error,
+      error: semanticColors.error,
+      errorBackground: semanticColors.errorBackground,
+      success: semanticColors.success,
+      successBackground: semanticColors.successBackground,
+      warning: semanticColors.warning,
+      warningBackground: semanticColors.warningBackground,
+      info: semanticColors.info,
+      infoBackground: semanticColors.infoBackground,
+      
+      // Navigation
+      tabBar: semanticColors.tabBar,
+      tabBarActive: semanticColors.tabBarActive,
+      tabBarInactive: semanticColors.tabBarInactive,
+      headerBackground: semanticColors.header,
+      
+      // Inputs
+      inputBackground: semanticColors.inputBackground,
+      inputBorder: semanticColors.inputBorder,
+      inputFocused: semanticColors.inputFocused,
+      inputPlaceholder: semanticColors.inputPlaceholder,
+      
+      // Buttons
+      buttonPrimary: semanticColors.interactive,
+      buttonSecondary: semanticColors.interactiveSecondary,
+      buttonDisabled: semanticColors.interactiveDisabled,
+      
+      // Skeleton loading
+      skeleton: semanticColors.skeleton,
+      skeletonHighlight: semanticColors.skeletonHighlight,
+      
+      // Overlay
+      overlay: semanticColors.overlay,
+      
+      // Game-specific
+      team1: semanticColors.team1,
+      team2: semanticColors.team2,
+      gold: semanticColors.gold,
+      silver: semanticColors.silver,
+      bronze: semanticColors.bronze,
+    },
+    spacing: {
+      xs: SpacingTokens.xs,
+      sm: SpacingTokens.sm,
+      md: SpacingTokens.md,
+      lg: SpacingTokens.lg,
+      xl: SpacingTokens.xl,
+      xxl: SpacingTokens.xxl,
+    },
+    borderRadius: {
+      xs: BorderRadiusTokens.xs,
+      sm: BorderRadiusTokens.sm,
+      md: BorderRadiusTokens.md,
+      lg: BorderRadiusTokens.lg,
+      xl: BorderRadiusTokens.xl,
+      full: BorderRadiusTokens.full,
+    },
+    typography: TypographyTokens.styles,
+    shadows: shadows,
+    touchTargets: TouchTargetTokens,
+    primitives: ColorPrimitives,
+  };
 };
 
-const sharedSpacing = {
-  xs: 4,
-  sm: 8,
-  md: 16,
-  lg: 24,
-  xl: 32,
-  xxl: 48,
-};
-
-const sharedBorderRadius = {
-  xs: 4,
-  sm: 6,
-  md: 8,
-  lg: 12,
-  xl: 16,
-  full: 999,
-};
-
-const sharedTouchTargets: TouchTargets = {
-  minimum: 44,      // iOS HIG minimum
-  comfortable: 48,  // Android Material minimum
-  generous: 56,     // Preferred for primary actions
-};
-
-const lightTheme: Theme = {
-  dark: false,
-  colors: {
-    primary: '#007AFF',
-    primaryHover: '#0051D5',
-    primaryPressed: '#003D99',
-    background: '#F2F2F7',
-    backgroundSecondary: '#FFFFFF',
-    card: '#FFFFFF',
-    cardHover: '#F9F9F9',
-    text: '#000000',
-    textSecondary: '#666666',
-    textTertiary: '#999999',
-    border: '#E5E5EA',
-    borderFocused: '#007AFF',
-    notification: '#FF3B30',
-    error: '#FF3B30',
-    errorBackground: '#FEE2E2',
-    success: '#34C759',
-    successBackground: '#DCFCE7',
-    warning: '#FF9500',
-    warningBackground: '#FEF3C7',
-    info: '#5856D6',
-    infoBackground: '#EDE9FE',
-    tabBar: '#FFFFFF',
-    tabBarActive: '#007AFF',
-    headerBackground: '#F2F2F7',
-    inputBackground: '#FFFFFF',
-    inputBorder: '#E5E5EA',
-    inputFocused: '#007AFF',
-    buttonPrimary: '#007AFF',
-    buttonSecondary: '#E5E5EA',
-    skeleton: '#E5E5EA',
-    skeletonHighlight: '#F5F5F5',
-    overlay: 'rgba(0, 0, 0, 0.5)',
-  },
-  spacing: sharedSpacing,
-  borderRadius: sharedBorderRadius,
-  typography: sharedTypography,
-  shadows: {
-    none: {},
-    sm: {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.05,
-      shadowRadius: 2,
-      elevation: 1,
-    },
-    md: {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 2,
-  },
-    lg: {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.15,
-      shadowRadius: 8,
-      elevation: 4,
-    },
-    xl: {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 8 },
-      shadowOpacity: 0.2,
-      shadowRadius: 16,
-      elevation: 8,
-  },
-  },
-  touchTargets: sharedTouchTargets,
-};
-
-const darkTheme: Theme = {
-  dark: true,
-  colors: {
-    primary: '#0A84FF',
-    primaryHover: '#409CFF',
-    primaryPressed: '#0066CC',
-    background: '#000000',
-    backgroundSecondary: '#1C1C1E',
-    card: '#1C1C1E',
-    cardHover: '#2C2C2E',
-    text: '#FFFFFF',
-    textSecondary: '#999999',
-    textTertiary: '#666666',
-    border: '#38383A',
-    borderFocused: '#0A84FF',
-    notification: '#FF453A',
-    error: '#FF453A',
-    errorBackground: '#3D1F1F',
-    success: '#32D74B',
-    successBackground: '#1F3D1F',
-    warning: '#FF9F0A',
-    warningBackground: '#3D3D1F',
-    info: '#5E5CE6',
-    infoBackground: '#1F1F3D',
-    tabBar: '#1C1C1E',
-    tabBarActive: '#0A84FF',
-    headerBackground: '#1C1C1E',
-    inputBackground: '#2C2C2E',
-    inputBorder: '#38383A',
-    inputFocused: '#0A84FF',
-    buttonPrimary: '#0A84FF',
-    buttonSecondary: '#38383A',
-    skeleton: '#38383A',
-    skeletonHighlight: '#48484A',
-    overlay: 'rgba(0, 0, 0, 0.7)',
-  },
-  spacing: sharedSpacing,
-  borderRadius: sharedBorderRadius,
-  typography: sharedTypography,
-  shadows: {
-    none: {},
-    sm: {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.3,
-      shadowRadius: 2,
-      elevation: 1,
-    },
-    md: {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.4,
-      shadowRadius: 4,
-      elevation: 2,
-    },
-    lg: {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.5,
-      shadowRadius: 8,
-      elevation: 4,
-    },
-    xl: {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 8 },
-      shadowOpacity: 0.6,
-      shadowRadius: 16,
-      elevation: 8,
-    },
-  },
-  touchTargets: sharedTouchTargets,
-};
+const lightTheme = buildTheme('light');
+const darkTheme = buildTheme('dark');
 
 interface ThemeContextType {
   theme: Theme;
@@ -440,3 +408,6 @@ export const useTheme = () => {
   }
   return context;
 };
+
+// Export design tokens for direct access when needed
+export { ColorPrimitives, SemanticColors } from '../constants/designTokens';
