@@ -1,6 +1,7 @@
 // components/CustomTabLayout.tsx
 import { SmoothTabContainer } from '@/components/SmoothTabContainer';
 import { useHaptics } from '@/contexts/HapticsContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import React, { useState } from 'react';
@@ -44,6 +45,7 @@ interface CustomTabLayoutProps {
 }
 
 export function CustomTabLayout({ initialTab }: CustomTabLayoutProps) {
+  const { theme } = useTheme();
   const { vibrationEnabled } = useHaptics();
   
   // Determine initial tab index based on initialTab prop
@@ -84,7 +86,7 @@ export function CustomTabLayout({ initialTab }: CustomTabLayoutProps) {
   });
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {/* Custom smooth tab container for mobile, fallback for web */}
       {Platform.OS !== 'web' ? (
         <SmoothTabContainer
@@ -95,13 +97,19 @@ export function CustomTabLayout({ initialTab }: CustomTabLayoutProps) {
         </SmoothTabContainer>
       ) : (
         // On web, just show the current tab
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
           {tabScreens[activeTab]}
         </View>
       )}
 
       {/* Custom Tab Bar */}
-      <View style={styles.tabBar}>
+      <View style={[
+        styles.tabBar, 
+        { 
+          backgroundColor: theme.colors.tabBar,
+          borderTopColor: theme.colors.border,
+        }
+      ]}>
         {tabs.map((tab, index) => (
           <TouchableOpacity
             key={tab.name}
@@ -115,12 +123,13 @@ export function CustomTabLayout({ initialTab }: CustomTabLayoutProps) {
             <Ionicons
               name={activeTab === index ? tab.icon.replace('-outline', '') as any : tab.icon}
               size={24}
-              color={activeTab === index ? '#007AFF' : '#8E8E93'}
+              color={activeTab === index ? theme.colors.tabBarActive : theme.colors.tabBarInactive}
             />
             <Text
               style={[
                 styles.tabLabel,
-                activeTab === index && styles.activeTabLabel,
+                { color: theme.colors.tabBarInactive },
+                activeTab === index && { color: theme.colors.tabBarActive, fontWeight: '600' },
               ]}
             >
               {tab.title}
@@ -135,13 +144,10 @@ export function CustomTabLayout({ initialTab }: CustomTabLayoutProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   tabBar: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
     borderTopWidth: 1,
-    borderTopColor: '#E5E5EA',
     paddingBottom: Platform.OS === 'ios' ? 12 : 6,
     paddingTop: 6,
   },
@@ -157,11 +163,6 @@ const styles = StyleSheet.create({
   tabLabel: {
     fontSize: 10,
     marginTop: 2,
-    color: '#8E8E93',
     fontWeight: '500',
-  },
-  activeTabLabel: {
-    color: '#007AFF',
-    fontWeight: '600',
   },
 });

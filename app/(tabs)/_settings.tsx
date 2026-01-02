@@ -292,7 +292,7 @@ export default function AccountScreen() {
   ];
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
@@ -672,7 +672,7 @@ export default function AccountScreen() {
             style={[styles.modalContent, { backgroundColor: theme.colors.background }]}
           >
             {/* Modal Header */}
-            <View style={styles.modalHeader}>
+            <View style={[styles.modalHeader, { borderBottomColor: theme.colors.border }]}>
               <ThemedText variant="subtitle">Customize Avatar</ThemedText>
               <TouchableOpacity 
                 onPress={() => setShowAvatarCustomizer(false)}
@@ -696,7 +696,7 @@ export default function AccountScreen() {
             )}
 
             {/* Tab Navigation */}
-            <View style={styles.tabContainer}>
+            <View style={[styles.tabContainer, { borderBottomColor: theme.colors.border }]}>
               <TouchableOpacity 
                 style={[styles.tab, activeTab === 'icon' && styles.activeTab, activeTab === 'icon' && { borderBottomColor: theme.colors.primary }]}
                 onPress={() => setActiveTab('icon')}
@@ -746,6 +746,7 @@ export default function AccountScreen() {
                       >
                         <View style={[
                           styles.iconItemContainer,
+                          { backgroundColor: theme.colors.card, borderColor: theme.colors.border },
                           profile?.avatar_icon === item.name && styles.selectedItem,
                           profile?.avatar_icon === item.name && { borderColor: theme.colors.primary, backgroundColor: theme.colors.primary + '20' }
                         ]}>

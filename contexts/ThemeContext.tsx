@@ -2,93 +2,15 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import {
-    BorderRadiusTokens,
-    ColorPrimitives,
-    SemanticColors,
-    ShadowTokens,
-    ShadowTokensDark,
-    SpacingTokens,
-    TouchTargetTokens,
-    TypographyTokens,
+  BorderRadiusTokens,
+  ColorPrimitives,
+  SemanticColors,
+  ShadowTokens,
+  ShadowTokensDark,
+  SpacingTokens,
+  TouchTargetTokens,
+  TypographyTokens,
 } from '../constants/designTokens';
-
-// Function to apply Dark Reader-style CSS filter for web
-const applyDarkModeFilter = (isDark: boolean) => {
-  if (typeof document === 'undefined') return;
-  
-  if (isDark) {
-    // Create or update dark mode style
-    let style = document.getElementById('dark-mode-style');
-    if (!style) {
-      style = document.createElement('style');
-      style.id = 'dark-mode-style';
-      document.head.appendChild(style);
-    }
-    
-    // Enhanced Dark Reader-style CSS with better handling
-    style.textContent = `
-      /* Main inversion filter */
-      html {
-        background-color: #181a1b !important;
-      }
-      
-      html, body {
-        background-color: #181a1b !important;
-        color: #e8e6e3 !important;
-      }
-      
-      /* Invert main content */
-      body {
-        filter: invert(0.88) hue-rotate(180deg) !important;
-      }
-      
-      /* Counter-invert images, videos, and media */
-      img, video, iframe, canvas,
-      [style*="background-image"],
-      svg, picture {
-        filter: invert(1) hue-rotate(180deg) !important;
-      }
-      
-      /* Handle specific UI elements */
-      input, textarea, select {
-        background-color: #1e2021 !important;
-        color: #e8e6e3 !important;
-        border-color: #3e4446 !important;
-      }
-      
-      /* Improve text contrast */
-      * {
-        color: inherit !important;
-        border-color: inherit !important;
-      }
-      
-      /* Fix scrollbars */
-      ::-webkit-scrollbar {
-        background-color: #202324 !important;
-      }
-      
-      ::-webkit-scrollbar-thumb {
-        background-color: #454a4d !important;
-      }
-      
-      /* Prevent double inversion on certain elements */
-      [data-theme="dark"] {
-        filter: none !important;
-      }
-      
-      /* Better handling of borders and shadows */
-      * {
-        box-shadow: none !important;
-      }
-    `;
-  } else {
-    // Remove dark mode styles
-    const style = document.getElementById('dark-mode-style');
-    if (style) {
-      style.remove();
-    }
-  }
-};
 
 type ColorScheme = 'light' | 'dark';
 
@@ -187,7 +109,7 @@ export interface Theme {
     // Overlay
     overlay: string;
     
-    // Game-specific
+    // Game-specific (preserved for user content)
     team1: string;
     team2: string;
     gold: string;
@@ -288,7 +210,7 @@ const buildTheme = (mode: 'light' | 'dark'): Theme => {
       // Overlay
       overlay: semanticColors.overlay,
       
-      // Game-specific
+      // Game-specific (preserved for user content - not affected by dark mode)
       team1: semanticColors.team1,
       team2: semanticColors.team2,
       gold: semanticColors.gold,
@@ -331,7 +253,7 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [colorScheme, setColorScheme] = useState<ColorScheme>('light'); // Default to light mode
+  const [colorScheme, setColorScheme] = useState<ColorScheme>('light');
 
   useEffect(() => {
     loadThemePreference();
@@ -361,29 +283,12 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const newScheme = colorScheme === 'light' ? 'dark' : 'light';
     setColorScheme(newScheme);
     saveThemePreference(newScheme);
-    
-    // Apply CSS filter for web dark mode
-    if (typeof document !== 'undefined') {
-      applyDarkModeFilter(newScheme === 'dark');
-    }
   };
 
   const handleSetColorScheme = (scheme: ColorScheme) => {
     setColorScheme(scheme);
     saveThemePreference(scheme);
-    
-    // Apply CSS filter for web dark mode
-    if (typeof document !== 'undefined') {
-      applyDarkModeFilter(scheme === 'dark');
-    }
   };
-
-  // Apply dark mode filter on initial load
-  useEffect(() => {
-    if (typeof document !== 'undefined') {
-      applyDarkModeFilter(colorScheme === 'dark');
-    }
-  }, [colorScheme]);
 
   const theme = colorScheme === 'dark' ? darkTheme : lightTheme;
 
