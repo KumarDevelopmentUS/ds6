@@ -25,7 +25,7 @@ const { width } = Dimensions.get('window');
 
 export default function AccountScreen() {
   const router = useRouter();
-  const { theme, toggleColorScheme } = useTheme();
+  const { theme, colorScheme, toggleColorScheme } = useTheme();
   const { vibrationEnabled, setVibrationEnabled } = useHaptics();
   const { communities: userCommunities, isLoading: communitiesLoading, refetch } = useFeed();
   const { session } = useAuth();
@@ -265,6 +265,12 @@ export default function AccountScreen() {
       icon: 'game-controller-outline',
       items: [
         {
+          label: 'Dark Mode',
+          value: colorScheme === 'dark',
+          onToggle: () => toggleColorScheme(),
+          type: 'switch' as const,
+        },
+        {
           label: 'Vibration',
           value: vibrationEnabled,
           onToggle: setVibrationEnabled,
@@ -342,14 +348,14 @@ export default function AccountScreen() {
             
             <View style={styles.loginButtons}>
               <TouchableOpacity 
-                style={styles.signInButton}
+                style={[styles.signInButton, { backgroundColor: theme.colors.primary }]}
                 onPress={() => router.push('/(auth)/login')}
               >
                 <Text style={styles.buttonText}>Sign In</Text>
               </TouchableOpacity>
 
               <TouchableOpacity 
-                style={styles.createAccountButton}
+                style={[styles.createAccountButton, { backgroundColor: theme.colors.primary }]}
                 onPress={() => router.push('/(auth)/signUp')}
               >
                 <Text style={styles.buttonText}>Create Account</Text>
@@ -593,6 +599,18 @@ export default function AccountScreen() {
               </ThemedText>
             </View>
 
+            <View style={[styles.settingItem, styles.settingItemBorder, { borderColor: theme.colors.border }]}>
+              <ThemedText variant="body">Dark Mode</ThemedText>
+              <Switch
+                value={colorScheme === 'dark'}
+                onValueChange={toggleColorScheme}
+                trackColor={{
+                  false: theme.colors.border,
+                  true: theme.colors.primary
+                }}
+                thumbColor={theme.dark ? '#f4f3f4' : '#f4f3f4'}
+              />
+            </View>
             <View style={styles.settingItem}>
               <ThemedText variant="body">Vibration</ThemedText>
               <Switch
