@@ -83,7 +83,8 @@
         "exclude": [
           "dotenv",
           "nanoid",
-          "next"
+          "next",
+          "react-native-chart-kit"
         ],
         "listUnknownPackages": false
       }
