@@ -769,16 +769,16 @@ export default function ManageCommunityScreen() {
                 <View style={[styles.inviteCodeSection, { backgroundColor: theme.colors.inputBackground }]}>
                   {/* Only show invite code when enabled */}
                   {community.invite_code_enabled && (
-                    <View style={styles.inviteCodeHeader}>
-                      <View style={{ flex: 1 }}>
-                        <ThemedText variant="caption" style={{ color: theme.colors.textSecondary }}>
-                          Invite Code
-                        </ThemedText>
-                        <ThemedText variant="subtitle" style={styles.inviteCode}>
-                          {community.invite_code}
-                        </ThemedText>
-                      </View>
+                  <View style={styles.inviteCodeHeader}>
+                    <View style={{ flex: 1 }}>
+                      <ThemedText variant="caption" style={{ color: theme.colors.textSecondary }}>
+                        Invite Code
+                      </ThemedText>
+                      <ThemedText variant="subtitle" style={styles.inviteCode}>
+                        {community.invite_code}
+                      </ThemedText>
                     </View>
+                  </View>
                   )}
                   
                   {/* Invite Code Toggle - always visible */}

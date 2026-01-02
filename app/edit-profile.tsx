@@ -66,6 +66,7 @@ export default function EditProfileScreen() {
   const [passwordError, setPasswordError] = useState('');
   const [pendingAction, setPendingAction] = useState<'upload' | null>(null);
   const [nicknameError, setNicknameError] = useState('');
+  const [nicknameTouched, setNicknameTouched] = useState(false);
   const [schoolSearch, setSchoolSearch] = useState('');
   const [filteredSchools, setFilteredSchools] = useState(SCHOOLS);
 
@@ -323,6 +324,12 @@ export default function EditProfileScreen() {
     setNicknameError(error);
   };
 
+  const handleNicknameBlur = () => {
+    setNicknameTouched(true);
+    const error = validateNickname(profile?.nickname || '');
+    setNicknameError(error);
+  };
+
   const handleUpdateProfile = async () => {
     if (!profile) return;
     setLoading(true);
@@ -542,11 +549,12 @@ export default function EditProfileScreen() {
           <ThemedInput
             value={profile.nickname}
             onChangeText={handleNicknameChange}
+            onBlur={handleNicknameBlur}
             icon={<Ionicons name="person-circle-outline" size={20} color={theme.colors.textSecondary} />}
-            style={{ ...styles.editableInput, marginBottom: nicknameError ? 5 : 0 }}
+            style={{ ...styles.editableInput, marginBottom: (nicknameTouched && nicknameError) ? 5 : 0 }}
             maxLength={15}
           />
-          {nicknameError ? (
+          {nicknameTouched && nicknameError ? (
             <ThemedText variant="caption" style={[{ color: theme.colors.error, marginBottom: theme.spacing.sm }]}>
               {nicknameError}
             </ThemedText>

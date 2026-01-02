@@ -53,6 +53,14 @@ export default function SignUpScreen() {
     password: '',
     confirmPassword: '',
   });
+  // Track which fields have been touched (blurred at least once)
+  const [touched, setTouched] = useState({
+    username: false,
+    nickname: false,
+    email: false,
+    password: false,
+    confirmPassword: false,
+  });
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
   const [checkingUsername, setCheckingUsername] = useState(false);
   const [usernameCheckTimeout, setUsernameCheckTimeout] = useState<ReturnType<typeof setTimeout> | null>(null);
@@ -187,7 +195,7 @@ export default function SignUpScreen() {
   const handleInputChange = (field: string, value: string) => {
     setFormData({ ...formData, [field]: value });
     
-    // Real-time validation
+    // Real-time validation (store errors but display based on touched state)
     let error = '';
     switch (field) {
       case 'username':
@@ -207,7 +215,7 @@ export default function SignUpScreen() {
         break;
       case 'password':
         error = validatePassword(value);
-        // Also validate confirm password if it exists
+        // Also validate confirm password if it exists and touched
         if (formData.confirmPassword) {
           setErrors(prev => ({ 
             ...prev, 
@@ -220,6 +228,32 @@ export default function SignUpScreen() {
         break;
     }
     
+    setErrors(prev => ({ ...prev, [field]: error }));
+  };
+
+  // Handle blur - mark field as touched and validate
+  const handleInputBlur = (field: string) => {
+    setTouched(prev => ({ ...prev, [field]: true }));
+    
+    // Re-validate on blur to ensure error shows
+    let error = '';
+    switch (field) {
+      case 'username':
+        error = validateUsername(formData.username);
+        break;
+      case 'nickname':
+        error = validateNickname(formData.nickname);
+        break;
+      case 'email':
+        error = validateEmail(formData.email);
+        break;
+      case 'password':
+        error = validatePassword(formData.password);
+        break;
+      case 'confirmPassword':
+        error = validateConfirmPassword(formData.password, formData.confirmPassword);
+        break;
+    }
     setErrors(prev => ({ ...prev, [field]: error }));
   };
 
@@ -532,11 +566,12 @@ export default function SignUpScreen() {
                     placeholder="First Name"
                     value={formData.nickname}
                     onChangeText={(text) => handleInputChange('nickname', text)}
+                    onBlur={() => handleInputBlur('nickname')}
                     icon={<Ionicons name="person-outline" size={24} color={theme.colors.textSecondary} />}
-                    style={{ marginBottom: errors.nickname ? 5 : 0 }}
+                    style={{ marginBottom: (touched.nickname && errors.nickname) ? 5 : 0 }}
                     maxLength={15}
                   />
-                  {errors.nickname ? (
+                  {touched.nickname && errors.nickname ? (
                     <ThemedText variant="caption" style={[styles.errorText, { color: theme.colors.error }]}>
                       {errors.nickname}
                     </ThemedText>
@@ -547,18 +582,25 @@ export default function SignUpScreen() {
                     placeholder="Username"
                     value={formData.username}
                     onChangeText={(text) => handleInputChange('username', text)}
+                    onBlur={() => handleInputBlur('username')}
                     autoCapitalize="none"
                     icon={<Ionicons name="at" size={24} color={theme.colors.textSecondary} />}
-                    style={{ marginBottom: errors.username ? 5 : 0 }}
+                    style={{ marginBottom: (touched.username && errors.username) ? 5 : 0 }}
                     maxLength={15}
                   />
-                  {errors.username ? (
+                  {touched.username && errors.username ? (
                     <ThemedText variant="caption" style={[styles.errorText, { color: theme.colors.error }]}>
                       {errors.username}
                     </ThemedText>
                   ) : null}
-                  {/* Username availability indicator */}
-                  {formData.username.length >= 5 && usernameAvailable !== null && (
+                  {/* Username hint - always visible when empty or too short */}
+                  {!touched.username && formData.username.length > 0 && formData.username.length < 5 && (
+                    <ThemedText variant="caption" style={[styles.hintText, { color: theme.colors.textSecondary }]}>
+                      Username must be at least 5 characters
+                    </ThemedText>
+                  )}
+                  {/* Username availability indicator - shows immediately since it's async check */}
+                  {formData.username.length >= 5 && (checkingUsername || usernameAvailable !== null) && (
                     <View style={styles.usernameStatusContainer}>
                       {checkingUsername ? (
                         <View style={styles.usernameStatusRow}>
@@ -590,12 +632,13 @@ export default function SignUpScreen() {
                     placeholder="Email"
                     value={formData.email}
                     onChangeText={(text) => handleInputChange('email', text)}
+                    onBlur={() => handleInputBlur('email')}
                     keyboardType="email-address"
                     autoCapitalize="none"
                     icon={<Ionicons name="mail-outline" size={24} color={theme.colors.textSecondary} />}
-                    style={{ marginBottom: errors.email ? 5 : 0 }}
+                    style={{ marginBottom: (touched.email && errors.email) ? 5 : 0 }}
                   />
-                  {errors.email ? (
+                  {touched.email && errors.email ? (
                     <ThemedText variant="caption" style={[styles.errorText, { color: theme.colors.error }]}>
                       {errors.email}
                     </ThemedText>
@@ -608,26 +651,37 @@ export default function SignUpScreen() {
                         placeholder="Password"
                         value={formData.password}
                         onChangeText={(text) => handleInputChange('password', text)}
+                        onBlur={() => handleInputBlur('password')}
                         secureTextEntry
                         icon={<Ionicons name="lock-closed-outline" size={24} color={theme.colors.textSecondary} />}
-                        style={{ marginBottom: errors.password ? 5 : 0 }}
+                        style={{ marginBottom: 5 }}
                       />
-                      {errors.password ? (
-                        <ThemedText variant="caption" style={[styles.errorText, { color: theme.colors.error }]}>
-                          {errors.password}
-                        </ThemedText>
-                      ) : null}
+                      {/* Password hint - always visible */}
+                      <ThemedText 
+                        variant="caption" 
+                        style={[
+                          styles.hintText, 
+                          { 
+                            color: touched.password && errors.password 
+                              ? theme.colors.error 
+                              : theme.colors.textSecondary 
+                          }
+                        ]}
+                      >
+                        Must be at least 6 characters
+                      </ThemedText>
                     </View>
                     <View style={{ marginBottom: 20 }}>
                       <ThemedInput
                         placeholder="Confirm Password"
                         value={formData.confirmPassword}
                         onChangeText={(text) => handleInputChange('confirmPassword', text)}
+                        onBlur={() => handleInputBlur('confirmPassword')}
                         secureTextEntry
                         icon={<Ionicons name="lock-closed-outline" size={24} color={theme.colors.textSecondary} />}
-                        style={{ marginBottom: errors.confirmPassword ? 5 : 0 }}
+                        style={{ marginBottom: (touched.confirmPassword && errors.confirmPassword) ? 5 : 0 }}
                       />
-                      {errors.confirmPassword ? (
+                      {touched.confirmPassword && errors.confirmPassword ? (
                         <ThemedText variant="caption" style={[styles.errorText, { color: theme.colors.error }]}>
                           {errors.confirmPassword}
                         </ThemedText>
@@ -864,6 +918,11 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: 12,
     fontWeight: '500',
+    marginTop: 5,
+  },
+  hintText: {
+    fontSize: 12,
+    fontWeight: '400',
     marginTop: 5,
   },
   usernameStatusContainer: {
