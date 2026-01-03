@@ -64,6 +64,7 @@ export interface Theme {
     
     // Text
     text: string;
+    textPrimary: string;  // Alias for consistency
     textSecondary: string;
     textTertiary: string;
     textInverse: string;
@@ -165,6 +166,7 @@ const buildTheme = (mode: 'light' | 'dark'): Theme => {
       
       // Text
       text: semanticColors.textPrimary,
+      textPrimary: semanticColors.textPrimary,  // Alias for consistency
       textSecondary: semanticColors.textSecondary,
       textTertiary: semanticColors.textTertiary,
       textInverse: semanticColors.textInverse,

@@ -589,11 +589,11 @@ export default function FriendsScreen() {
                 viewingProfileStats ? (
                     <ThemedView variant="card" style={styles.statsCard}>
                         <ThemedText variant='subtitle' style={styles.statsTitle}>Player Stats</ThemedText>
-                        <View style={styles.statRow}><ThemedText>Games Played</ThemedText><ThemedText variant='body' color='primary'>{viewingProfileStats.total_matches}</ThemedText></View>
-                        <View style={styles.statRow}><ThemedText>Win Rate</ThemedText><ThemedText variant='body' color='primary'>{viewingProfileStats.win_rate.toFixed(1)}%</ThemedText></View>
-                        <View style={styles.statRow}><ThemedText>Average Score</ThemedText><ThemedText variant='body' color='primary'>{viewingProfileStats.avg_score.toFixed(1)}</ThemedText></View>
-                        <View style={styles.statRow}><ThemedText>Hit Rate</ThemedText><ThemedText variant='body' color='primary'>{viewingProfileStats.hit_rate.toFixed(1)}%</ThemedText></View>
-                        <View style={styles.statRow}><ThemedText>Catch Rate</ThemedText><ThemedText variant='body' color='primary'>{viewingProfileStats.catch_rate.toFixed(1)}%</ThemedText></View>
+                        <View style={[styles.statRow, { borderBottomColor: theme.colors.border }]}><ThemedText>Games Played</ThemedText><ThemedText variant='body' color='primary'>{viewingProfileStats.total_matches}</ThemedText></View>
+                        <View style={[styles.statRow, { borderBottomColor: theme.colors.border }]}><ThemedText>Win Rate</ThemedText><ThemedText variant='body' color='primary'>{viewingProfileStats.win_rate.toFixed(1)}%</ThemedText></View>
+                        <View style={[styles.statRow, { borderBottomColor: theme.colors.border }]}><ThemedText>Average Score</ThemedText><ThemedText variant='body' color='primary'>{viewingProfileStats.avg_score.toFixed(1)}</ThemedText></View>
+                        <View style={[styles.statRow, { borderBottomColor: theme.colors.border }]}><ThemedText>Hit Rate</ThemedText><ThemedText variant='body' color='primary'>{viewingProfileStats.hit_rate.toFixed(1)}%</ThemedText></View>
+                        <View style={[styles.statRow, { borderBottomColor: theme.colors.border }]}><ThemedText>Catch Rate</ThemedText><ThemedText variant='body' color='primary'>{viewingProfileStats.catch_rate.toFixed(1)}%</ThemedText></View>
                     </ThemedView>
                 ) : <ThemedText style={styles.emptyText}>No stats available for this user.</ThemedText>
             }
@@ -618,7 +618,7 @@ export default function FriendsScreen() {
         color={theme.colors.primary}
       />
 
-      <View style={styles.tabContainer}>
+      <View style={[styles.tabContainer, { borderBottomColor: theme.colors.border }]}>
         {['friends', 'invites'].map((tab) => {
           const badgeCount = tab === 'invites' ? totalInvitesBadge : 0;
           const tabLabel = tab.charAt(0).toUpperCase() + tab.slice(1);
@@ -822,7 +822,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row', 
     justifyContent: 'space-around', 
     borderBottomWidth: 1, 
-    borderBottomColor: '#e5e5e5', 
     marginTop: 40,
     marginHorizontal: 12,
   },
@@ -984,7 +983,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between', 
     paddingVertical: 12, 
     borderBottomWidth: 1, 
-    borderBottomColor: '#e5e5e5' 
   },
   // Expand section styles
   expandSection: {

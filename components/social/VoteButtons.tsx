@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface VoteButtonsProps {
   likeCount: number;
@@ -10,6 +11,7 @@ interface VoteButtonsProps {
 }
 
 export const VoteButtons: React.FC<VoteButtonsProps> = ({ likeCount, onVote, userVote }) => {
+  const { theme } = useTheme();
   const [localVote, setLocalVote] = useState(userVote);
   const [displayCount, setDisplayCount] = useState(likeCount);
 
@@ -46,27 +48,27 @@ export const VoteButtons: React.FC<VoteButtonsProps> = ({ likeCount, onVote, use
     <View style={styles.container}>
       <TouchableOpacity
         onPress={() => handleVote(1)}
-        style={[styles.button, localVote === 1 && styles.activeUpvote]}
+        style={[styles.button, localVote === 1 && { backgroundColor: theme.colors.primary + '20' }]}
       >
         <Ionicons
           name="arrow-up"
           size={18}
-          color={localVote === 1 ? '#007AFF' : '#666'}
+          color={localVote === 1 ? theme.colors.primary : theme.colors.textSecondary}
         />
       </TouchableOpacity>
 
-      <Text style={[styles.count, localVote !== null && styles.activeCount]}>
+      <Text style={[styles.count, { color: localVote !== null ? theme.colors.textPrimary : theme.colors.textSecondary }]}>
         {displayCount}
       </Text>
 
       <TouchableOpacity
         onPress={() => handleVote(-1)}
-        style={[styles.button, localVote === -1 && styles.activeDownvote]}
+        style={[styles.button, localVote === -1 && { backgroundColor: theme.colors.error + '20' }]}
       >
         <Ionicons
           name="arrow-down"
           size={18}
-          color={localVote === -1 ? '#FF3B30' : '#666'}
+          color={localVote === -1 ? theme.colors.error : theme.colors.textSecondary}
         />
       </TouchableOpacity>
     </View>

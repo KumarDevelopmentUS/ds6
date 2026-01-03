@@ -3,6 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
+import { useTheme } from '../../contexts/ThemeContext';
 import { ThemedText } from '../themed/ThemedText';
 import { ThemedView } from '../themed/ThemedView';
 
@@ -13,6 +14,8 @@ interface MatchSummaryProps {
 
 export default function MatchSummary({ matchData, showFullDetails = false }: MatchSummaryProps) {
   const router = useRouter();
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
 
   // Calculate player rating using the same formula as the app
   const calculatePlayerRating = (player: PlayerStats): number => {
@@ -273,22 +276,22 @@ export default function MatchSummary({ matchData, showFullDetails = false }: Mat
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) => StyleSheet.create({
   container: {
     borderRadius: 12,
     padding: 16,
     marginVertical: 8,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    backgroundColor: '#F9FAFB',
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.backgroundSecondary,
   },
   condensedContainer: {
     borderRadius: 8,
     padding: 12,
     marginVertical: 4,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    backgroundColor: '#F9FAFB',
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.backgroundSecondary,
   },
   condensedHeader: {
     flexDirection: 'row',
@@ -298,7 +301,7 @@ const styles = StyleSheet.create({
   condensedTitle: {
     marginLeft: 4,
     fontWeight: '600',
-    color: '#374151',
+    color: theme.colors.textPrimary,
     fontSize: 12,
   },
   condensedScoreContainer: {
@@ -310,22 +313,22 @@ const styles = StyleSheet.create({
   condensedTeamName: {
     fontSize: 12,
     fontWeight: '500',
-    color: '#374151',
+    color: theme.colors.textPrimary,
     flex: 1,
     textAlign: 'center',
   },
   condensedScore: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#374151',
+    color: theme.colors.textPrimary,
     marginHorizontal: 8,
   },
   condensedWinnerScore: {
-    color: '#059669',
+    color: theme.colors.success,
   },
   condensedVs: {
     fontSize: 12,
-    color: '#6B7280',
+    color: theme.colors.textSecondary,
     marginHorizontal: 4,
   },
   header: {
@@ -339,10 +342,10 @@ const styles = StyleSheet.create({
   matchTitle: {
     marginLeft: 6,
     fontWeight: '600',
-    color: '#374151',
+    color: theme.colors.textPrimary,
   },
   matchDate: {
-    color: '#6B7280',
+    color: theme.colors.textSecondary,
   },
   scoreContainer: {
     flexDirection: 'row',
@@ -350,7 +353,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
     paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.card,
     borderRadius: 8,
     paddingHorizontal: 16,
   },
@@ -367,15 +370,15 @@ const styles = StyleSheet.create({
   score: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#374151',
+    color: theme.colors.textPrimary,
   },
   winnerScore: {
-    color: '#059669',
+    color: theme.colors.success,
   },
   vs: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#6B7280',
+    color: theme.colors.textSecondary,
     marginHorizontal: 16,
   },
   playersContainer: {
@@ -384,7 +387,7 @@ const styles = StyleSheet.create({
   playersHeader: {
     marginBottom: 8,
     fontWeight: '600',
-    color: '#374151',
+    color: theme.colors.textPrimary,
   },
   playersGrid: {
     flexDirection: 'row',
@@ -393,15 +396,15 @@ const styles = StyleSheet.create({
   },
   playerCard: {
     width: '48%',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.card,
     borderRadius: 8,
     padding: 12,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: theme.colors.border,
   },
   winnerPlayerCard: {
-    borderColor: '#059669',
-    backgroundColor: '#F0FDF4',
+    borderColor: theme.colors.success,
+    backgroundColor: theme.colors.successBackground,
   },
   playerHeader: {
     marginBottom: 4,
@@ -418,19 +421,19 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   guestPlayerName: {
-    color: '#6B7280',
+    color: theme.colors.textSecondary,
   },
   guestLabel: {
     fontSize: 10,
-    color: '#9CA3AF',
-    backgroundColor: '#F3F4F6',
+    color: theme.colors.textTertiary,
+    backgroundColor: theme.colors.backgroundSecondary,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
     marginLeft: 4,
   },
   playerScore: {
-    color: '#6B7280',
+    color: theme.colors.textSecondary,
   },
   playerStats: {
     marginTop: 4,
@@ -440,7 +443,7 @@ const styles = StyleSheet.create({
   },
   statText: {
     fontSize: 11,
-    color: '#6B7280',
+    color: theme.colors.textSecondary,
   },
   winnerContainer: {
     flexDirection: 'row',
@@ -448,11 +451,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
+    borderTopColor: theme.colors.border,
   },
   winnerText: {
     marginLeft: 6,
     fontWeight: '600',
-    color: '#059669',
+    color: theme.colors.success,
   },
 });

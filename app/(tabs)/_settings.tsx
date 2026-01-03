@@ -26,6 +26,7 @@ const { width } = Dimensions.get('window');
 export default function AccountScreen() {
   const router = useRouter();
   const { theme, colorScheme, toggleColorScheme } = useTheme();
+  const styles = createStyles(theme);
   const { vibrationEnabled, setVibrationEnabled } = useHaptics();
   const { communities: userCommunities, isLoading: communitiesLoading, refetch } = useFeed();
   const { session } = useAuth();
@@ -829,10 +830,10 @@ export default function AccountScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.background,
   },
   content: {
     flexGrow: 1,
@@ -976,7 +977,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     marginTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#e5e5e5',
+    borderTopColor: theme.colors.border,
   },
   joinGeneralInfo: {
     flexDirection: 'row',
@@ -993,7 +994,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     marginTop: 16,
     borderTopWidth: 1,
-    borderTopColor: '#e5e5e5',
+    borderTopColor: theme.colors.border,
   },
   createCommunityIcon: {
     width: 40,
@@ -1031,19 +1032,19 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   signInButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: theme.colors.primary,
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',
   },
   createAccountButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: theme.colors.primary,
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',
   },
   buttonText: {
-    color: 'white',
+    color: theme.colors.textOnPrimary,
     textAlign: 'center',
     fontWeight: 'bold',
     fontSize: 16,
@@ -1073,7 +1074,7 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: theme.colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
@@ -1097,7 +1098,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e5e5',
+    borderBottomColor: theme.colors.border,
   },
   avatarPreviewContainer: {
     alignItems: 'center',
@@ -1106,7 +1107,7 @@ const styles = StyleSheet.create({
   tabContainer: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e5e5',
+    borderBottomColor: theme.colors.border,
     marginBottom: 16,
   },
   tab: {

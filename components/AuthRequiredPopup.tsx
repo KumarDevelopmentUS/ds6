@@ -28,6 +28,7 @@ export function AuthRequiredPopup({
   message = 'You must be logged in to access this feature.',
 }: AuthRequiredPopupProps) {
   const { theme } = useTheme();
+  const styles = createStyles(theme);
 
   // For iOS, use Alert instead of Modal for better native feel
   const handleIOSAuthRequired = React.useCallback(() => {
@@ -102,10 +103,10 @@ export function AuthRequiredPopup({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) => StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: theme.colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
@@ -129,7 +130,7 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    backgroundColor: theme.colors.primary + '20',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
@@ -142,7 +143,7 @@ const styles = StyleSheet.create({
   },
   message: {
     textAlign: 'center',
-    color: '#6b7280',
+    color: theme.colors.textSecondary,
     lineHeight: 20,
   },
   actions: {
@@ -158,19 +159,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   dismissButton: {
-    backgroundColor: '#f3f4f6',
+    backgroundColor: theme.colors.backgroundSecondary,
     borderWidth: 1,
-    borderColor: '#d1d5db',
+    borderColor: theme.colors.border,
   },
   dismissButtonText: {
-    color: '#374151',
+    color: theme.colors.textPrimary,
     fontWeight: '600',
   },
   signInButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: theme.colors.primary,
   },
   signInButtonText: {
-    color: '#ffffff',
+    color: theme.colors.textOnPrimary,
     fontWeight: '600',
   },
 });

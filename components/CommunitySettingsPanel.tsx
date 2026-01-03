@@ -19,6 +19,7 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import { useTheme } from '../contexts/ThemeContext';
 
 const { height: screenHeight } = Dimensions.get('window');
 
@@ -52,6 +53,7 @@ export function CommunitySettingsPanel({
 }: CommunitySettingsPanelProps) {
   const router = useRouter();
   const { session } = useAuth();
+  const { theme } = useTheme();
   const currentUserId = session?.user?.id;
   const [showWebConfirm, setShowWebConfirm] = useState(false);
   const isWeb = Platform.OS === 'web';
@@ -304,21 +306,22 @@ export function CommunitySettingsPanel({
             style={[
               styles.panel,
               {
-                transform: [{ translateY: pan.y }]
+                transform: [{ translateY: pan.y }],
+                backgroundColor: theme.colors.card,
               }
             ]}
             {...panResponder.panHandlers}
           >
             {/* Handle bar */}
             <View style={styles.handleBar}>
-              <View style={styles.handle} />
+              <View style={[styles.handle, { backgroundColor: theme.colors.border }]} />
             </View>
 
             {/* Header */}
-            <View style={styles.header}>
-              <Text style={styles.headerTitle}>Community Settings</Text>
+            <View style={[styles.header, { borderBottomColor: theme.colors.border }]}>
+              <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Community Settings</Text>
               <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-                <Ionicons name="close" size={24} color="#666" />
+                <Ionicons name="close" size={24} color={theme.colors.textSecondary} />
               </TouchableOpacity>
             </View>
 
@@ -327,17 +330,17 @@ export function CommunitySettingsPanel({
             <View style={styles.content}>
                 {loadingDetails ? (
                   <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color="#007AFF" />
+                    <ActivityIndicator size="large" color={theme.colors.primary} />
                   </View>
                 ) : (
                   <>
               {/* Community Info Section */}
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Community Information</Text>
+                <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Community Information</Text>
                 
                       {/* Community Icon for private communities */}
                       {isPrivateCommunity && communityDetails && (
-                        <View style={styles.communityIconRow}>
+                        <View style={[styles.communityIconRow, { backgroundColor: theme.colors.backgroundTertiary }]}>
                           <CommunityIcon
                             icon={communityDetails.icon}
                             iconColor={communityDetails.icon_color}
@@ -345,10 +348,10 @@ export function CommunitySettingsPanel({
                             size={60}
                           />
                           <View style={styles.communityIconInfo}>
-                            <Text style={styles.communityIconName}>{displayCommunityName}</Text>
-                            <View style={styles.privateBadge}>
-                              <Ionicons name="lock-closed" size={12} color="#007AFF" />
-                              <Text style={styles.privateBadgeText}>Private Community</Text>
+                            <Text style={[styles.communityIconName, { color: theme.colors.text }]}>{displayCommunityName}</Text>
+                            <View style={[styles.privateBadge, { backgroundColor: theme.dark ? theme.colors.backgroundSecondary : '#E8F4FD' }]}>
+                              <Ionicons name="lock-closed" size={12} color={theme.colors.primary} />
+                              <Text style={[styles.privateBadgeText, { color: theme.colors.primary }]}>Private Community</Text>
                             </View>
                           </View>
                         </View>
@@ -356,38 +359,38 @@ export function CommunitySettingsPanel({
 
                       {!isPrivateCommunity && (
                 <View style={styles.infoRow}>
-                  <View style={styles.infoIcon}>
-                    <Ionicons name="people" size={20} color="#007AFF" />
+                  <View style={[styles.infoIcon, { backgroundColor: theme.dark ? theme.colors.backgroundSecondary : '#F0F8FF' }]}>
+                    <Ionicons name="people" size={20} color={theme.colors.primary} />
                   </View>
                   <View style={styles.infoContent}>
-                    <Text style={styles.infoLabel}>Community Name</Text>
-                    <Text style={styles.infoValue}>{displayCommunityName}</Text>
+                    <Text style={[styles.infoLabel, { color: theme.colors.textSecondary }]}>Community Name</Text>
+                    <Text style={[styles.infoValue, { color: theme.colors.text }]}>{displayCommunityName}</Text>
                   </View>
                 </View>
                       )}
 
                 <View style={styles.infoRow}>
-                  <View style={styles.infoIcon}>
-                    <Ionicons name="calendar" size={20} color="#007AFF" />
+                  <View style={[styles.infoIcon, { backgroundColor: theme.dark ? theme.colors.backgroundSecondary : '#F0F8FF' }]}>
+                    <Ionicons name="calendar" size={20} color={theme.colors.primary} />
                   </View>
                   <View style={styles.infoContent}>
-                    <Text style={styles.infoLabel}>Joined On</Text>
-                    <Text style={styles.infoValue}>{formatJoinedDate(joinedAt)}</Text>
+                    <Text style={[styles.infoLabel, { color: theme.colors.textSecondary }]}>Joined On</Text>
+                    <Text style={[styles.infoValue, { color: theme.colors.text }]}>{formatJoinedDate(joinedAt)}</Text>
                   </View>
                 </View>
 
                       {userRole && (
                         <View style={styles.infoRow}>
-                          <View style={styles.infoIcon}>
+                          <View style={[styles.infoIcon, { backgroundColor: theme.dark ? theme.colors.backgroundSecondary : '#F0F8FF' }]}>
                             <Ionicons 
                               name={userRole === 'owner' ? 'star' : userRole === 'admin' ? 'shield' : 'person'} 
                               size={20} 
-                              color="#007AFF" 
+                              color={theme.colors.primary} 
                             />
                           </View>
                           <View style={styles.infoContent}>
-                            <Text style={styles.infoLabel}>Your Role</Text>
-                            <Text style={styles.infoValue}>
+                            <Text style={[styles.infoLabel, { color: theme.colors.textSecondary }]}>Your Role</Text>
+                            <Text style={[styles.infoValue, { color: theme.colors.text }]}>
                               {userRole.charAt(0).toUpperCase() + userRole.slice(1)}
                             </Text>
                           </View>
@@ -397,31 +400,31 @@ export function CommunitySettingsPanel({
 
               {/* Actions Section */}
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Actions</Text>
+                <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Actions</Text>
                       
                       {/* Manage Community (for owners/admins of private communities) */}
                       {isPrivateCommunity && isOwnerOrAdmin && (
                         <TouchableOpacity
-                          style={styles.manageButton}
+                          style={[styles.manageButton, { backgroundColor: theme.dark ? theme.colors.backgroundSecondary : '#F0F8FF', borderColor: theme.dark ? theme.colors.border : '#E0EFFF' }]}
                           onPress={handleManageCommunity}
                         >
                           <View style={styles.actionIcon}>
-                            <Ionicons name="settings-outline" size={20} color="#007AFF" />
+                            <Ionicons name="settings-outline" size={20} color={theme.colors.primary} />
                           </View>
-                          <Text style={styles.manageButtonText}>Manage Community</Text>
-                          <Ionicons name="chevron-forward" size={16} color="#666" />
+                          <Text style={[styles.manageButtonText, { color: theme.colors.primary }]}>Manage Community</Text>
+                          <Ionicons name="chevron-forward" size={16} color={theme.colors.textSecondary} />
                         </TouchableOpacity>
                       )}
                 
                 <TouchableOpacity
-                  style={styles.actionButton}
+                  style={[styles.actionButton, { backgroundColor: theme.dark ? theme.colors.errorBackground : '#FFF5F5', borderColor: theme.dark ? theme.colors.error : '#FFE5E5' }]}
                   onPress={handleLeaveCommunity}
                 >
                   <View style={styles.actionIcon}>
-                    <Ionicons name="exit-outline" size={20} color="#FF3B30" />
+                    <Ionicons name="exit-outline" size={20} color={theme.colors.error} />
                   </View>
-                  <Text style={styles.actionText}>Leave Community</Text>
-                  <Ionicons name="chevron-forward" size={16} color="#666" />
+                  <Text style={[styles.actionText, { color: theme.colors.error }]}>Leave Community</Text>
+                  <Ionicons name="chevron-forward" size={16} color={theme.colors.textSecondary} />
                 </TouchableOpacity>
               </View>
                   </>
@@ -441,23 +444,23 @@ export function CommunitySettingsPanel({
           onRequestClose={() => setShowWebConfirm(false)}
         >
           <View style={styles.webConfirmOverlay}>
-            <View style={styles.webConfirmDialog}>
-              <Text style={styles.webConfirmTitle}>Leave Community</Text>
-              <Text style={styles.webConfirmMessage}>
+            <View style={[styles.webConfirmDialog, { backgroundColor: theme.colors.card }]}>
+              <Text style={[styles.webConfirmTitle, { color: theme.colors.text }]}>Leave Community</Text>
+              <Text style={[styles.webConfirmMessage, { color: theme.colors.textSecondary }]}>
                 Are you sure you want to leave {displayCommunityName}? This action can not be undone.
               </Text>
               <View style={styles.webConfirmButtons}>
                 <TouchableOpacity
-                  style={[styles.webConfirmButton, styles.webConfirmButtonCancel]}
+                  style={[styles.webConfirmButton, styles.webConfirmButtonCancel, { backgroundColor: theme.colors.backgroundTertiary, borderColor: theme.colors.border }]}
                   onPress={() => setShowWebConfirm(false)}
                 >
-                  <Text style={styles.webConfirmButtonTextCancel}>Cancel</Text>
+                  <Text style={[styles.webConfirmButtonTextCancel, { color: theme.colors.textSecondary }]}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.webConfirmButton, styles.webConfirmButtonLeave]}
+                  style={[styles.webConfirmButton, styles.webConfirmButtonLeave, { backgroundColor: theme.colors.error }]}
                   onPress={performLeaveCommunity}
                 >
-                  <Text style={styles.webConfirmButtonTextLeave}>Leave</Text>
+                  <Text style={[styles.webConfirmButtonTextLeave, { color: theme.colors.textOnPrimary }]}>Leave</Text>
                 </TouchableOpacity>
               </View>
             </View>

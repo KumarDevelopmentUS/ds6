@@ -78,6 +78,7 @@ const diceFacts = [
 export default function MainMenuScreen() {
   const router = useRouter();
   const { theme } = useTheme();
+  const styles = createStyles(theme);
   const { session } = useAuth();
   const { data: userProfile } = useUserProfile();
   const [userName, setUserName] = useState('');
@@ -724,10 +725,10 @@ export default function MainMenuScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.background,
   },
   content: {
     flexGrow: 1,
@@ -908,7 +909,7 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: theme.colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
@@ -929,14 +930,15 @@ const styles = StyleSheet.create({
   },
   modalInput: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: theme.colors.inputBorder,
+    backgroundColor: theme.colors.inputBackground,
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
     marginBottom: 20,
     textAlign: 'center',
     textTransform: 'uppercase',
-    color: '#666',
+    color: theme.colors.textPrimary,
   },
   modalButtons: {
     flexDirection: 'row',
@@ -949,12 +951,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalButtonSecondary: {
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.backgroundSecondary,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: theme.colors.border,
   },
   modalButtonPrimary: {
-    backgroundColor: '#007AFF',
+    backgroundColor: theme.colors.primary,
   },
   featuresOverviewCard: {
     marginBottom: 24,
@@ -997,19 +999,19 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   signInButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: theme.colors.primary,
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',
   },
   createAccountButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: theme.colors.primary,
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',
   },
   buttonText: {
-    color: 'white',
+    color: theme.colors.textOnPrimary,
     textAlign: 'center',
     fontWeight: 'bold',
     fontSize: 16,

@@ -3,6 +3,9 @@ import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { Image, StyleSheet, TouchableOpacity, View } from 'react-native';
 
+// Feature flag for profile picture display - set to true to enable
+const ENABLE_PROFILE_PICTURE_DISPLAY = false;
+
 interface UserAvatarProps {
   icon?: string;
   iconColor?: string;
@@ -21,8 +24,8 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
   onPress
 }) => {
   const AvatarContent = () => {
-    // If there's a profile picture, show it; otherwise show the icon-based avatar
-    if (profilePictureUrl) {
+    // If profile pictures are enabled and there's a profile picture, show it; otherwise show the icon-based avatar
+    if (ENABLE_PROFILE_PICTURE_DISPLAY && profilePictureUrl) {
       return (
         <Image 
           source={{ uri: profilePictureUrl }}

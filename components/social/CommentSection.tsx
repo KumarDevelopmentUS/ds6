@@ -11,6 +11,7 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
+import { useTheme } from '../../contexts/ThemeContext';
 import { Comment } from '../../types/social';
 import { UserAvatar } from './UserAvatar';
 
@@ -20,6 +21,8 @@ interface CommentSectionProps {
 }
 
 export const CommentSection: React.FC<CommentSectionProps> = ({ comments, onAddComment }) => {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   const [newComment, setNewComment] = useState('');
   const [replyingTo, setReplyingTo] = useState<{ id: number; name: string } | null>(null);
 
@@ -122,9 +125,9 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ comments, onAddC
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) => StyleSheet.create({
   container: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
     padding: 16,
     marginTop: 8,
   },
@@ -132,20 +135,20 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 16,
-    color: '#000',
+    color: theme.colors.textPrimary,
   },
   replyingToContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.backgroundSecondary,
     padding: 8,
     borderRadius: 8,
     marginBottom: 8,
   },
   replyingToText: {
     fontSize: 14,
-    color: '#666',
+    color: theme.colors.textSecondary,
   },
   cancelReplyButton: {
     padding: 4,
@@ -158,7 +161,9 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: theme.colors.inputBorder,
+    backgroundColor: theme.colors.inputBackground,
+    color: theme.colors.textPrimary,
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 8,
@@ -167,7 +172,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   submitButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: theme.colors.primary,
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -175,7 +180,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   submitButtonDisabled: {
-    backgroundColor: '#ccc',
+    backgroundColor: theme.colors.buttonDisabled,
   },
   commentsList: {
     maxHeight: 400,
@@ -184,7 +189,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: theme.colors.border,
   },
   commentHeader: {
     flexDirection: 'row',
@@ -197,17 +202,17 @@ const styles = StyleSheet.create({
   },
   userName: {
     fontWeight: '600',
-    color: '#000',
+    color: theme.colors.textPrimary,
     fontSize: 14,
   },
   timestamp: {
     fontSize: 12,
-    color: '#666',
+    color: theme.colors.textSecondary,
     marginTop: 2,
   },
   commentContent: {
     fontSize: 14,
-    color: '#333',
+    color: theme.colors.textSecondary,
     marginBottom: 8,
     lineHeight: 20,
     marginLeft: 40,
@@ -216,7 +221,7 @@ const styles = StyleSheet.create({
     marginLeft: 40,
   },
   replyButtonText: {
-    color: '#007AFF',
+    color: theme.colors.primary,
     fontSize: 14,
     fontWeight: '500',
   },
@@ -225,7 +230,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     textAlign: 'center',
-    color: '#666',
+    color: theme.colors.textSecondary,
     fontSize: 14,
     marginTop: 20,
   },

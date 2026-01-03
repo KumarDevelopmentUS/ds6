@@ -801,11 +801,13 @@ export default function StatisticsScreen() {
     return `${hours}h ${minutes}m`;
   };
 
+  const styles = createStyles(theme);
+  
   const BackButton = () => (
     <HapticBackButton
       onPress={() => router.back()}
       style={styles.backButton}
-      color="#3b82f6"
+      color={theme.colors.primary}
     />
   );
 
@@ -1238,9 +1240,9 @@ export default function StatisticsScreen() {
                 )}
                 {personalRecords.mostSinksInMatch && personalRecords.mostSinksInMatch.value > 0 && (
                   <View style={styles.recordItem}>
-                    <Ionicons name="water" size={20} color="#06b6d4" />
+                    <Ionicons name="water" size={20} color={theme.colors.info} />
                     <ThemedText variant="caption">Most Sinks</ThemedText>
-                    <ThemedText variant="body" style={{ color: '#06b6d4' }}>{personalRecords.mostSinksInMatch.value}</ThemedText>
+                    <ThemedText variant="body" color="info">{personalRecords.mostSinksInMatch.value}</ThemedText>
                   </View>
                 )}
                 {personalRecords.mostGoalsInMatch && personalRecords.mostGoalsInMatch.value > 0 && (
@@ -1266,9 +1268,9 @@ export default function StatisticsScreen() {
                 )}
                 {personalRecords.fastestWin && (
                   <View style={styles.recordItem}>
-                    <Ionicons name="flash" size={20} color="#f59e0b" />
+                    <Ionicons name="flash" size={20} color={theme.colors.warning} />
                     <ThemedText variant="caption">Fastest Win</ThemedText>
-                    <ThemedText variant="body" style={{ color: '#f59e0b' }}>
+                    <ThemedText variant="body" color="warning">
                       {Math.floor(personalRecords.fastestWin.durationSeconds / 60)}:{String(personalRecords.fastestWin.durationSeconds % 60).padStart(2, '0')}
                     </ThemedText>
                   </View>
@@ -1515,9 +1517,10 @@ export default function StatisticsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) => StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: theme.colors.background,
   },
   content: {
     padding: 12,
@@ -1533,7 +1536,7 @@ const styles = StyleSheet.create({
   },
   backText: {
     marginLeft: 8,
-    color: '#3b82f6',
+    color: theme.colors.primary,
     fontSize: 16,
     fontWeight: '500',
   },
@@ -1557,13 +1560,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   winForm: {
-    backgroundColor: '#22c55e',
+    backgroundColor: theme.colors.success,
   },
   lossForm: {
-    backgroundColor: '#ef4444',
+    backgroundColor: theme.colors.error,
   },
   drawForm: {
-    backgroundColor: '#6b7280',
+    backgroundColor: theme.colors.textSecondary,
   },
   statsGrid: {
     flexDirection: 'row',
@@ -1592,7 +1595,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: theme.colors.border,
   },
   insightsCard: {
     marginBottom: 16,
@@ -1639,7 +1642,7 @@ const styles = StyleSheet.create({
   achievementStatName: { // New style for stat name
     textAlign: 'center',
     fontSize: 10,
-    color: '#6b7280',
+    color: theme.colors.textSecondary,
     marginBottom: 8,
   },
   achievementTier: { // This style is no longer explicitly used to render text, but can be kept for historical or future use.
@@ -1657,7 +1660,7 @@ const styles = StyleSheet.create({
   progressBarBackground: {
     width: '80%',
     height: 6,
-    backgroundColor: '#e0e0e0',
+    backgroundColor: theme.colors.border,
     borderRadius: 3,
     marginTop: 8,
     overflow: 'hidden',
@@ -1687,14 +1690,14 @@ const styles = StyleSheet.create({
   playerStatsContainer: {
     padding: 16,
     borderRadius: 12,
-    backgroundColor: '#f9fafb', // Light background for player stats
+    backgroundColor: theme.colors.backgroundTertiary,
   },
   playerName: {
     fontSize: 18,
     fontWeight: 'bold',
     textAlign: 'center',
     marginBottom: 12,
-    color: '#374151', // Darker text for contrast
+    color: theme.colors.text,
   },
   playerStatsList: {
     gap: 10,
@@ -1705,7 +1708,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: theme.colors.border,
   },
   schlevinsCard: {
     marginBottom: 20,
@@ -1743,21 +1746,21 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
   winStreakBadge: {
-    backgroundColor: '#22c55e',
+    backgroundColor: theme.colors.success,
   },
   lossStreakBadge: {
-    backgroundColor: '#ef4444',
+    backgroundColor: theme.colors.error,
   },
   neutralStreakBadge: {
-    backgroundColor: '#6b7280',
+    backgroundColor: theme.colors.textSecondary,
   },
   streakNumber: {
-    color: '#fff',
+    color: theme.colors.textOnPrimary,
     fontSize: 28,
     fontWeight: 'bold',
   },
   streakLabel: {
-    color: '#fff',
+    color: theme.colors.textOnPrimary,
     fontSize: 10,
     textAlign: 'center',
   },
@@ -1779,7 +1782,7 @@ const styles = StyleSheet.create({
     width: '30%',
     alignItems: 'center',
     padding: 12,
-    backgroundColor: '#f9fafb',
+    backgroundColor: theme.colors.backgroundTertiary,
     borderRadius: 12,
     gap: 4,
   },
@@ -1795,7 +1798,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: theme.colors.border,
   },
   playerAvatar: {
     width: 40,
@@ -1825,10 +1828,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   winStreakMini: {
-    backgroundColor: '#dcfce7',
+    backgroundColor: theme.colors.successBackground,
   },
   lossStreakMini: {
-    backgroundColor: '#fee2e2',
+    backgroundColor: theme.colors.errorBackground,
   },
   miniStreakText: {
     fontSize: 12,

@@ -2,6 +2,7 @@
 'use client';
 
 import { HapticBackButton } from '@/components/HapticBackButton';
+import { useTheme } from '@/contexts/ThemeContext';
 import { supabase } from '@/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
@@ -100,6 +101,8 @@ const DieStatsTracker: React.FC = () => {
   const { roomCode } = useLocalSearchParams();
   const roomCodeString = Array.isArray(roomCode) ? roomCode[0] : roomCode || generateId(6);
   const router = useRouter();
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
 
   // Core game state, initialized with default values
   const [matchSetup, setMatchSetup] = useState<MatchSetup>({
@@ -1217,19 +1220,21 @@ const DieStatsTracker: React.FC = () => {
           <Text style={styles.cardTitle}>Match Setup</Text>
 
           {/* Basic Match Info Section */}
-          <View style={styles.setupSection}>
-            <Text style={styles.sectionHeader}>Basic Information</Text>
+          <View style={[styles.setupSection, { borderBottomColor: theme.colors.border }]}>
+            <Text style={[styles.sectionHeader, { color: theme.colors.textPrimary }]}>Basic Information</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: theme.colors.inputBackground, borderColor: theme.colors.inputBorder, color: theme.colors.textPrimary }]}
               placeholder="Match Title"
+              placeholderTextColor={theme.colors.inputPlaceholder}
               value={matchSetup.title}
               onChangeText={(text) =>
                 setMatchSetup((prev) => ({ ...prev, title: sanitizeInput(text) }))
               }
             />
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: theme.colors.inputBackground, borderColor: theme.colors.inputBorder, color: theme.colors.textPrimary }]}
               placeholder="Arena"
+              placeholderTextColor={theme.colors.inputPlaceholder}
               value={matchSetup.arena}
               onChangeText={(text) =>
                 setMatchSetup((prev) => ({ ...prev, arena: sanitizeInput(text) }))
@@ -1245,6 +1250,7 @@ const DieStatsTracker: React.FC = () => {
                 <TextInput
                   style={styles.teamNameInput}
                   placeholder="Team 1 Name"
+                  placeholderTextColor={theme.colors.inputPlaceholder}
                   value={matchSetup.teamNames[0]}
                   onChangeText={(text) => {
                     const newNames = [...matchSetup.teamNames];
@@ -1255,6 +1261,7 @@ const DieStatsTracker: React.FC = () => {
                 <TextInput
                   style={styles.input}
                   placeholder="Player 1"
+                  placeholderTextColor={theme.colors.inputPlaceholder}
                   value={matchSetup.playerNames[0]}
                   onChangeText={(text) => {
                     const newNames = [...matchSetup.playerNames];
@@ -1265,6 +1272,7 @@ const DieStatsTracker: React.FC = () => {
                 <TextInput
                   style={styles.input}
                   placeholder="Player 2"
+                  placeholderTextColor={theme.colors.inputPlaceholder}
                   value={matchSetup.playerNames[1]}
                   onChangeText={(text) => {
                     const newNames = [...matchSetup.playerNames];
@@ -1277,6 +1285,7 @@ const DieStatsTracker: React.FC = () => {
                 <TextInput
                   style={styles.teamNameInput}
                   placeholder="Team 2 Name"
+                  placeholderTextColor={theme.colors.inputPlaceholder}
                   value={matchSetup.teamNames[1]}
                   onChangeText={(text) => {
                     const newNames = [...matchSetup.teamNames];
@@ -1287,6 +1296,7 @@ const DieStatsTracker: React.FC = () => {
                 <TextInput
                   style={styles.input}
                   placeholder="Player 3"
+                  placeholderTextColor={theme.colors.inputPlaceholder}
                   value={matchSetup.playerNames[2]}
                   onChangeText={(text) => {
                     const newNames = [...matchSetup.playerNames];
@@ -1297,6 +1307,7 @@ const DieStatsTracker: React.FC = () => {
                 <TextInput
                   style={styles.input}
                   placeholder="Player 4"
+                  placeholderTextColor={theme.colors.inputPlaceholder}
                   value={matchSetup.playerNames[3]}
                   onChangeText={(text) => {
                     const newNames = [...matchSetup.playerNames];
@@ -1497,7 +1508,7 @@ const DieStatsTracker: React.FC = () => {
                   >
                     <Text
                       style={[
-                        styles.buttonText,
+                        styles.playerButtonText,
                         throwingPlayer === playerId && styles.selectedButtonText,
                       ]}
                       numberOfLines={1}
@@ -1618,7 +1629,7 @@ const DieStatsTracker: React.FC = () => {
                   >
                     <Text
                       style={[
-                        styles.buttonText,
+                        styles.playerButtonText,
                         defendingPlayer === playerId && styles.selectedButtonText,
                       ]}
                       numberOfLines={1}
@@ -1641,7 +1652,7 @@ const DieStatsTracker: React.FC = () => {
                 >
                   <Text
                     style={[
-                      styles.buttonText,
+                      styles.playerButtonText,
                       defendingPlayer === -1 && styles.selectedButtonText,
                     ]}
                   >
@@ -1657,7 +1668,7 @@ const DieStatsTracker: React.FC = () => {
                 >
                   <Text
                     style={[
-                      styles.buttonText,
+                      styles.playerButtonText,
                       defendingPlayer === 0 && styles.selectedButtonText,
                     ]}
                   >
@@ -1759,7 +1770,7 @@ const DieStatsTracker: React.FC = () => {
                       >
                         <Text
                           style={[
-                            styles.buttonText,
+                            styles.playerButtonText,
                             fifaKicker === playerId && styles.selectedButtonText,
                           ]}
                         >
@@ -1810,7 +1821,7 @@ const DieStatsTracker: React.FC = () => {
                         {manualAdjustments[1] !== 0 && (
                           <Text style={[
                             styles.adjustmentBadge,
-                            { color: manualAdjustments[1] > 0 ? '#10b981' : '#ef4444' }
+                            { color: manualAdjustments[1] > 0 ? theme.colors.success : theme.colors.error }
                           ]}>
                             {manualAdjustments[1] > 0 ? '+' : ''}{manualAdjustments[1]}
                           </Text>
@@ -1839,7 +1850,7 @@ const DieStatsTracker: React.FC = () => {
                         {manualAdjustments[2] !== 0 && (
                           <Text style={[
                             styles.adjustmentBadge,
-                            { color: manualAdjustments[2] > 0 ? '#10b981' : '#ef4444' }
+                            { color: manualAdjustments[2] > 0 ? theme.colors.success : theme.colors.error }
                           ]}>
                             {manualAdjustments[2] > 0 ? '+' : ''}{manualAdjustments[2]}
                           </Text>
@@ -1941,7 +1952,7 @@ const DieStatsTracker: React.FC = () => {
                 style={styles.iconButton}
                 onPress={handleGoHome}
               >
-                <Ionicons name="home-outline" size={24} color="#6b7280" />
+                <Ionicons name="home-outline" size={24} color={theme.colors.textSecondary} />
               </TouchableOpacity>
               
               {/* Match Settings Button */}
@@ -1949,7 +1960,7 @@ const DieStatsTracker: React.FC = () => {
                 style={styles.iconButton}
                 onPress={() => setShowSettingsPanel(true)}
               >
-                <Ionicons name="settings-outline" size={24} color="#3b82f6" />
+                <Ionicons name="settings-outline" size={24} color={theme.colors.primary} />
               </TouchableOpacity>
             </View>
           </View>
@@ -2170,51 +2181,53 @@ const DieStatsTracker: React.FC = () => {
 
       {/* Settings Bottom Panel */}
       {showSettingsPanel && (
-        <View style={styles.bottomPanelOverlay}>
+        <View style={[styles.bottomPanelOverlay, { backgroundColor: theme.colors.overlay }]}>
           <TouchableOpacity 
             style={styles.bottomPanelBackdrop}
             onPress={() => setShowSettingsPanel(false)}
           />
-          <View style={styles.bottomPanel}>
-            <View style={styles.panelHeader}>
-              <Text style={styles.panelTitle}>Match Settings</Text>
+          <View style={[styles.bottomPanel, { backgroundColor: theme.colors.card }]}>
+            <View style={[styles.panelHeader, { borderBottomColor: theme.colors.border }]}>
+              <Text style={[styles.panelTitle, { color: theme.colors.textPrimary }]}>Match Settings</Text>
               <TouchableOpacity onPress={() => setShowSettingsPanel(false)}>
-                <Text style={styles.panelCloseButton}>✕</Text>
+                <Text style={[styles.panelCloseButton, { color: theme.colors.textSecondary }]}>✕</Text>
               </TouchableOpacity>
             </View>
             
             <ScrollView style={styles.panelContent}>
               {/* Match Title */}
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Match Title:</Text>
+                <Text style={[styles.label, { color: theme.colors.textSecondary }]}>Match Title:</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { backgroundColor: theme.colors.inputBackground, borderColor: theme.colors.inputBorder, color: theme.colors.textPrimary }]}
                   value={matchSetup.title}
                   onChangeText={(text) =>
                     setMatchSetup((prev) => ({ ...prev, title: sanitizeInput(text) }))
                   }
                   placeholder="Match Title"
+                  placeholderTextColor={theme.colors.inputPlaceholder}
                 />
               </View>
 
               {/* Arena */}
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Arena:</Text>
+                <Text style={[styles.label, { color: theme.colors.textSecondary }]}>Arena:</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { backgroundColor: theme.colors.inputBackground, borderColor: theme.colors.inputBorder, color: theme.colors.textPrimary }]}
                   value={matchSetup.arena}
                   onChangeText={(text) =>
                     setMatchSetup((prev) => ({ ...prev, arena: sanitizeInput(text) }))
                   }
                   placeholder="Arena"
+                  placeholderTextColor={theme.colors.inputPlaceholder}
                 />
               </View>
 
               {/* Team Setup */}
-              <Text style={styles.sectionHeader}>Team Setup</Text>
+              <Text style={[styles.sectionHeader, { color: theme.colors.textPrimary }]}>Team Setup</Text>
               
               {/* Team 1 Group */}
-              <View style={styles.teamGroup}>
+              <View style={[styles.teamGroup, { backgroundColor: theme.colors.backgroundSecondary, borderColor: theme.colors.border }]}>
                 <View style={styles.teamHeader}>
                   <Text style={styles.teamLabel}>Team 1</Text>
                 </View>
@@ -2229,6 +2242,7 @@ const DieStatsTracker: React.FC = () => {
                       setMatchSetup((prev) => ({ ...prev, teamNames: newNames }));
                     }}
                     placeholder="Team 1"
+                    placeholderTextColor={theme.colors.inputPlaceholder}
                   />
                 </View>
                 
@@ -2258,6 +2272,7 @@ const DieStatsTracker: React.FC = () => {
                             }
                           }}
                           placeholder={`Player ${index + 1}`}
+                          placeholderTextColor={theme.colors.inputPlaceholder}
                           editable={!isDisabled}
                         />
                         {isDisabled && (
@@ -2287,6 +2302,7 @@ const DieStatsTracker: React.FC = () => {
                       setMatchSetup((prev) => ({ ...prev, teamNames: newNames }));
                     }}
                     placeholder="Team 2"
+                    placeholderTextColor={theme.colors.inputPlaceholder}
                   />
                 </View>
                 
@@ -2316,6 +2332,7 @@ const DieStatsTracker: React.FC = () => {
                             }
                           }}
                           placeholder={`Player ${index + 1}`}
+                          placeholderTextColor={theme.colors.inputPlaceholder}
                           editable={!isDisabled}
                         />
                         {isDisabled && (
@@ -2472,15 +2489,15 @@ const DieStatsTracker: React.FC = () => {
   };
 
 // StyleSheet for component styling
-const styles = StyleSheet.create({
+const createStyles = (theme: any) => StyleSheet.create({
   container: {
     flexGrow: 1,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: theme.colors.background,
     padding: 16,
   },
   headerCard: {
     marginTop: 100, // Increased space for the back button and safe area
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
     borderRadius: 12,
     padding: 20,
     marginBottom: 16,
@@ -2493,25 +2510,25 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: theme.colors.textPrimary,
     marginBottom: 4,
   },
   headerSubtitle: {
     fontSize: 20,
-    color: '#4b5563',
+    color: theme.colors.textSecondary,
     marginBottom: 8,
   },
   roomCodeText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: theme.colors.textSecondary,
     marginBottom: 4,
   },
   elapsedTimeText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: theme.colors.textSecondary,
   },
   card: {
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.colors.card,
     borderRadius: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -2525,30 +2542,31 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '600',
     marginBottom: 16,
-    color: '#1f2937',
+    color: theme.colors.textPrimary,
   },
   input: {
     width: '100%',
     padding: 12,
     borderWidth: 1,
-    borderColor: '#d1d5db',
+    borderColor: theme.colors.inputBorder,
     borderRadius: 4,
     marginBottom: 12,
-    color: '#1f2937',
+    color: theme.colors.textPrimary,
+    backgroundColor: theme.colors.inputBackground,
   },
   teamNameInput: {
     width: '100%',
     padding: 12,
     borderWidth: 2,
-    borderColor: '#3b82f6',
+    borderColor: theme.colors.primary,
     borderRadius: 4,
     marginBottom: 16,
-    color: '#1f2937',
-    backgroundColor: '#f0f9ff',
+    color: theme.colors.textPrimary,
+    backgroundColor: theme.colors.infoBackground,
     fontWeight: '600',
   },
   primaryButton: {
-    backgroundColor: '#3b82f6',
+    backgroundColor: theme.colors.primary,
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 4,
@@ -2557,18 +2575,18 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   buttonText: {
-    color: '#000000',
+    color: theme.colors.textOnPrimary,
     fontWeight: 'bold',
     fontSize: 16,
   },
   disabledButton: {
-    backgroundColor: '#9ca3af',
+    backgroundColor: theme.colors.buttonDisabled,
   },
   sectionHeader: {
     fontSize: 16,
     fontWeight: '500',
     marginBottom: 8,
-    color: '#1f2937',
+    color: theme.colors.textPrimary,
   },
   collapsibleHeader: {
     flexDirection: 'row',
@@ -2578,7 +2596,7 @@ const styles = StyleSheet.create({
   },
   collapseIcon: {
     fontSize: 16,
-    color: '#6b7280',
+    color: theme.colors.textSecondary,
     fontWeight: 'bold',
   },
   twoColumnRow: {
@@ -2595,38 +2613,38 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     marginBottom: 4,
-    color: '#374151',
+    color: theme.colors.textSecondary,
   },
   setupSection: {
     marginBottom: 24,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: theme.colors.border,
   },
   dropdownButton: {
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: '#d1d5db',
-    backgroundColor: '#ffffff',
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.card,
     marginRight: 8,
   },
   dropdownButtonSelected: {
-    backgroundColor: '#3b82f6',
-    borderColor: '#3b82f6',
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
   },
   dropdownButtonText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#374151',
+    color: theme.colors.textPrimary,
   },
   dropdownButtonTextSelected: {
-    color: '#ffffff',
+    color: theme.colors.textOnPrimary,
   },
   joinInstructionText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: theme.colors.textSecondary,
     marginBottom: 12,
     textAlign: 'center',
   },
@@ -2652,7 +2670,7 @@ const styles = StyleSheet.create({
     width: 4,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#6b7280',
+    backgroundColor: theme.colors.textSecondary,
     marginVertical: 1,
   },
   bottomPanelOverlay: {
@@ -2661,14 +2679,14 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: theme.colors.overlay,
     justifyContent: 'flex-end',
   },
   bottomPanelBackdrop: {
     flex: 1,
   },
   bottomPanel: {
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.colors.card,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: '80%',
@@ -2680,48 +2698,48 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: theme.colors.border,
   },
   panelTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: theme.colors.textPrimary,
   },
   panelCloseButton: {
     fontSize: 20,
-    color: '#6b7280',
+    color: theme.colors.textSecondary,
     padding: 4,
   },
   panelContent: {
     padding: 20,
   },
   disabledInput: {
-    backgroundColor: '#f3f4f6',
-    color: '#9ca3af',
+    backgroundColor: theme.colors.backgroundSecondary,
+    color: theme.colors.textTertiary,
   },
   disabledText: {
     fontSize: 12,
-    color: '#6b7280',
+    color: theme.colors.textSecondary,
     fontStyle: 'italic',
     marginTop: 4,
   },
   iconButton: {
     padding: 12,
     borderRadius: 8,
-    backgroundColor: '#f9fafb',
+    backgroundColor: theme.colors.backgroundSecondary,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: theme.colors.border,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 8,
   },
   teamGroup: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: theme.colors.backgroundSecondary,
     borderRadius: 8,
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: theme.colors.border,
   },
   teamHeader: {
     marginBottom: 12,
@@ -2729,7 +2747,7 @@ const styles = StyleSheet.create({
   teamLabel: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#000000',
+    color: theme.colors.textPrimary,
     textAlign: 'center',
   },
   playersContainer: {
@@ -2744,7 +2762,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: theme.colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 1000,
@@ -2757,7 +2775,7 @@ const styles = StyleSheet.create({
     bottom: 0,
   },
   confirmationModal: {
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.colors.card,
     borderRadius: 12,
     width: '80%',
     maxWidth: 400,
@@ -2774,12 +2792,12 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: theme.colors.border,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: theme.colors.textPrimary,
     textAlign: 'center',
   },
   modalContent: {
@@ -2789,38 +2807,38 @@ const styles = StyleSheet.create({
   },
   modalMessage: {
     fontSize: 16,
-    color: '#4b5563',
+    color: theme.colors.textSecondary,
     lineHeight: 22,
     textAlign: 'center',
   },
   modalActions: {
     flexDirection: 'row',
     borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
+    borderTopColor: theme.colors.border,
   },
   modalCancelButton: {
     flex: 1,
     paddingVertical: 16,
     alignItems: 'center',
     borderRightWidth: 1,
-    borderRightColor: '#e5e7eb',
+    borderRightColor: theme.colors.border,
   },
   modalConfirmButton: {
     flex: 1,
     paddingVertical: 16,
     alignItems: 'center',
-    backgroundColor: '#ef4444',
+    backgroundColor: theme.colors.error,
     borderBottomRightRadius: 12,
   },
   modalCancelText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#6b7280',
+    color: theme.colors.textSecondary,
   },
   modalConfirmText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#ffffff',
+    color: theme.colors.textOnPrimary,
   },
   qrCodeContainer: {
     alignItems: 'center',
@@ -2829,24 +2847,24 @@ const styles = StyleSheet.create({
   qrPlaceholder: {
     width: 150,
     height: 150,
-    backgroundColor: '#e5e7eb',
+    backgroundColor: theme.colors.backgroundSecondary,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 8,
   },
   placeholderText: {
-    color: '#6b7280',
+    color: theme.colors.textSecondary,
     fontSize: 12,
     textAlign: 'center',
   },
   linkText: {
     fontSize: 12,
-    color: '#6b7280',
+    color: theme.colors.textSecondary,
     textAlign: 'center',
     marginTop: 8,
   },
   secondaryButton: {
-    backgroundColor: '#e5e7eb',
+    backgroundColor: theme.colors.backgroundSecondary,
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 4,
@@ -2855,7 +2873,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   secondaryButtonText: {
-    color: '#374151',
+    color: theme.colors.textPrimary,
     fontWeight: 'bold',
     fontSize: 16,
   },
@@ -2872,19 +2890,19 @@ const styles = StyleSheet.create({
   teamName: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: theme.colors.textPrimary,
   },
   winnerTeamText: {
-    color: '#f59e0b', // A distinct color for the winning team
+    color: theme.colors.gold, // A distinct color for the winning team
   },
   teamScore: {
     fontSize: 40,
     fontWeight: 'bold',
-    color: '#2563eb',
+    color: theme.colors.primary,
   },
   playerInfo: {
     fontSize: 12,
-    color: '#6b7280',
+    color: theme.colors.textSecondary,
     textAlign: 'center',
   },
   scoreboardCenter: {
@@ -2893,17 +2911,17 @@ const styles = StyleSheet.create({
   },
   scoreLimitText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: theme.colors.textSecondary,
   },
   overtimeText: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#ef4444',
+    color: theme.colors.error,
   },
   tiedText: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#f97316',
+    color: theme.colors.warning,
   },
   buttonRow: {
     flexDirection: 'row',
@@ -2934,24 +2952,30 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 8,
     borderRadius: 4,
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.colors.card,
     borderWidth: 2,
-    borderColor: '#6b7280',
+    borderColor: theme.colors.border,
     minWidth: 0, // Allow flex to work properly
+    alignItems: 'center',
   },
   playerButtonSelected: {
-    backgroundColor: '#3b82f6',
-    borderColor: '#3b82f6',
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
+  },
+  playerButtonText: {
+    color: theme.colors.textPrimary,
+    fontWeight: '600',
+    fontSize: 14,
   },
   selectedButtonText: {
-    color: '#ffffff',
+    color: theme.colors.textOnPrimary,
   },
   throwResultGroup: {
     marginBottom: 8,
   },
   throwResultLabel: {
     fontSize: 14,
-    color: '#4b5563',
+    color: theme.colors.textSecondary,
     marginBottom: 4,
   },
   throwResultButton: {
@@ -2959,54 +2983,54 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 6,
     borderRadius: 4,
-    backgroundColor: '#e5e7eb',
+    backgroundColor: theme.colors.backgroundSecondary,
     minWidth: 0, // Allow flex to work properly
   },
   throwResultButtonText: {
     fontSize: 12,
-    color: '#374151',
+    color: theme.colors.textPrimary,
     fontWeight: '500',
   },
   goodResultOutline: {
     borderWidth: 1,
-    borderColor: '#22c55e',
-    backgroundColor: '#f0fdf4',
+    borderColor: theme.colors.success,
+    backgroundColor: theme.colors.successBackground,
   },
   badResultOutline: {
     borderWidth: 1,
-    borderColor: '#ef4444',
-    backgroundColor: '#fef2f2',
+    borderColor: theme.colors.error,
+    backgroundColor: theme.colors.errorBackground,
   },
   goodResultSelected: {
-    backgroundColor: '#22c55e',
-    borderColor: '#22c55e',
+    backgroundColor: theme.colors.success,
+    borderColor: theme.colors.success,
   },
   badResultSelected: {
-    backgroundColor: '#ef4444',
-    borderColor: '#ef4444',
+    backgroundColor: theme.colors.error,
+    borderColor: theme.colors.error,
   },
   // NEW: Special result styling for Successful Redemption
   specialResultOutline: {
     borderWidth: 1,
-    borderColor: '#8b5cf6',
-    backgroundColor: '#faf5ff',
+    borderColor: theme.colors.info,
+    backgroundColor: theme.colors.infoBackground,
   },
   specialResultSelected: {
-    backgroundColor: '#8b5cf6',
-    borderColor: '#8b5cf6',
+    backgroundColor: theme.colors.info,
+    borderColor: theme.colors.info,
   },
   // NEW: Neutral result styling for N/A
   neutralResultOutline: {
     borderWidth: 1,
-    borderColor: '#6b7280',
-    backgroundColor: '#f9fafb',
+    borderColor: theme.colors.textSecondary,
+    backgroundColor: theme.colors.backgroundSecondary,
   },
   neutralResultSelected: {
-    backgroundColor: '#6b7280',
-    borderColor: '#6b7280',
+    backgroundColor: theme.colors.textSecondary,
+    borderColor: theme.colors.textSecondary,
   },
   selectedThrowText: {
-    color: '#ffffff',
+    color: theme.colors.textOnPrimary,
     fontWeight: 'bold',
   },
   actionButtonRow: {
@@ -3017,9 +3041,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center', // Center buttons in the row
   },
   actionButton: {
-    backgroundColor: '#fff7ed',
+    backgroundColor: theme.colors.warningBackground,
     borderWidth: 2,
-    borderColor: '#f97316',
+    borderColor: theme.colors.warning,
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 6,
@@ -3028,12 +3052,12 @@ const styles = StyleSheet.create({
     minHeight: 48,
   },
   actionButtonText: {
-    color: '#000000',
+    color: theme.colors.textPrimary,
     fontSize: 16,
     fontWeight: '600',
   },
   redButton: {
-    backgroundColor: '#dc2626', // Darker, less saturated red
+    backgroundColor: theme.colors.error,
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 6,
@@ -3042,19 +3066,19 @@ const styles = StyleSheet.create({
     minHeight: 48,
   },
   redButtonText: {
-    color: '#ffffff',
+    color: theme.colors.textOnPrimary,
     fontWeight: '600',
     fontSize: 16,
     textAlign: 'center',
   },
   nestedCard: {
-    backgroundColor: '#f5f3ff', // Light purple for nested sections (e.g., FIFA)
+    backgroundColor: theme.colors.infoBackground,
     borderRadius: 8,
     padding: 16,
     marginBottom: 16,
   },
   nestedCardYellow: {
-    backgroundColor: '#fffbeb', // Light yellow for other nested sections (e.g., Redemption)
+    backgroundColor: theme.colors.warningBackground,
     borderRadius: 8,
     padding: 16,
     marginBottom: 16,
@@ -3065,7 +3089,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   submitButton: {
-    backgroundColor: '#22c55e', // Green for submit/confirm actions
+    backgroundColor: theme.colors.success,
     paddingVertical: 16,
     paddingHorizontal: 16,
     borderRadius: 4,
@@ -3074,13 +3098,13 @@ const styles = StyleSheet.create({
     flex: 0.6, // 60% width
   },
   errorMessage: {
-    color: '#ef4444', // Red for error messages
+    color: theme.colors.error,
     fontSize: 14,
     marginTop: 8,
     textAlign: 'center',
   },
   orangeButton: {
-    backgroundColor: '#f97316', // Orange for warning/secondary actions
+    backgroundColor: theme.colors.warning,
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 6,
@@ -3089,12 +3113,12 @@ const styles = StyleSheet.create({
     minHeight: 48,
   },
   orangeButtonText: {
-    color: '#ffffff',
+    color: theme.colors.textOnPrimary,
     fontSize: 16,
     fontWeight: '600',
   },
   greenButton: {
-    backgroundColor: '#16a34a', // Darker, less saturated green
+    backgroundColor: theme.colors.success,
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 6,
@@ -3103,13 +3127,13 @@ const styles = StyleSheet.create({
     minHeight: 48,
   },
   greenButtonText: {
-    color: '#ffffff',
+    color: theme.colors.textOnPrimary,
     fontWeight: '600',
     fontSize: 16,
     textAlign: 'center',
   },
   playerStatsCard: {
-    backgroundColor: '#f9fafb', // Light background for individual player stats
+    backgroundColor: theme.colors.backgroundSecondary,
     borderRadius: 8,
     padding: 16,
     marginBottom: 12,
@@ -3118,7 +3142,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 18,
     marginBottom: 8,
-    color: '#1f2937',
+    color: theme.colors.textPrimary,
   },
   statsRow: {
     flexDirection: 'row',
@@ -3127,7 +3151,7 @@ const styles = StyleSheet.create({
   },
   statText: {
     fontSize: 14,
-    color: '#374151',
+    color: theme.colors.textSecondary,
     marginRight: 12,
     marginBottom: 4,
   },
@@ -3137,14 +3161,14 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)', // Semi-transparent black background
+    backgroundColor: theme.colors.overlay,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 16,
     zIndex: 50, // Ensure overlay is on top
   },
   dialogCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.colors.card,
     borderRadius: 8,
     padding: 24,
     width: '100%',
@@ -3152,11 +3176,11 @@ const styles = StyleSheet.create({
   },
   dialogMessage: {
     marginBottom: 16,
-    color: '#4b5563',
+    color: theme.colors.textSecondary,
     textAlign: 'center',
   },
   dialogButton: {
-    backgroundColor: '#3b82f6', // Blue for dialog actions
+    backgroundColor: theme.colors.primary,
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 4,
@@ -3165,7 +3189,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   dialogCancelButton: {
-    backgroundColor: '#d1d5db', // Grey for cancel actions
+    backgroundColor: theme.colors.backgroundSecondary,
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 4,
@@ -3173,7 +3197,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   warningMessage: {
-    color: '#f97316', // Orange for warning text
+    color: theme.colors.warning,
     fontSize: 12,
     marginBottom: 16,
     textAlign: 'center',
@@ -3193,13 +3217,13 @@ const styles = StyleSheet.create({
     minWidth: 60,
   },
   toggleButtonActive: {
-    backgroundColor: '#22c55e',
+    backgroundColor: theme.colors.success,
   },
   toggleButtonInactive: {
-    backgroundColor: '#ef4444',
+    backgroundColor: theme.colors.error,
   },
   toggleButtonText: {
-    color: '#ffffff',
+    color: theme.colors.textOnPrimary,
     fontWeight: 'bold',
   },
   backButton: {
@@ -3209,19 +3233,19 @@ const styles = StyleSheet.create({
     zIndex: 20,
   },
   homeActionButton: {
-    backgroundColor: '#28a745',
+    backgroundColor: theme.colors.success,
     padding: 12,
     borderRadius: 6,
     alignItems: 'center',
     marginBottom: 12,
   },
   homeActionButtonText: {
-    color: '#ffffff',
+    color: theme.colors.textOnPrimary,
     fontSize: 16,
     fontWeight: '600',
   },
   clearSelectionButton: {
-    backgroundColor: '#6b7280', // Gray color for clear/reset actions
+    backgroundColor: theme.colors.textSecondary,
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 4,
@@ -3230,7 +3254,7 @@ const styles = StyleSheet.create({
     flex: 0.4, // 40% width
   },
   clearSelectionButtonText: {
-    color: '#ffffff',
+    color: theme.colors.textOnPrimary,
     fontWeight: 'bold',
     fontSize: 14,
   },
@@ -3242,22 +3266,22 @@ const styles = StyleSheet.create({
   },
   debugTeam: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: theme.colors.backgroundSecondary,
     padding: 12,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#e9ecef',
+    borderColor: theme.colors.border,
   },
   debugTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#495057',
+    color: theme.colors.textPrimary,
     marginBottom: 8,
     textAlign: 'center',
   },
   debugText: {
     fontSize: 12,
-    color: '#6c757d',
+    color: theme.colors.textSecondary,
     marginBottom: 4,
   },
   statsContainer: {
@@ -3269,23 +3293,23 @@ const styles = StyleSheet.create({
   },
   // Manual adjustment styles - Compact design
   manualAdjustCard: {
-    backgroundColor: '#f8f9fa',
+    backgroundColor: theme.colors.backgroundSecondary,
     padding: 16,
     borderRadius: 12,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: theme.colors.border,
   },
   manualAdjustTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#1f2937',
+    color: theme.colors.textPrimary,
     marginBottom: 4,
     textAlign: 'center',
   },
   manualAdjustSubtitle: {
     fontSize: 13,
-    color: '#6b7280',
+    color: theme.colors.textSecondary,
     marginBottom: 16,
     textAlign: 'center',
   },
@@ -3296,12 +3320,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.colors.card,
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: theme.colors.border,
   },
   teamNameContainer: {
     flexDirection: 'row',
@@ -3312,14 +3336,14 @@ const styles = StyleSheet.create({
   compactTeamName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#374151',
+    color: theme.colors.textPrimary,
   },
   adjustmentBadge: {
     fontSize: 14,
     fontWeight: '700',
     paddingHorizontal: 8,
     paddingVertical: 2,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: theme.colors.backgroundSecondary,
     borderRadius: 12,
   },
   compactControls: {
@@ -3327,9 +3351,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   compactButton: {
-    backgroundColor: '#fff7ed',
+    backgroundColor: theme.colors.warningBackground,
     borderWidth: 2,
-    borderColor: '#f97316',
+    borderColor: theme.colors.warning,
     width: 44,
     height: 44,
     borderRadius: 8,
@@ -3337,12 +3361,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   compactButtonText: {
-    color: '#000000',
+    color: theme.colors.textPrimary,
     fontSize: 24,
     fontWeight: '600',
   },
   compactResetButton: {
-    backgroundColor: '#ef4444',
+    backgroundColor: theme.colors.error,
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 8,
@@ -3350,7 +3374,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   compactResetButtonText: {
-    color: '#ffffff',
+    color: theme.colors.textOnPrimary,
     fontSize: 14,
     fontWeight: '600',
   },

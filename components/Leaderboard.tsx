@@ -45,6 +45,7 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
   showHeader = true 
 }) => {
   const { theme } = useTheme();
+  const styles = createStyles(theme);
   const { session } = useAuth();
   const router = useRouter();
   const [players, setPlayers] = useState<LeaderboardPlayer[]>([]);
@@ -506,7 +507,7 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) => StyleSheet.create({
   container: {
     marginBottom: 16,
   },
@@ -588,7 +589,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 8,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.1)',
+    borderBottomColor: theme.colors.border,
     marginBottom: 16,
   },
   rankHeader: {
@@ -618,7 +619,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     marginBottom: 8,
     borderRadius: 8,
-    backgroundColor: 'rgba(255,255,255,0.5)',
+    backgroundColor: theme.colors.card,
   },
   rankContainer: {
     width: 50,

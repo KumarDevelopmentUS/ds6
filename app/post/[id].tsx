@@ -1,5 +1,6 @@
 // app/post/[id].tsx
 import { HapticBackButton } from '@/components/HapticBackButton';
+import { useTheme } from '@/contexts/ThemeContext';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
@@ -35,6 +36,8 @@ const blurhash = 'L6PZfSi_.AyE_3t7t7R**0o#DgR4';
 export default function PostDetailScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   const postId = Array.isArray(id) ? id[0] : (id as string);
   
   const { post, isLoading: postLoading, handleVote, userVote, error: postError } = usePost(postId);
@@ -214,10 +217,10 @@ export default function PostDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f5f5f5',
+        backgroundColor: theme.colors.background,
       },
       scrollView: {
         flex: 1,
@@ -234,10 +237,10 @@ const styles = StyleSheet.create({
       },
       errorText: {
         fontSize: 16,
-        color: '#888',
+        color: theme.colors.textSecondary,
       },
       postContainer: {
-        backgroundColor: '#fff',
+        backgroundColor: theme.colors.card,
         padding: 20,
         borderRadius: 12,
         marginBottom: 16,
@@ -262,7 +265,7 @@ const styles = StyleSheet.create({
       },
       timestamp: { 
         fontSize: Platform.OS === 'web' ? 16 : 14, 
-        color: '#666', 
+        color: theme.colors.textSecondary, 
         marginTop: 2 
       },
       title: { 
@@ -281,12 +284,12 @@ const styles = StyleSheet.create({
         borderRadius: 8, 
         marginBottom: 16, 
         marginHorizontal: -20,
-        backgroundColor: '#f0f0f0' 
+        backgroundColor: theme.colors.backgroundSecondary 
       },
-      actions: { paddingTop: 16, borderTopWidth: 1, borderTopColor: '#eee' },
+      actions: { paddingTop: 16, borderTopWidth: 1, borderTopColor: theme.colors.border },
       commentContainer: {
         flexDirection: 'row',
-        backgroundColor: '#fff',
+        backgroundColor: theme.colors.card,
         padding: 16,
         borderRadius: 12,
         marginBottom: 12,
@@ -308,16 +311,16 @@ const styles = StyleSheet.create({
         marginBottom: 4,
       },
       commentContent: {
-        color: '#333',
+        color: theme.colors.textSecondary,
       },
       noCommentsText: {
         textAlign: 'center',
         padding: 20,
-        color: '#888',
+        color: theme.colors.textSecondary,
       },
       modalContainer: {
         flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.9)',
+        backgroundColor: theme.colors.overlay,
         justifyContent: 'center',
         alignItems: 'center',
       },

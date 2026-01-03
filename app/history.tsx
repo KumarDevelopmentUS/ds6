@@ -86,6 +86,7 @@ export default function GameHistoryScreen() {
   const router = useRouter();
   const { theme } = useTheme();
   const { session } = useAuth();
+  const styles = createStyles(theme);
   const [matches, setMatches] = useState<SavedMatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -281,7 +282,7 @@ export default function GameHistoryScreen() {
             <HapticBackButton 
               onPress={() => router.back()} 
               style={styles.backButton}
-              color="#3b82f6"
+              color={theme.colors.primary}
             />
             <ThemedView style={styles.header}>
               <ThemedText variant="title">Game History</ThemedText>
@@ -321,7 +322,7 @@ export default function GameHistoryScreen() {
         <HapticBackButton 
           onPress={() => router.back()} 
           style={styles.backButton}
-          color="#3b82f6"
+          color={theme.colors.primary}
         />
 
         {/* Header */}
@@ -546,9 +547,10 @@ export default function GameHistoryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) => StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: theme.colors.background,
   },
   content: {
     padding: 12,
@@ -585,20 +587,20 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 20,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: theme.colors.card,
     borderWidth: 2,
-    borderColor: '#E5E7EB',
+    borderColor: theme.colors.border,
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
+    shadowOpacity: theme.dark ? 0.3 : 0.05,
     shadowRadius: 2,
     elevation: 2,
   },
   filterTabActive: {
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
+    shadowOpacity: theme.dark ? 0.4 : 0.15,
     shadowRadius: 4,
     elevation: 4,
   },
@@ -647,10 +649,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   winBadge: {
-    backgroundColor: '#22c55e',
+    backgroundColor: theme.colors.success,
   },
   lossBadge: {
-    backgroundColor: '#ef4444',
+    backgroundColor: theme.colors.error,
   },
   scoreSummary: {
     flexDirection: 'row',
@@ -668,7 +670,7 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: '#e5e7eb',
+    backgroundColor: theme.colors.border,
     marginBottom: 16,
   },
   detailsRow: {
@@ -692,13 +694,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 8,
     marginBottom: 12,
-    backgroundColor: '#f9fafb',
+    backgroundColor: theme.colors.backgroundTertiary,
     minHeight: 200,
   },
   userPlayerCard: {
-    backgroundColor: '#eff6ff',
+    backgroundColor: theme.dark ? theme.colors.backgroundSecondary : '#eff6ff',
     borderWidth: 1,
-    borderColor: '#3b82f6',
+    borderColor: theme.colors.primary,
   },
   playerHeader: {
     flexDirection: 'row',
@@ -721,15 +723,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 6,
     paddingHorizontal: 8,
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.colors.card,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: theme.colors.border,
     marginBottom: 8,
   },
   statLabel: {
     fontSize: 10,
-    color: '#6b7280',
+    color: theme.colors.textSecondary,
     marginBottom: 2,
     textAlign: 'center',
   },
@@ -744,7 +746,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
+    borderTopColor: theme.colors.border,
   },
   actionButton: {
     flexDirection: 'row',

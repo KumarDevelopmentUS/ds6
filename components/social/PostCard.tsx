@@ -23,6 +23,7 @@ import Animated, {
 // Note: You will need to update your actual Post type definition where it lives.
 import { useRouter } from 'expo-router';
 import { Post as BasePost } from '../../types/social';
+import { useTheme } from '../../contexts/ThemeContext';
 import MatchSummary from './MatchSummary';
 import { UserAvatar } from './UserAvatar';
 import { VoteButtons } from './VoteButtons';
@@ -51,6 +52,7 @@ const PostCardComponent: React.FC<PostCardProps> = ({
 }) => {
   const [imageModalVisible, setImageModalVisible] = useState(false);
   const router = useRouter();
+  const { theme } = useTheme();
 
   const scale = useSharedValue(1);
   const translateX = useSharedValue(0);
@@ -145,7 +147,7 @@ const PostCardComponent: React.FC<PostCardProps> = ({
       <TouchableOpacity
         onPress={onPress}
         activeOpacity={0.7}
-        style={styles.container}
+        style={[styles.container, { backgroundColor: theme.colors.card }]}
       >
         <View style={styles.header}>
           <UserAvatar
@@ -160,28 +162,28 @@ const PostCardComponent: React.FC<PostCardProps> = ({
             <View style={styles.topRow}>
               <View>
                 <TouchableOpacity onPress={() => router.push(`/user-profile/${post.user_id}`)}>
-                  <Text style={styles.authorName}>{post.author_name}</Text>
+                  <Text style={[styles.authorName, { color: theme.colors.text }]}>{post.author_name}</Text>
                   {/* Display @username below the author name, as requested */}
                   {post.author_username ? (
-                    <Text style={styles.username}>@{post.author_username}</Text>
+                    <Text style={[styles.username, { color: theme.colors.textSecondary }]}>@{post.author_username}</Text>
                   ) : null}
                 </TouchableOpacity>
                 
               </View>
               {displayName ? (
-                <View style={styles.communityBadge}>
-                  <Text style={styles.communityName}>{displayName}</Text>
-                  <Text style={styles.postDate}>{new Date(post.created_at).toLocaleDateString()}</Text>
+                <View style={[styles.communityBadge, { backgroundColor: theme.dark ? theme.colors.backgroundTertiary : '#e8f4ff' }]}>
+                  <Text style={[styles.communityName, { color: theme.colors.primary }]}>{displayName}</Text>
+                  <Text style={[styles.postDate, { color: theme.colors.textSecondary }]}>{new Date(post.created_at).toLocaleDateString()}</Text>
                 </View>
               ) : null}
             </View>
           </View>
         </View>
 
-        <Text style={styles.title}>{post.title}</Text>
+        <Text style={[styles.title, { color: theme.colors.text }]}>{post.title}</Text>
 
         {post.content ? (
-          <Text style={styles.content} numberOfLines={3}>
+          <Text style={[styles.content, { color: theme.colors.text }]} numberOfLines={3}>
             {post.content}
           </Text>
         ) : null}
@@ -194,18 +196,18 @@ const PostCardComponent: React.FC<PostCardProps> = ({
                 post.image_url.startsWith('http')) {
               return isIOSSimulator ? (
                 <TouchableOpacity
-                  style={styles.simulatorImageContainer}
+                  style={[styles.simulatorImageContainer, { backgroundColor: theme.colors.backgroundTertiary, borderColor: theme.colors.border }]}
                   onPress={handleOpenInBrowser}
                 >
-                  <Ionicons name="image" size={50} color="#007AFF" />
-                  <Text style={styles.simulatorImageText}>Image Available</Text>
+                  <Ionicons name="image" size={50} color={theme.colors.primary} />
+                  <Text style={[styles.simulatorImageText, { color: theme.colors.primary }]}>Image Available</Text>
                 </TouchableOpacity>
               ) : (
                 <TouchableOpacity
                   onPress={() => setImageModalVisible(true)}
                   activeOpacity={0.9}
                 >
-                  <View style={styles.imageContainer}>
+                  <View style={[styles.imageContainer, { backgroundColor: theme.colors.backgroundTertiary }]}>
                     <Image
                       source={{ uri: post.image_url.trim() }}
                       style={styles.image}
@@ -235,15 +237,15 @@ const PostCardComponent: React.FC<PostCardProps> = ({
           </View>
         )}
 
-        <View style={styles.footer}>
+        <View style={[styles.footer, { borderTopColor: theme.colors.border }]}>
            <VoteButtons
             likeCount={post.like_count}
             onVote={onVote}
              userVote={userVote || null}
           />
           <View style={styles.commentButton}>
-            <Ionicons name="chatbubble-outline" size={18} color="#666" />
-            <Text style={styles.commentCount}>{post.comment_count}</Text>
+            <Ionicons name="chatbubble-outline" size={18} color={theme.colors.textSecondary} />
+            <Text style={[styles.commentCount, { color: theme.colors.textSecondary }]}>{post.comment_count}</Text>
           </View>
         </View>
       </TouchableOpacity>
@@ -256,7 +258,6 @@ export const PostCard = memo(PostCardComponent);
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#fff',
     marginHorizontal: 8,
     marginVertical: 8,
     padding: 16,
@@ -285,15 +286,12 @@ const styles = StyleSheet.create({
   authorName: {
     fontSize: Platform.OS === 'web' ? 16 : 14,
     fontWeight: '600',
-    color: '#333',
   },
   username: {
     // New style for the @username
     fontSize: Platform.OS === 'web' ? 14 : 13,
-    color: '#555',
   },
   communityBadge: {
-    backgroundColor: '#e8f4ff',
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 12,
@@ -301,36 +299,30 @@ const styles = StyleSheet.create({
   },
   communityName: {
     fontSize: Platform.OS === 'web' ? 13 : 12,
-    color: '#007AFF',
     fontWeight: '500',
   },
   postDate: {
     fontSize: Platform.OS === 'web' ? 12 : 11,
-    color: '#666',
     marginTop: 2,
     textAlign: 'center',
   },
   timestamp: {
     fontSize: 12,
-    color: '#666',
     marginTop: 4, // Adjusted margin
   },
   title: {
     fontSize: Platform.OS === 'web' ? 18 : 16,
     fontWeight: 'bold',
-    color: '#000',
     marginBottom: 8,
   },
   content: {
     fontSize: 14,
-    color: '#333',
     lineHeight: 20,
     marginBottom: 12,
   },
   imageContainer: {
     width: '100%',
     marginBottom: 12,
-    backgroundColor: '#f0f0f0',
     borderRadius: 8,
     overflow: 'hidden',
   },
@@ -352,10 +344,8 @@ const styles = StyleSheet.create({
   simulatorImageContainer: {
     width: '100%',
     height: 200,
-    backgroundColor: '#f8f9fa',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#e1e4e8',
     borderStyle: 'dashed',
     justifyContent: 'center',
     alignItems: 'center',
@@ -364,7 +354,6 @@ const styles = StyleSheet.create({
   simulatorImageText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#007AFF',
     marginTop: 8,
   },
   footer: {
@@ -373,7 +362,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: '#eee',
   },
   commentButton: {
     flexDirection: 'row',
@@ -382,6 +370,5 @@ const styles = StyleSheet.create({
   },
   commentCount: {
     fontSize: 14,
-    color: '#666',
   },
 });

@@ -38,9 +38,13 @@ const { width } = Dimensions.get('window');
 const ICON_SIZE = 60;
 const COLOR_SWATCH_SIZE = 40;
 
+// Feature flag for profile picture upload - set to true to enable the feature
+const ENABLE_PROFILE_PICTURE_UPLOAD = false;
+
 export default function EditProfileScreen() {
   const router = useRouter();
   const { theme } = useTheme();
+  const dynamicStyles = createDynamicStyles(theme);
   const queryClient = useQueryClient(); // 2. Get the query client instance
   const [loading, setLoading] = useState(true);
   
@@ -456,9 +460,9 @@ export default function EditProfileScreen() {
         <ThemedView variant="card" style={styles.avatarCustomizationCard}>
           <ThemedText variant="subtitle" style={styles.avatarSectionTitle}>Your Avatar</ThemedText>
           
-          {/* Profile Picture Preview */}
+          {/* Avatar Preview - shows profile picture only when feature is enabled */}
           <View style={styles.avatarPreview}>
-            {profile.avatar_url ? (
+            {ENABLE_PROFILE_PICTURE_UPLOAD && profile.avatar_url ? (
               <Image 
                 source={{ uri: profile.avatar_url }}
                 style={styles.profileImage}
@@ -473,7 +477,7 @@ export default function EditProfileScreen() {
           
 
           {/* Remove Profile Picture Button - only show when user has a profile picture */}
-          {profile.avatar_url && (
+          {ENABLE_PROFILE_PICTURE_UPLOAD && profile.avatar_url && (
             <TouchableOpacity 
               style={[styles.removeProfilePictureButton, { borderColor: theme.colors.error }]} 
               onPress={handleRemoveProfilePicture}
@@ -513,22 +517,27 @@ export default function EditProfileScreen() {
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity style={[styles.selectionRow, { borderColor: theme.colors.border }]} onPress={handleProfilePictureUpload}>
-            <ThemedText>Profile Picture</ThemedText>
-            <View style={styles.selectionValueContainer}>
-              <Ionicons name="camera" size={24} color={theme.colors.textSecondary} />
-              <Ionicons name="chevron-forward" size={20} color={theme.colors.textSecondary} />
-            </View>
-          </TouchableOpacity>
-          
-          {/* Web-only message for profile picture feature */}
-          {Platform.OS === 'web' && (
-            <View style={styles.webOnlyMessage}>
-              <Ionicons name="phone-portrait" size={16} color={theme.colors.textSecondary} />
-              <ThemedText style={styles.webOnlyText}>
-                Profile picture upload is not available on web
-              </ThemedText>
-            </View>
+          {/* Profile Picture Upload - hidden until feature is enabled */}
+          {ENABLE_PROFILE_PICTURE_UPLOAD && (
+            <>
+              <TouchableOpacity style={[styles.selectionRow, { borderColor: theme.colors.border }]} onPress={handleProfilePictureUpload}>
+                <ThemedText>Profile Picture</ThemedText>
+                <View style={styles.selectionValueContainer}>
+                  <Ionicons name="camera" size={24} color={theme.colors.textSecondary} />
+                  <Ionicons name="chevron-forward" size={20} color={theme.colors.textSecondary} />
+                </View>
+              </TouchableOpacity>
+              
+              {/* Web-only message for profile picture feature */}
+              {Platform.OS === 'web' && (
+                <View style={styles.webOnlyMessage}>
+                  <Ionicons name="phone-portrait" size={16} color={theme.colors.textSecondary} />
+                  <ThemedText style={styles.webOnlyText}>
+                    Profile picture upload is not available on web
+                  </ThemedText>
+                </View>
+              )}
+            </>
           )}
         </ThemedView>
 
@@ -764,54 +773,72 @@ export default function EditProfileScreen() {
           </KeyboardAvoidingView>
         </Modal>
 
-        {/* Password Modal for Profile Picture Upload */}
-        <Modal visible={showPasswordModal} animationType="fade" transparent={true} onRequestClose={handlePasswordCancel}>
-          <View style={styles.modalOverlay}>
-            <ThemedView variant="card" style={styles.modalContent}>
-              <ThemedText variant="subtitle" style={styles.modalTitle}>
-                Profile Picture Password
-              </ThemedText>
-              <ThemedText variant="body" style={styles.modalDescription}>
-                Enter password:
-              </ThemedText>
-              <TextInput
-                style={[styles.modalInput, passwordError && { borderColor: '#ef4444' }]}
-                placeholder="Enter password..."
-                placeholderTextColor={theme.colors.textSecondary}
-                value={passwordInput}
-                onChangeText={setPasswordInput}
-                secureTextEntry={true}
-                autoFocus={true}
-                autoComplete="off"
-                autoCorrect={false}
-                onSubmitEditing={handlePasswordSubmit}
-              />
-              {passwordError ? (
-                <ThemedText style={{ color: theme.colors.error, marginTop: 8, textAlign: 'center', marginBottom: 20 }}>
-                  {passwordError}
+        {/* Password Modal for Profile Picture Upload - hidden until feature is enabled */}
+        {ENABLE_PROFILE_PICTURE_UPLOAD && (
+          <Modal visible={showPasswordModal} animationType="fade" transparent={true} onRequestClose={handlePasswordCancel}>
+            <View style={styles.modalOverlay}>
+              <ThemedView variant="card" style={styles.modalContent}>
+                <ThemedText variant="subtitle" style={styles.modalTitle}>
+                  Profile Picture Password
                 </ThemedText>
-              ) : null}
-              <View style={styles.modalButtons}>
-                <TouchableOpacity
-                  style={[styles.modalButton, { backgroundColor: theme.colors.card, borderColor: theme.colors.border, borderWidth: 1 }]}
-                  onPress={handlePasswordCancel}
-                >
-                  <ThemedText variant="body">Cancel</ThemedText>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.modalButton, { backgroundColor: theme.colors.primary }]}
-                  onPress={handlePasswordSubmit}
-                >
-                  <ThemedText variant="body" style={{ color: theme.colors.textOnPrimary }}>Submit</ThemedText>
-                </TouchableOpacity>
-              </View>
-            </ThemedView>
-          </View>
-        </Modal>
+                <ThemedText variant="body" style={styles.modalDescription}>
+                  Enter password:
+                </ThemedText>
+                <TextInput
+                  style={[styles.modalInput, passwordError && { borderColor: '#ef4444' }]}
+                  placeholder="Enter password..."
+                  placeholderTextColor={theme.colors.textSecondary}
+                  value={passwordInput}
+                  onChangeText={setPasswordInput}
+                  secureTextEntry={true}
+                  autoFocus={true}
+                  autoComplete="off"
+                  autoCorrect={false}
+                  onSubmitEditing={handlePasswordSubmit}
+                />
+                {passwordError ? (
+                  <ThemedText style={{ color: theme.colors.error, marginTop: 8, textAlign: 'center', marginBottom: 20 }}>
+                    {passwordError}
+                  </ThemedText>
+                ) : null}
+                <View style={styles.modalButtons}>
+                  <TouchableOpacity
+                    style={[styles.modalButton, { backgroundColor: theme.colors.card, borderColor: theme.colors.border, borderWidth: 1 }]}
+                    onPress={handlePasswordCancel}
+                  >
+                    <ThemedText variant="body">Cancel</ThemedText>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.modalButton, { backgroundColor: theme.colors.primary }]}
+                    onPress={handlePasswordSubmit}
+                  >
+                    <ThemedText variant="body" style={{ color: theme.colors.textOnPrimary }}>Submit</ThemedText>
+                  </TouchableOpacity>
+                </View>
+              </ThemedView>
+            </View>
+          </Modal>
+        )}
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
+
+// Dynamic theme-aware styles
+const createDynamicStyles = (theme: any) => ({
+  container: { backgroundColor: theme.colors.background },
+  card: { backgroundColor: theme.colors.card },
+  text: { color: theme.colors.textPrimary },
+  textSecondary: { color: theme.colors.textSecondary },
+  inputBackground: { backgroundColor: theme.colors.inputBackground, borderColor: theme.colors.inputBorder, color: theme.colors.textPrimary },
+  border: { borderColor: theme.colors.border },
+  primary: { backgroundColor: theme.colors.primary },
+  primaryText: { color: theme.colors.primary },
+  overlay: { backgroundColor: theme.colors.overlay },
+  modalContent: { backgroundColor: theme.colors.card },
+  buttonSecondary: { backgroundColor: theme.colors.backgroundSecondary, borderColor: theme.colors.border },
+  buttonText: { color: theme.colors.textOnPrimary },
+});
 
 const styles = StyleSheet.create<{
   container: ViewStyle;

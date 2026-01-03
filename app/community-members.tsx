@@ -17,6 +17,7 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
+import { useTheme } from '../contexts/ThemeContext';
 
 type UserProfile = {
   id: string;
@@ -38,6 +39,7 @@ export default function CommunityMembersScreen() {
   const router = useRouter();
   const { communityId, communityName } = useLocalSearchParams();
   const { session } = useAuth();
+  const { theme } = useTheme();
   
   // Process community name to use proper school display name if needed
   const displayCommunityName = (() => {
@@ -59,6 +61,7 @@ export default function CommunityMembersScreen() {
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [userJoinDate, setUserJoinDate] = useState<string>('');
   const currentUserId = session?.user?.id;
+  const styles = createStyles(theme);
 
   useEffect(() => {
     if (currentUserId) {
@@ -304,12 +307,12 @@ export default function CommunityMembersScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <View style={styles.header}>
         <HapticBackButton 
           onPress={() => router.back()} 
           style={styles.backButton}
-          color="#007AFF"
+          color={theme.colors.primary}
           text=""
         />
         <Text style={styles.headerTitle}>{displayCommunityName} Members</Text>
@@ -318,14 +321,14 @@ export default function CommunityMembersScreen() {
             style={styles.settingsButton}
             onPress={() => setSettingsVisible(true)}
           >
-            <Ionicons name="settings-outline" size={24} color="#007AFF" />
+            <Ionicons name="settings-outline" size={24} color={theme.colors.primary} />
           </TouchableOpacity>
         )}
       </View>
 
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
+          <ActivityIndicator size="large" color={theme.colors.primary} />
         </View>
       ) : (
         <FlatList
@@ -360,10 +363,10 @@ export default function CommunityMembersScreen() {
     );
   }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -371,9 +374,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: theme.colors.border,
   },
   backButton: {
     padding: 4,
@@ -381,7 +384,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#000',
+    color: theme.colors.text,
   },
   settingsButton: {
     padding: 4,
@@ -400,14 +403,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
     marginHorizontal: 16,
     marginVertical: 4,
     padding: 16,
     borderRadius: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
+    shadowOpacity: theme.dark ? 0.3 : 0.05,
     shadowRadius: 2,
     elevation: 2,
   },
@@ -430,17 +433,17 @@ const styles = StyleSheet.create({
   nickname: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#000',
+    color: theme.colors.text,
     marginBottom: 2,
   },
   username: {
     fontSize: 14,
-    color: '#666',
+    color: theme.colors.textSecondary,
     marginBottom: 2,
   },
   school: {
     fontSize: 12,
-    color: '#888',
+    color: theme.colors.textTertiary,
   },
   statusButton: {
     paddingHorizontal: 16,
@@ -450,36 +453,36 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   addButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: theme.colors.primary,
   },
   addButtonText: {
-    color: '#fff',
+    color: theme.colors.textOnPrimary,
     fontWeight: '600',
     fontSize: 14,
   },
   friendButton: {
-    backgroundColor: '#e8f4ff',
+    backgroundColor: theme.dark ? theme.colors.backgroundTertiary : '#e8f4ff',
   },
   friendButtonText: {
-    color: '#007AFF',
+    color: theme.colors.primary,
     fontWeight: '500',
     fontSize: 14,
   },
   pendingButton: {
-    backgroundColor: '#f0f0f0',
+    backgroundColor: theme.colors.backgroundTertiary,
   },
   pendingButtonText: {
-    color: '#666',
+    color: theme.colors.textSecondary,
     fontWeight: '500',
     fontSize: 14,
   },
   youButton: {
-    backgroundColor: '#f0f0f0',
+    backgroundColor: theme.colors.backgroundTertiary,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: theme.colors.border,
   },
   youButtonText: {
-    color: '#888',
+    color: theme.colors.textTertiary,
     fontWeight: '500',
     fontSize: 14,
   },
@@ -491,7 +494,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#666',
+    color: theme.colors.textSecondary,
     textAlign: 'center',
   },
   quickStats: {
@@ -504,12 +507,12 @@ const styles = StyleSheet.create({
   },
   quickStatText: {
     fontSize: 12,
-    color: '#666',
+    color: theme.colors.textSecondary,
     marginTop: 4,
   },
   quickStatLabel: {
     fontSize: 10,
-    color: '#888',
+    color: theme.colors.textTertiary,
     marginTop: 2,
   },
 });

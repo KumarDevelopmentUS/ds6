@@ -55,6 +55,7 @@ export default function UserProfileScreen() {
   const { theme } = useTheme();
   const { session } = useAuth();
   const { userId } = useLocalSearchParams();
+  const styles = createStyles(theme);
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [stats, setStats] = useState<UserStats | null>(null);
@@ -307,11 +308,8 @@ export default function UserProfileScreen() {
         {/* Profile Header */}
         <ThemedView variant="card" style={styles.profileHeader}>
           <View style={[styles.avatar, { backgroundColor: profile.avatar_background_color }]}>
-            {profile.avatar_url ? (
-              <Ionicons name="person" size={60} color={profile.avatar_icon_color} />
-            ) : (
-              <Ionicons name={profile.avatar_icon} size={60} color={profile.avatar_icon_color} />
-            )}
+            {/* Profile picture display disabled - always show icon avatar */}
+            <Ionicons name={profile.avatar_icon} size={60} color={profile.avatar_icon_color} />
           </View>
           
           <View style={styles.profileInfo}>
@@ -482,9 +480,10 @@ export default function UserProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) => StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: theme.colors.background,
   },
   content: {
     paddingTop: 60, // Space for back button
@@ -524,11 +523,11 @@ const styles = StyleSheet.create({
   },
   username: {
     marginBottom: 4,
-    color: '#6b7280',
+    color: theme.colors.textSecondary,
     fontSize: 16,
   },
   school: {
-    color: '#6b7280',
+    color: theme.colors.textSecondary,
     fontSize: 14,
   },
   actionsCard: {
@@ -539,7 +538,7 @@ const styles = StyleSheet.create({
   },
   statusText: {
     textAlign: 'center',
-    color: '#6b7280',
+    color: theme.colors.textSecondary,
     fontSize: 16,
   },
   statsGrid: {
@@ -570,7 +569,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: theme.colors.border,
   },
   loadingCard: {
     padding: 40,
@@ -581,7 +580,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
     textAlign: 'center',
     fontSize: 16,
-    color: '#6b7280',
+    color: theme.colors.textSecondary,
   },
   errorContainer: {
     flex: 1,
@@ -606,7 +605,7 @@ const styles = StyleSheet.create({
   emptyStatsText: {
     marginTop: 8,
     textAlign: 'center',
-    color: '#6b7280',
+    color: theme.colors.textSecondary,
     fontSize: 16,
   },
   // Achievements styles
@@ -624,7 +623,7 @@ const styles = StyleSheet.create({
     width: '47%',
     alignItems: 'center',
     padding: 12,
-    backgroundColor: '#f9fafb',
+    backgroundColor: theme.colors.backgroundTertiary,
     borderRadius: 12,
   },
   achievementIcon: {
@@ -644,6 +643,6 @@ const styles = StyleSheet.create({
   achievementTier: {
     textAlign: 'center',
     fontSize: 11,
-    color: '#6b7280',
+    color: theme.colors.textSecondary,
   },
 });

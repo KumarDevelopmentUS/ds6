@@ -82,6 +82,7 @@ export default function ScoreboardScreen() {
   const { roomCode } = useLocalSearchParams();
   const router = useRouter();
   const { theme } = useTheme();
+  const styles = createStyles(theme);
   
   const [liveMatch, setLiveMatch] = useState<LiveMatch | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -386,10 +387,10 @@ export default function ScoreboardScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.background,
   },
   backButton: {
     position: 'absolute',
@@ -452,10 +453,10 @@ const styles = StyleSheet.create({
   versus: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#666',
+    color: theme.colors.textSecondary,
   },
   winnerContainer: {
-    backgroundColor: '#f0f8ff',
+    backgroundColor: theme.colors.infoBackground,
     padding: 12,
     borderRadius: 8,
     marginTop: 16,
@@ -464,14 +465,14 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     textAlign: 'center',
-    color: '#2563eb',
+    color: theme.colors.primary,
   },
   statsCard: {
     marginBottom: 20,
   },
   playerRow: {
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: theme.colors.border,
     paddingVertical: 16,
   },
   playerHeader: {
@@ -492,11 +493,11 @@ const styles = StyleSheet.create({
   playerScore: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: theme.colors.textPrimary,
   },
   playerRating: {
     fontSize: 14,
-    color: '#666',
+    color: theme.colors.textSecondary,
   },
   onFireBadge: {
     fontSize: 16,
@@ -510,20 +511,20 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontSize: 12,
-    color: '#666',
+    color: theme.colors.textSecondary,
     marginBottom: 2,
   },
   statValue: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#333',
+    color: theme.colors.textPrimary,
   },
   rulesCard: {
     marginBottom: 20,
   },
   ruleText: {
     fontSize: 14,
-    color: '#666',
+    color: theme.colors.textSecondary,
     marginBottom: 4,
   },
 }); 

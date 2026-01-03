@@ -44,6 +44,7 @@ export default function JoinMatchScreen() {
   const router = useRouter();
   const { session } = useAuth();
   const { theme } = useTheme();
+  const styles = createStyles(theme);
   
   const [liveMatch, setLiveMatch] = useState<LiveMatch | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -637,10 +638,10 @@ export default function JoinMatchScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.background,
   },
   backButton: {
     position: 'absolute',
@@ -745,7 +746,7 @@ const styles = StyleSheet.create({
   playerSlot: {
     flex: 1,
     minWidth: '45%',
-    backgroundColor: '#007AFF',
+    backgroundColor: theme.colors.primary,
     padding: 15,
     borderRadius: 8,
     alignItems: 'center',
@@ -753,19 +754,19 @@ const styles = StyleSheet.create({
     minHeight: 80,
   },
   playerSlotAvailable: {
-    backgroundColor: '#007AFF',
+    backgroundColor: theme.colors.primary,
     borderWidth: 2,
-    borderColor: '#0056CC',
+    borderColor: theme.colors.primaryPressed,
   },
   playerSlotJoining: {
-    backgroundColor: '#FF9500',
+    backgroundColor: theme.colors.warning,
     opacity: 0.8,
   },
   playerSlotTaken: {
-    backgroundColor: '#ccc',
+    backgroundColor: theme.colors.buttonDisabled,
   },
   playerSlotMine: {
-    backgroundColor: '#28a745',
+    backgroundColor: theme.colors.success,
   },
   playerSlotContent: {
     alignItems: 'center',
@@ -778,7 +779,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   playerSlotTextTaken: {
-    color: '#666',
+    color: theme.colors.textSecondary,
   },
   playerSlotTextAvailable: {
     color: 'white',
@@ -793,7 +794,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   takenText: {
-    color: '#666',
+    color: theme.colors.textSecondary,
     fontSize: 12,
     fontStyle: 'italic',
   },
@@ -814,7 +815,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   userIdText: {
-    color: '#666',
+    color: theme.colors.textSecondary,
     fontSize: 10,
     marginTop: 2,
   },
@@ -855,7 +856,7 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
   confirmDialog: {
-    backgroundColor: 'white',
+    backgroundColor: theme.colors.card,
     borderRadius: 12,
     padding: 24,
     margin: 20,

@@ -29,6 +29,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 export default function SignUpScreen() {
   const router = useRouter();
   const { theme } = useTheme();
+  const styles = createStyles(theme);
   const [formData, setFormData] = useState({
     username: '', // Changed from firstName
     email: '',
@@ -812,9 +813,10 @@ export default function SignUpScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) => StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: theme.colors.background,
   },
   scrollContent: {
     flexGrow: 1,
@@ -836,7 +838,7 @@ const styles = StyleSheet.create({
   },
   backText: {
     marginLeft: 8,
-    color: '#3b82f6',
+    color: theme.colors.primary,
     fontSize: 16,
     fontWeight: '500',
   },
@@ -869,6 +871,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 8,
     borderWidth: 1,
+    borderColor: theme.colors.inputBorder,
+    backgroundColor: theme.colors.inputBackground,
     paddingHorizontal: 16,
     paddingVertical: 14,
     gap: 12,
@@ -878,7 +882,7 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: theme.colors.overlay,
     justifyContent: 'center',
     padding: 20,
   },
@@ -887,6 +891,7 @@ const styles = StyleSheet.create({
     padding: 20,
     maxHeight: '80%',
     width: '100%',
+    backgroundColor: theme.colors.card,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -902,14 +907,19 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     marginBottom: 16,
     gap: 12,
+    backgroundColor: theme.colors.inputBackground,
+    borderWidth: 1,
+    borderColor: theme.colors.inputBorder,
   },
   searchInput: {
     flex: 1,
     fontSize: 16,
+    color: theme.colors.textPrimary,
   },
   schoolItem: {
     paddingVertical: 16,
     borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
   },
   emptyContainer: {
     paddingVertical: 40,
@@ -919,11 +929,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
     marginTop: 5,
+    color: theme.colors.error,
   },
   hintText: {
     fontSize: 12,
     fontWeight: '400',
     marginTop: 5,
+    color: theme.colors.textSecondary,
   },
   usernameStatusContainer: {
     marginTop: 5,
@@ -950,6 +962,8 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 8,
     borderWidth: 1,
+    borderColor: theme.colors.success,
+    backgroundColor: theme.colors.successBackground,
   },
   successTextContainer: {
     flex: 1,
@@ -958,11 +972,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     marginBottom: 2,
+    color: theme.colors.success,
   },
   successSubtext: {
     fontSize: 11,
     fontWeight: '400',
     lineHeight: 16,
+    color: theme.colors.textSecondary,
   },
   authToggleContainer: {
     alignItems: 'center',
@@ -978,28 +994,33 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 24,
+    backgroundColor: theme.colors.successBackground,
   },
   emailSentTitle: {
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 16,
     textAlign: 'center',
+    color: theme.colors.textPrimary,
   },
   emailSentMessage: {
     fontSize: 16,
     marginBottom: 12,
     textAlign: 'center',
     lineHeight: 24,
+    color: theme.colors.textSecondary,
   },
   emailSentNote: {
     fontSize: 14,
     textAlign: 'center',
     lineHeight: 20,
     marginTop: 8,
+    color: theme.colors.textSecondary,
   },
   resendTimer: {
     fontSize: 14,
     textAlign: 'center',
     marginTop: 20,
+    color: theme.colors.textSecondary,
   },
 });

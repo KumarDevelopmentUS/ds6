@@ -33,6 +33,7 @@ export default function FeedScreen() {
   const router = useRouter();
   const { session } = useAuth();
   const { theme } = useTheme();
+  const styles = createStyles(theme);
   const { communities, isLoading: isCommunitiesLoading, error: communitiesError, refetch } = useFeed();
   const [selectedCommunityId, setSelectedCommunityId] = useState<number | null>(null);
   const [dropdownVisible, setDropdownVisible] = useState(false);
@@ -561,17 +562,17 @@ export default function FeedScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.background,
   },
   header: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: theme.colors.border,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -584,7 +585,7 @@ const styles = StyleSheet.create({
   selectorLabel: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#666',
+    color: theme.colors.textSecondary,
   },
   dropdownButton: {
     flexDirection: 'row',
@@ -592,7 +593,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between', // Aligns items on opposite ends
     paddingVertical: 8,
     paddingHorizontal: 12,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: theme.colors.backgroundSecondary,
     borderRadius: 8,
     flex: 1,
     marginHorizontal: 12,
@@ -606,16 +607,16 @@ const styles = StyleSheet.create({
   dropdownButtonText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#000',
+    color: theme.colors.textPrimary,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: theme.colors.overlay,
     justifyContent: 'flex-start',
     paddingTop: 100,
   },
   dropdownContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
     marginHorizontal: 16,
     borderRadius: 12,
     paddingVertical: 8,
@@ -634,10 +635,10 @@ const styles = StyleSheet.create({
   },
   dropdownItemText: {
     fontSize: 16,
-    color: '#333',
+    color: theme.colors.textPrimary,
   },
   dropdownItemTextSelected: {
-    color: '#007AFF',
+    color: theme.colors.primary,
     fontWeight: '600',
   },
   dropdownItemContent: {
@@ -646,7 +647,7 @@ const styles = StyleSheet.create({
   },
   dropdownDivider: {
     height: 1,
-    backgroundColor: '#E5E5E5',
+    backgroundColor: theme.colors.border,
     marginVertical: 8,
     marginHorizontal: 16,
   },
@@ -658,12 +659,12 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.background,
   },
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: '#666',
+    color: theme.colors.textSecondary,
   },
   emptyContainer: {
     flex: 1,
@@ -674,14 +675,14 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 18,
-    color: '#333',
+    color: theme.colors.textPrimary,
     textAlign: 'center',
     fontWeight: '600',
     marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#666',
+    color: theme.colors.textSecondary,
     textAlign: 'center',
     lineHeight: 20,
   },
@@ -692,7 +693,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#007AFF',
+    backgroundColor: theme.colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
@@ -725,19 +726,19 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   signInButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: theme.colors.primary,
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',
   },
   createAccountButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: theme.colors.primary,
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',
   },
   buttonText: {
-    color: 'white',
+    color: theme.colors.textOnPrimary,
     fontSize: 16,
     fontWeight: 'bold',
   },

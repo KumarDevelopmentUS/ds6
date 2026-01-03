@@ -22,6 +22,7 @@ import {
 export default function LoginScreen() {
   const router = useRouter();
   const { theme } = useTheme();
+  const styles = createStyles(theme);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -313,9 +314,10 @@ export default function LoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) => StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: theme.colors.background,
   },
   scrollContent: {
     flexGrow: 1,
@@ -335,7 +337,7 @@ const styles = StyleSheet.create({
   },
   backText: {
     marginLeft: 8,
-    color: '#3b82f6',
+    color: theme.colors.primary,
     fontSize: 16,
     fontWeight: '500',
   },
