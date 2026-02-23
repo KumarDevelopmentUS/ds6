@@ -91,7 +91,7 @@ export default function GameHistoryScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [expandedMatch, setExpandedMatch] = useState<string | null>(null);
-  const [filter, setFilter] = useState<'all' | 'wins' | 'losses'>('all');
+  const [filter, setFilter] = useState<'all' | 'wins' | 'losses' | 'draws'>('all');
 
   useEffect(() => {
     if (session?.user) {
@@ -231,8 +231,10 @@ export default function GameHistoryScreen() {
       
       if (filter === 'wins') {
         return match.winnerTeam === userTeam;
-      } else {
+      } else if (filter === 'losses') {
         return !!match.winnerTeam && match.winnerTeam !== userTeam;
+      } else {
+        return !match.winnerTeam;
       }
     });
   };
@@ -338,7 +340,7 @@ export default function GameHistoryScreen() {
 
         {/* Filter Tabs */}
         <View style={styles.filterContainer}>
-          {(['all', 'wins', 'losses'] as const).map((filterType) => (
+          {(['all', 'wins', 'losses', 'draws'] as const).map((filterType) => (
             <TouchableOpacity
               key={filterType}
               style={[
@@ -383,7 +385,8 @@ export default function GameHistoryScreen() {
             const team1Score = calculateTeamScore(match, 1);
             const team2Score = calculateTeamScore(match, 2);
             const userTeam = getUserTeam(match);
-            const isWin = userTeam && match.winnerTeam === userTeam;
+            const isDraw = !match.winnerTeam;
+            const isWin = !isDraw && userTeam && match.winnerTeam === userTeam;
             const isExpanded = expandedMatch === match.id;
 
             return (
@@ -400,15 +403,15 @@ export default function GameHistoryScreen() {
                       <ThemedText variant="caption">{formatDate(match.createdAt)}</ThemedText>
                     </View>
                     <View style={styles.matchResult}>
-                      {isWin !== null && (
+                      {userTeam && (
                         <View
                           style={[
                             styles.resultBadge,
-                            isWin ? styles.winBadge : styles.lossBadge,
+                            isDraw ? styles.drawBadge : isWin ? styles.winBadge : styles.lossBadge,
                           ]}
                         >
                           <ThemedText variant="caption" style={styles.badgeText}>
-                            {isWin ? 'WIN' : 'LOSS'}
+                            {isDraw ? 'DRAW' : isWin ? 'WIN' : 'LOSS'}
                           </ThemedText>
                         </View>
                       )}
@@ -653,6 +656,9 @@ const createStyles = (theme: any) => StyleSheet.create({
   },
   lossBadge: {
     backgroundColor: theme.colors.error,
+  },
+  drawBadge: {
+    backgroundColor: theme.colors.warning,
   },
   scoreSummary: {
     flexDirection: 'row',

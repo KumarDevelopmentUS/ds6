@@ -898,7 +898,7 @@ export default function StatisticsScreen() {
                     result === 'W' ? styles.winForm : result === 'L' ? styles.lossForm : styles.drawForm,
                   ]}
                 >
-                  <ThemedText variant="caption">
+                  <ThemedText variant="caption" style={{ color: '#FFFFFF', fontWeight: '700' }}>
                     {result}
                   </ThemedText>
                 </View>
@@ -1566,7 +1566,7 @@ const createStyles = (theme: any) => StyleSheet.create({
     backgroundColor: theme.colors.error,
   },
   drawForm: {
-    backgroundColor: theme.colors.textSecondary,
+    backgroundColor: theme.colors.warning,
   },
   statsGrid: {
     flexDirection: 'row',
