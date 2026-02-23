@@ -206,8 +206,9 @@ export default function GameHistoryScreen() {
   };
 
   const formatDuration = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
+    const s = Math.max(0, seconds);
+    const mins = Math.floor(s / 60);
+    const secs = s % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 

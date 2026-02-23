@@ -375,7 +375,7 @@ export default function StatisticsScreen() {
         }
       }
 
-      stats.totalMatchDuration += match.matchDuration || 0;
+      stats.totalMatchDuration += Math.max(0, match.matchDuration || 0);
     });
 
     // Set totalMatches here, after filtering and iterating
@@ -796,8 +796,9 @@ export default function StatisticsScreen() {
 
 
   const formatDuration = (seconds: number): string => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
+    const s = Math.max(0, seconds);
+    const hours = Math.floor(s / 3600);
+    const minutes = Math.floor((s % 3600) / 60);
     return `${hours}h ${minutes}m`;
   };
 

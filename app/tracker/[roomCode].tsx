@@ -1185,11 +1185,10 @@ const DieStatsTracker: React.FC = () => {
                 <Text style={styles.elapsedTimeText}>
                   Elapsed:{' '}
                   {(() => {
-                    const elapsedSeconds = Math.floor((Date.now() - matchStartTime.getTime()) / 1000);
-                    const minutes = Math.floor(Math.abs(elapsedSeconds) / 60);
-                    const seconds = Math.abs(elapsedSeconds) % 60;
-                    const sign = elapsedSeconds < 0 ? '-' : '';
-                    return `${sign}${minutes}:${String(seconds).padStart(2, '0')}`;
+                    const elapsedSeconds = Math.max(0, Math.floor((Date.now() - matchStartTime.getTime()) / 1000));
+                    const minutes = Math.floor(elapsedSeconds / 60);
+                    const seconds = elapsedSeconds % 60;
+                    return `${minutes}:${String(seconds).padStart(2, '0')}`;
                   })()}
                 </Text>
               )}
