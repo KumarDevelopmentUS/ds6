@@ -990,7 +990,8 @@ const DieStatsTracker: React.FC = () => {
     }
 
     // Automatically save the match after finishing
-    await handleSaveStats();
+    // Pass winner directly to avoid reading stale React state
+    await handleSaveStats(winner);
   };
 
   const cancelFinishMatch = () => {
@@ -998,7 +999,7 @@ const DieStatsTracker: React.FC = () => {
   };
 
   // Handles saving match statistics to the 'saved_matches' table
-  const handleSaveStats = async () => {
+  const handleSaveStats = async (explicitWinner?: number) => {
     console.log('Attempting to save match stats...');
     let savingUserId: string | null | undefined = currentUser?.id;
   
@@ -1045,8 +1046,9 @@ const DieStatsTracker: React.FC = () => {
         ? Math.max(0, Math.floor((Date.now() - matchStartTime.getTime()) / 1000))
         : 0;
 
-      // Validate winner team
-      const validatedWinner = (winnerTeam === 1 || winnerTeam === 2 || winnerTeam === 0) ? winnerTeam : 0;
+      // Validate winner team — use explicitWinner if provided (avoids stale React state)
+      const resolvedWinner = explicitWinner !== undefined ? explicitWinner : winnerTeam;
+      const validatedWinner = (resolvedWinner === 1 || resolvedWinner === 2 || resolvedWinner === 0) ? resolvedWinner : 0;
 
       const matchData = {
         userId: savingUserId, // Use the determined saving user's ID

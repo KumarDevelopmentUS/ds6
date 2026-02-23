@@ -232,7 +232,7 @@ export default function GameHistoryScreen() {
       if (filter === 'wins') {
         return match.winnerTeam === userTeam;
       } else {
-        return match.winnerTeam !== userTeam && match.winnerTeam !== null;
+        return !!match.winnerTeam && match.winnerTeam !== userTeam;
       }
     });
   };
