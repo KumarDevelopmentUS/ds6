@@ -37,6 +37,8 @@ export async function logSessionStart(userId: string | null): Promise<void> {
   const ipInfo = await getIpInfo();
   const userAgent = typeof navigator !== 'undefined' ? navigator.userAgent : '';
 
+  console.log('[SessionLogger] Attempting to log visit, userId:', userId);
+
   const { data, error } = await supabase
     .from('session_logs')
     .insert({
@@ -50,7 +52,10 @@ export async function logSessionStart(userId: string | null): Promise<void> {
     .select('id')
     .single();
 
-  if (!error && data) {
+  if (error) {
+    console.error('[SessionLogger] Insert failed:', error.message, error.details, error.hint);
+  } else if (data) {
+    console.log('[SessionLogger] Session logged, id:', data.id);
     activeSessionId = data.id;
     if (typeof window !== 'undefined') {
       window.__sessionLogId = data.id;
