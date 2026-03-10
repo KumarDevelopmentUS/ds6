@@ -281,7 +281,7 @@ export default function AccountScreen() {
       icon: 'game-controller-outline',
       items: [
         {
-          label: 'Dark Mode',
+          label: 'Dark Mode (WIP)',
           value: colorScheme === 'dark',
           onToggle: () => toggleColorScheme(),
           type: 'switch' as const,
