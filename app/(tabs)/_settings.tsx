@@ -113,9 +113,8 @@ export default function AccountScreen() {
       const result = await joinGeneralCommunity(session.user.id);
       if (result.success) {
         setIsInGeneralCommunity(true);
-        Alert.alert('Success', 'You have joined the General community!');
-        // Refresh communities list
-        refetch();
+        // Refresh both feed communities and settings page profile data
+        await Promise.all([refetch(), loadUserAndProfile()]);
       } else {
         Alert.alert('Error', result.error || 'Failed to join General community');
       }
