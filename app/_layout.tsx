@@ -199,6 +199,11 @@ function RootLayoutNav() {
         logSessionStart(session.user.id).catch(() => {});
       }
 
+      // Also log when user opens the site while already logged in
+      if (session?.user && event === 'INITIAL_SESSION') {
+        logSessionStart(session.user.id).catch(() => {});
+      }
+
       if (event === 'SIGNED_OUT') {
         logSessionEnd().catch(() => {});
       }
