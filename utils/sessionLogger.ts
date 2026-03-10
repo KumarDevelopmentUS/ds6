@@ -4,6 +4,7 @@ import { supabase } from '@/supabase';
 declare global {
   interface Window {
     __sessionLogId?: string;
+    __sessionLogged?: boolean;
   }
 }
 
@@ -25,8 +26,13 @@ async function getIpInfo(): Promise<{ ip: string; country: string; region: strin
   }
 }
 
-export async function logSessionStart(userId: string): Promise<void> {
+// Logs a visit on every page load. userId is null for unauthenticated visitors.
+export async function logSessionStart(userId: string | null): Promise<void> {
   if (Platform.OS !== 'web') return;
+
+  // Only log once per page load
+  if (typeof window !== 'undefined' && window.__sessionLogged) return;
+  if (typeof window !== 'undefined') window.__sessionLogged = true;
 
   const ipInfo = await getIpInfo();
   const userAgent = typeof navigator !== 'undefined' ? navigator.userAgent : '';
@@ -58,35 +64,25 @@ export async function logSessionEnd(): Promise<void> {
   const sessionId = activeSessionId ?? (typeof window !== 'undefined' ? window.__sessionLogId : null);
   if (!sessionId) return;
 
-  const { error } = await supabase
+  await supabase
     .from('session_logs')
-    .update({
-      logout_at: new Date().toISOString(),
-    })
+    .update({ logout_at: new Date().toISOString() })
     .eq('id', sessionId);
 
-  if (!error) {
-    activeSessionId = null;
-    if (typeof window !== 'undefined') {
-      window.__sessionLogId = undefined;
-    }
+  activeSessionId = null;
+  if (typeof window !== 'undefined') {
+    window.__sessionLogId = undefined;
+    window.__sessionLogged = undefined;
   }
 }
 
-// Call on page unload to capture tab closes
+// Captures tab/browser close
 export function registerUnloadHandler(): () => void {
   if (Platform.OS !== 'web' || typeof window === 'undefined') return () => {};
 
   const handler = () => {
     const sessionId = activeSessionId ?? window.__sessionLogId;
     if (!sessionId) return;
-    // Use sendBeacon for reliability on page close
-    const payload = JSON.stringify({
-      logout_at: new Date().toISOString(),
-      session_id: sessionId,
-    });
-    navigator.sendBeacon?.('/api/session-end', payload);
-    // Fallback: fire-and-forget fetch (may not complete)
     supabase.from('session_logs').update({ logout_at: new Date().toISOString() }).eq('id', sessionId);
   };
 

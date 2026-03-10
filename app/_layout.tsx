@@ -177,6 +177,12 @@ function RootLayoutNav() {
   useEffect(() => {
     const cleanupUnload = registerUnloadHandler();
 
+    // Log every page visit (null for anonymous, user id for authenticated)
+    // The auth listener below may call this again but the dedup guard in sessionLogger prevents double-logging
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      logSessionStart(session?.user?.id ?? null).catch(() => {});
+    });
+
     // Listen for auth state changes for profile sync
     const {
       data: { subscription },
@@ -196,11 +202,7 @@ function RootLayoutNav() {
         } catch (error) {
           console.error('❌ Profile sync error:', error);
         }
-        logSessionStart(session.user.id).catch(() => {});
-      }
-
-      // Also log when user opens the site while already logged in
-      if (session?.user && event === 'INITIAL_SESSION') {
+        // logSessionStart dedup guard handles the case where getSession already logged this visit
         logSessionStart(session.user.id).catch(() => {});
       }
 
