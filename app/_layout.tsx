@@ -6,6 +6,7 @@ import { HapticsProvider } from '@/contexts/HapticsContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { supabase } from '@/supabase';
 import { ensureUserProfilesExist } from '@/utils/profileSync';
+import { logSessionStart, logSessionEnd, registerUnloadHandler } from '@/utils/sessionLogger';
 import type { Session } from '@supabase/supabase-js';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SplashScreen, Stack, useRouter, useSegments } from 'expo-router';
@@ -174,6 +175,8 @@ function RootLayoutNav() {
   }, [segments, isReady]);
 
   useEffect(() => {
+    const cleanupUnload = registerUnloadHandler();
+
     // Listen for auth state changes for profile sync
     const {
       data: { subscription },
@@ -193,12 +196,18 @@ function RootLayoutNav() {
         } catch (error) {
           console.error('❌ Profile sync error:', error);
         }
+        logSessionStart(session.user.id).catch(() => {});
+      }
+
+      if (event === 'SIGNED_OUT') {
+        logSessionEnd().catch(() => {});
       }
     });
 
     // Unsubscribe from the listener when the component unmounts.
     return () => {
       subscription.unsubscribe();
+      cleanupUnload();
     };
   }, []);
 
