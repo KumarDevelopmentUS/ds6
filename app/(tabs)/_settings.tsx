@@ -41,6 +41,7 @@ export default function AccountScreen() {
   } | null>(null);
   const [loading, setLoading] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isTestAccount, setIsTestAccount] = useState(false);
   const [isInGeneralCommunity, setIsInGeneralCommunity] = useState<boolean | null>(null);
   const [joiningGeneral, setJoiningGeneral] = useState(false);
   const [selectedCommunityForSettings, setSelectedCommunityForSettings] = useState<{
@@ -72,7 +73,7 @@ export default function AccountScreen() {
     if (currentUser) {
       const { data: userProfile, error } = await supabase
         .from('user_profiles')
-        .select('id, display_name, nickname, school, avatar_icon, avatar_icon_color, avatar_background_color, avatar_url, username')
+        .select('id, display_name, nickname, school, avatar_icon, avatar_icon_color, avatar_background_color, avatar_url, username, is_test_account')
         .eq('id', currentUser.id)
         .single();
 
@@ -91,6 +92,7 @@ export default function AccountScreen() {
           avatar_background_color: userProfile.avatar_background_color || theme.colors.primary,
           avatar_url: userProfile.avatar_url || null,
         });
+        setIsTestAccount(userProfile.is_test_account ?? false);
       }
 
       // Check General community membership
@@ -192,6 +194,20 @@ export default function AccountScreen() {
     }
   };
 
+  const handleToggleTestAccount = async (value: boolean) => {
+    if (!session?.user) return;
+    setIsTestAccount(value);
+    const { error } = await supabase
+      .from('user_profiles')
+      .update({ is_test_account: value })
+      .eq('id', session.user.id);
+    if (error) {
+      console.error('Error updating test account flag:', error);
+      setIsTestAccount(!value); // revert on failure
+      Alert.alert('Error', 'Failed to update test account setting');
+    }
+  };
+
   const handleLogout = async () => {
     if (isLoggingOut) {
       return;
@@ -287,6 +303,12 @@ export default function AccountScreen() {
           label: 'Edit Profile',
           onPress: () => router.push('/edit-profile'),
           type: 'button' as const,
+        },
+        {
+          label: 'Test Account',
+          value: isTestAccount,
+          onToggle: handleToggleTestAccount,
+          type: 'switch' as const,
         },
       ],
     },

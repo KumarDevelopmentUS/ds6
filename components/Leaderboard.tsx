@@ -130,7 +130,8 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
           average_rating
         `)
         .not('total_matches_played', 'is', null)
-        .gt('total_matches_played', 0);
+        .gt('total_matches_played', 0)
+        .not('is_test_account', 'eq', true);
 
       // Apply school filter if needed
       if (filterBy === 'school' && userSchool) {

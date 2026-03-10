@@ -232,7 +232,7 @@ export const usePosts = (communityId?: number) => {
       // Fetch user_profiles for author information and avatar data
       const { data: userProfiles, error: userProfileError } = await supabase
         .from('user_profiles')
-        .select('id, avatar_url, username, nickname, display_name, avatar_icon, avatar_icon_color, avatar_background_color')
+        .select('id, avatar_url, username, nickname, display_name, avatar_icon, avatar_icon_color, avatar_background_color, is_test_account')
         .in('id', userIds);
 
 
@@ -252,8 +252,11 @@ export const usePosts = (communityId?: number) => {
 
 
 
+      // Filter out posts from test accounts
+      const filteredPosts = posts.filter((post: any) => !profileMap[post.user_id]?.is_test_account);
+
       // Get vote counts for all posts
-      const postUids = posts.map(p => p.uid || String(p.id));
+      const postUids = filteredPosts.map((p: any) => p.uid || String(p.id));
       const { data: voteCounts } = await supabase
         .from('votes')
         .select('post_uid')
@@ -278,7 +281,7 @@ export const usePosts = (communityId?: number) => {
       }, {});
 
       // Get match data for posts with linked matches
-      const linkedMatchIds = posts
+      const linkedMatchIds = filteredPosts
         .filter((p: any) => p.linked_match_id)
         .map((p: any) => p.linked_match_id);
       
@@ -307,7 +310,7 @@ export const usePosts = (communityId?: number) => {
       }
 
       // Combine the data
-      let combinedPosts = posts.map((post: any) => {
+      let combinedPosts = filteredPosts.map((post: any) => {
         const profileData = profileMap[post.user_id];
         // Determine the best author name from profile data
         const authorName = profileData?.nickname || post.author_name || 'Anonymous';

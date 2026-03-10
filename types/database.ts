@@ -428,6 +428,7 @@ export type Database = {
           display_name: string | null
           first_name: string | null
           id: string
+          is_test_account: boolean | null
           nickname: string | null
           notification_settings: Json | null
           preferred_theme: string | null
@@ -451,6 +452,7 @@ export type Database = {
           display_name?: string | null
           first_name?: string | null
           id: string
+          is_test_account?: boolean | null
           nickname?: string | null
           notification_settings?: Json | null
           preferred_theme?: string | null
@@ -474,6 +476,7 @@ export type Database = {
           display_name?: string | null
           first_name?: string | null
           id?: string
+          is_test_account?: boolean | null
           nickname?: string | null
           notification_settings?: Json | null
           preferred_theme?: string | null
