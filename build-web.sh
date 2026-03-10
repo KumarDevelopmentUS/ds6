@@ -2,7 +2,7 @@
 
 # Build the web version
 echo "Starting web export..."
-npx expo export --platform web --clear
+EXPO_NO_SOURCEMAPS=true npx expo export --platform web --clear
 
 # Check if dist directory was created
 if [ ! -d "dist" ]; then
