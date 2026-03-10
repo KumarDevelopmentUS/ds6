@@ -21,13 +21,11 @@
         "NSAppTransportSecurity": {
           "NSExceptionDomains": {
             "pralctamjnxchqpmazpf.supabase.co": {
-              "NSExceptionRequiresForwardSecrecy": false,
-              "NSExceptionMinimumTLSVersion": "1.0",
+              "NSExceptionMinimumTLSVersion": "TLSv1.2",
               "NSIncludesSubdomains": true
             },
             "diestats.app": {
-              "NSExceptionRequiresForwardSecrecy": false,
-              "NSExceptionMinimumTLSVersion": "1.0",
+              "NSExceptionMinimumTLSVersion": "TLSv1.2",
               "NSIncludesSubdomains": true
             }
           }

@@ -92,7 +92,7 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
     try {
       const { data: relationships, error } = await supabase
         .from('friends')
-        .select('*')
+        .select('user_id_1, user_id_2')
         .or(`user_id_1.eq.${session.user.id},user_id_2.eq.${session.user.id}`)
         .eq('status', 'accepted');
 
