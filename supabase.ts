@@ -53,7 +53,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     detectSessionInUrl: true, // Enable URL detection for magic links
     // Additional settings for maximum session persistence
-    flowType: 'pkce',
+    flowType: Platform.OS === 'web' ? 'implicit' : 'pkce',
     debug: false,
   },
 });

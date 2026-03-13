@@ -75,8 +75,10 @@ export default function AuthCallbackScreen() {
           console.log('⚠️ No session found, trying to handle URL parameters...');
           
           // If no session, try to handle the auth code from URL parameters
+          // Check both query string (PKCE) and hash fragment (implicit flow)
           const urlParams = new URLSearchParams(window.location.search);
-          const code = urlParams.get('code');
+          const hashParams = new URLSearchParams(window.location.hash.replace('#', ''));
+          const code = urlParams.get('code') || hashParams.get('code');
           
           if (code) {
             console.log('🔑 Found auth code in URL, attempting to exchange...');
