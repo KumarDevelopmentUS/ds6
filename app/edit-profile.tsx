@@ -316,13 +316,14 @@ export default function EditProfileScreen() {
     if (nickname.length > 15) {
       return 'Name must be no more than 15 characters long';
     }
-    if (nickname.length > 0 && !/^[a-zA-Z0-9._]+$/.test(nickname)) {
-      return 'Name can only contain letters, numbers, dots (.), and underscores (_)';
+    if (nickname.length > 0 && !/^[a-zA-Z0-9]+$/.test(nickname)) {
+      return 'Name can only contain letters and numbers';
     }
     return '';
   };
 
   const handleNicknameChange = (text: string) => {
+    text = text.replace(/[^a-zA-Z0-9]/g, '');
     setProfile({ ...profile!, nickname: text });
     const error = validateNickname(text);
     setNicknameError(error);
