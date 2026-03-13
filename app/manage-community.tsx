@@ -62,7 +62,7 @@ type Community = {
   invite_code: string | null;
   invite_code_enabled: boolean;
   is_private: boolean;
-  creator_id: string;
+  creator_id: string | null;
 };
 
 // Community icons (same as create-community)

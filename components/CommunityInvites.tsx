@@ -25,8 +25,8 @@ type PendingInvite = {
   community_icon: string | null;
   community_icon_color: string | null;
   community_background_color: string | null;
-  inviter_id: string;
-  inviter_name: string;
+  inviter_id: string | null;
+  inviter_name: string | null;
   created_at: string;
 };
 
@@ -168,7 +168,7 @@ export function CommunityInvites({ onInviteResponded }: CommunityInvitesProps) {
                   {invite.community_name}
                 </ThemedText>
                 <ThemedText variant="caption" style={{ color: theme.colors.textSecondary }}>
-                  Invited by {invite.inviter_name}
+                  Invited by {invite.inviter_name ?? 'Unknown User'}
                 </ThemedText>
                 <ThemedText variant="caption" style={{ color: theme.colors.textSecondary, fontSize: 11 }}>
                   {formatDate(invite.created_at)}
