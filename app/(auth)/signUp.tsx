@@ -45,7 +45,6 @@ export default function SignUpScreen() {
   const [schoolSearch, setSchoolSearch] = useState('');
   const [filteredSchools, setFilteredSchools] = useState(SCHOOLS);
   const [showEmailLink, setShowEmailLink] = useState(true);
-  const [emailLinkSent, setEmailLinkSent] = useState(false);
   const [cooldownTimer, setCooldownTimer] = useState(0);
   const [errors, setErrors] = useState({
     username: '',
@@ -477,12 +476,9 @@ export default function SignUpScreen() {
       });
       
       if (result.success) {
-        setEmailLinkSent(true);
-        setCooldownTimer(15); // Start 15-second cooldown
-        // Don't show alert, let the UI show the success message
+        router.push({ pathname: '/(auth)/verify-otp' as any, params: { email: email.toLowerCase(), type: 'signup' } });
       } else {
         Alert.alert('Error', result.message);
-        setEmailLinkSent(false);
       }
     } catch (error: any) {
       Alert.alert('Error', 'Failed to send email link. Please try again.');
@@ -526,42 +522,7 @@ export default function SignUpScreen() {
 
           {/* Form */}
           <ThemedView variant="card" style={styles.formCard}>
-            {emailLinkSent ? (
-              /* Email Sent Confirmation */
-              <View style={styles.emailSentContainer}>
-                <View style={[styles.emailSentIconContainer, { backgroundColor: theme.colors.success + '20' }]}>
-                  <Ionicons name="mail" size={48} color={theme.colors.success} />
-                </View>
-                
-                <ThemedText variant="subtitle" style={[styles.emailSentTitle, { color: theme.colors.success }]}>
-                  Email Sent!
-                </ThemedText>
-                
-                <ThemedText variant="body" style={[styles.emailSentMessage, { color: theme.colors.text }]}>
-                  Please check <ThemedText variant="body" style={{ fontWeight: 'bold' }}>{formData.email}</ThemedText> for your login link.
-                </ThemedText>
-                
-                <ThemedText variant="caption" style={[styles.emailSentNote, { color: theme.colors.textSecondary }]}>
-                  It may take up to 60 seconds to receive the email. Check your spam folder if you don&apos;t see it.
-                </ThemedText>
-
-                {cooldownTimer > 0 ? (
-                  <ThemedText variant="caption" style={[styles.resendTimer, { color: theme.colors.textSecondary }]}>
-                    Can resend in {cooldownTimer}s
-                  </ThemedText>
-                ) : (
-                  <ThemedButton
-                    title="Resend Email"
-                    variant="ghost"
-                    onPress={handleEmailLinkSignup}
-                    loading={emailLinkLoading}
-                    style={{ marginTop: theme.spacing.md }}
-                  />
-                )}
-              </View>
-            ) : (
-              /* Signup Form */
-              <>
+            <>
                 <View style={{ marginBottom: 20 }}>
                   <ThemedInput
                     placeholder="First Name"
@@ -709,7 +670,7 @@ export default function SignUpScreen() {
 
                 {showEmailLink ? (
                   <ThemedButton
-                    title={cooldownTimer > 0 ? `Resend in ${cooldownTimer}s` : "Send Email Link"}
+                    title={cooldownTimer > 0 ? `Resend in ${cooldownTimer}s` : "Send Verification Code"}
                     onPress={handleEmailLinkSignup}
                     loading={emailLinkLoading}
                     disabled={usernameAvailable === false || checkingUsername || cooldownTimer > 0}
@@ -736,7 +697,6 @@ export default function SignUpScreen() {
                   </ThemedText>
                 )}
               </>
-            )}
           </ThemedView>
 
           <ThemedButton
@@ -982,45 +942,5 @@ const createStyles = (theme: any) => StyleSheet.create({
   },
   authToggleContainer: {
     alignItems: 'center',
-  },
-  emailSentContainer: {
-    alignItems: 'center',
-    paddingVertical: 30,
-  },
-  emailSentIconContainer: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 24,
-    backgroundColor: theme.colors.successBackground,
-  },
-  emailSentTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 16,
-    textAlign: 'center',
-    color: theme.colors.textPrimary,
-  },
-  emailSentMessage: {
-    fontSize: 16,
-    marginBottom: 12,
-    textAlign: 'center',
-    lineHeight: 24,
-    color: theme.colors.textSecondary,
-  },
-  emailSentNote: {
-    fontSize: 14,
-    textAlign: 'center',
-    lineHeight: 20,
-    marginTop: 8,
-    color: theme.colors.textSecondary,
-  },
-  resendTimer: {
-    fontSize: 14,
-    textAlign: 'center',
-    marginTop: 20,
-    color: theme.colors.textSecondary,
   },
 });

@@ -29,7 +29,6 @@ export default function LoginScreen() {
   const [emailLinkLoading, setEmailLinkLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showEmailLink, setShowEmailLink] = useState(true);
-  const [emailLinkSent, setEmailLinkSent] = useState(false);
   const [cooldownTimer, setCooldownTimer] = useState(0);
 
   // Cooldown timer effect
@@ -138,13 +137,10 @@ export default function LoginScreen() {
       const result = await sendMagicLinkSignin(email);
       
       if (result.success) {
-        setEmailLinkSent(true);
         setError(null);
-        setCooldownTimer(15); // Start 15-second cooldown
-        // Don't show alert, let the UI show the success message
+        router.push({ pathname: '/(auth)/verify-otp' as any, params: { email, type: 'magiclink' } });
       } else {
         setError(result.message);
-        setEmailLinkSent(false);
       }
     } catch (error: any) {
       setError('Failed to send email link. Please try again.');
@@ -224,21 +220,6 @@ export default function LoginScreen() {
               />
             )}
 
-            {/* Success Display */}
-            {emailLinkSent && (
-              <View style={[styles.successContainer, { backgroundColor: theme.colors.success + '20', borderColor: theme.colors.success }]}>
-                <Ionicons name="checkmark-circle" size={16} color={theme.colors.success} />
-                <View style={styles.successTextContainer}>
-                  <ThemedText variant="caption" style={[styles.successText, { color: theme.colors.success }]}>
-                    Email link sent successfully!
-                  </ThemedText>
-                  <ThemedText variant="caption" style={[styles.successSubtext, { color: theme.colors.textSecondary }]}>
-                    Check your email and click the link to sign in. <ThemedText variant="caption" style={[styles.successSubtext, { color: theme.colors.textSecondary, fontWeight: 'bold' }]}>It may take up to 60 seconds to receive the email.</ThemedText>
-                  </ThemedText>
-                </View>
-              </View>
-            )}
-
             {/* Error Display */}
             {error && (
               <View style={styles.errorContainer}>
@@ -251,7 +232,7 @@ export default function LoginScreen() {
 
             {showEmailLink ? (
               <ThemedButton
-                title={cooldownTimer > 0 ? `Resend in ${cooldownTimer}s` : "Send Email Link"}
+                title={cooldownTimer > 0 ? `Resend in ${cooldownTimer}s` : "Send Verification Code"}
                 onPress={handleEmailLinkSignin}
                 loading={emailLinkLoading}
                 disabled={!email.trim() || cooldownTimer > 0}
@@ -270,12 +251,11 @@ export default function LoginScreen() {
             {/* Toggle between password and email link */}
             <View style={[styles.authToggleContainer, { marginTop: theme.spacing.sm }]}>
               <ThemedButton
-                title={showEmailLink ? "Use Password Instead" : "Use Email Link Instead"}
+                title={showEmailLink ? "Use Password Instead" : "Use Verification Code Instead"}
                 variant="ghost"
                 onPress={() => {
                   setShowEmailLink(!showEmailLink);
                   setError(null);
-                  setEmailLinkSent(false);
                   setCooldownTimer(0);
                 }}
                 size="small"
@@ -378,29 +358,6 @@ const createStyles = (theme: any) => StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
     flex: 1,
-  },
-  successContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 8,
-    marginTop: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-  successTextContainer: {
-    flex: 1,
-  },
-  successText: {
-    fontSize: 12,
-    fontWeight: '600',
-    marginBottom: 2,
-  },
-  successSubtext: {
-    fontSize: 11,
-    fontWeight: '400',
-    lineHeight: 16,
   },
   authToggleContainer: {
     alignItems: 'center',
