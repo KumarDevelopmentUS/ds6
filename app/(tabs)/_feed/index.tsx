@@ -117,43 +117,19 @@ export default function FeedScreen() {
       Alert.alert('Not Logged In', 'Please log in first');
       return;
     }
-    
+
     try {
-      Alert.alert('Fixing...', 'Attempting to fix community membership...');
-      
-      // Check if user is in any community
-      const { data: memberships } = await supabase
-        .from('user_communities')
-        .select('*, communities(*)')
-        .eq('user_id', session.user.id);
-
-      console.log('Current memberships:', memberships);
-
-      if (memberships && memberships.length > 0) {
-        Alert.alert('Already Fixed', `You are already in ${memberships.length} community(ies)! Try refreshing the app.`);
-        return;
-      }
-
-      // Use the utility function to fix membership
       const result = await fixUserCommunityMembership();
-      
+
       if (result?.success) {
-        Alert.alert('Fixed!', 'You have been added to the general community. Refreshing...');
-        
-        // Trigger refetch and force refresh
         refetch();
-        setTimeout(() => {
-          if (typeof window !== 'undefined') {
-            window.location.reload();
-          }
-        }, 1000);
       } else {
-        Alert.alert('Fix Failed', result?.error || 'Unknown error occurred');
+        Alert.alert('Error', result?.error || 'Failed to join community. Please try again.');
       }
-      
+
     } catch (error: any) {
       console.error('Fix error:', error);
-      Alert.alert('Error', error.message || 'Failed to fix community membership');
+      Alert.alert('Error', error.message || 'Failed to join community');
     }
   };
 
