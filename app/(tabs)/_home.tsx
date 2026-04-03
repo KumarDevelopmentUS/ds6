@@ -591,14 +591,30 @@ export default function MainMenuScreen() {
         <ThemedText variant="body" style={styles.funFactText}>
           {randomFact}
         </ThemedText>
+      </ThemedView>
+
+      {/* Bottom utility row */}
+      <View style={styles.utilityRow}>
         <TouchableOpacity
-          style={[styles.schlevinsButton, { backgroundColor: theme.colors.primary }]}
+          style={[styles.utilityButton, { backgroundColor: theme.colors.primary }]}
           onPress={() => router.push('/schlevins')}
         >
           <Ionicons name="dice" size={16} color="#FFFFFF" />
-          <Text style={styles.schlevinsButtonText}>Play Schlevins</Text>
+          {session && (
+            <Text style={styles.utilityButtonText}>Play Schlevins</Text>
+          )}
         </TouchableOpacity>
-      </ThemedView>
+
+        <TouchableOpacity
+          style={[styles.utilityButton, { backgroundColor: theme.colors.card, borderWidth: 1, borderColor: theme.colors.border }]}
+          onPress={() => {/* Terms & Conditions - future use */}}
+        >
+          <Ionicons name="document-text-outline" size={16} color={theme.colors.textSecondary} />
+          {session && (
+            <Text style={[styles.utilityButtonText, { color: theme.colors.textSecondary }]}>Terms</Text>
+          )}
+        </TouchableOpacity>
+      </View>
 
       {/* Debug Section - Only show for authenticated users */}
       {false && session && (
@@ -1023,20 +1039,24 @@ const createStyles = (theme: any) => StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 16,
   },
-  schlevinsButton: {
+  utilityRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 4,
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  utilityButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
     gap: 6,
-    alignSelf: 'center',
-    marginTop: 12,
     paddingVertical: 7,
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     borderRadius: 8,
   },
-  schlevinsButtonText: {
+  utilityButtonText: {
     color: '#FFFFFF',
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
   },
 });
