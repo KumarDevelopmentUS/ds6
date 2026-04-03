@@ -706,17 +706,6 @@ export async function joinCommunityManually(communityName: string, communityType
     
     console.log('✅ Successfully joined community:', membership);
     
-    // Force refresh of community data by triggering a window reload
-    console.log('🔄 Refreshing community data...');
-    
-    // For web, we can trigger a page refresh to clear all caches
-    if (typeof window !== 'undefined') {
-      console.log('🔄 Triggering page refresh to update cache...');
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
-    }
-    
     return true;
     
   } catch (error) {

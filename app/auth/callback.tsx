@@ -3,7 +3,7 @@ import { ThemedText } from '@/components/themed/ThemedText';
 import { ThemedView } from '@/components/themed/ThemedView';
 import { useTheme } from '@/contexts/ThemeContext';
 import { supabase } from '@/supabase';
-import { ensureUserProfilesExist, joinDefaultCommunity } from '@/utils/profileSync';
+import { ensureUserProfilesExist, handleSchoolCommunityChange, joinDefaultCommunity } from '@/utils/profileSync';
 import { retrievePendingSignupData } from '@/utils/signupStorage';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -58,10 +58,13 @@ export default function AuthCallbackScreen() {
           try {
             await ensureUserProfilesExist(user.id, userData);
             await joinDefaultCommunity(user.id);
-            
+            if (userData.school) {
+              await handleSchoolCommunityChange(user.id, userData.school);
+            }
+
             setStatus('success');
             setMessage('Successfully authenticated! Redirecting...');
-            
+
             // Redirect to home after a short delay
             setTimeout(() => {
               router.replace('/(tabs)/' as any);
@@ -118,10 +121,13 @@ export default function AuthCallbackScreen() {
               try {
                 await ensureUserProfilesExist(user.id, userData);
                 await joinDefaultCommunity(user.id);
-                
+                if (userData.school) {
+                  await handleSchoolCommunityChange(user.id, userData.school);
+                }
+
                 setStatus('success');
                 setMessage('Successfully authenticated! Redirecting...');
-                
+
                 // Redirect to home after a short delay
                 setTimeout(() => {
                   router.replace('/(tabs)/' as any);

@@ -3,7 +3,7 @@ import { HapticBackButton } from '@/components/HapticBackButton';
 import { SCHOOLS, searchSchools } from '@/constants/schools';
 import { supabase } from '@/supabase';
 import { sendMagicLinkSignup } from '@/utils/magicLinkAuth';
-import { ensureUserProfilesExist, joinDefaultCommunity } from '@/utils/profileSync';
+import { ensureUserProfilesExist, handleSchoolCommunityChange, joinDefaultCommunity } from '@/utils/profileSync';
 import { storePendingSignupData } from '@/utils/signupStorage';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -387,8 +387,11 @@ export default function SignUpScreen() {
         school: school,
       });
 
-      // Step 3: Add user to default community
+      // Step 3: Add user to default community and school community
       await joinDefaultCommunity(authData.user.id);
+      if (school) {
+        await handleSchoolCommunityChange(authData.user.id, school);
+      }
 
       // Step 4: Success!
       if (authData.session) {

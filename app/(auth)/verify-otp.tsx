@@ -5,7 +5,7 @@ import { ThemedText } from '@/components/themed/ThemedText';
 import { ThemedView } from '@/components/themed/ThemedView';
 import { useTheme } from '@/contexts/ThemeContext';
 import { supabase } from '@/supabase';
-import { ensureUserProfilesExist, joinDefaultCommunity } from '@/utils/profileSync';
+import { ensureUserProfilesExist, handleSchoolCommunityChange, joinDefaultCommunity } from '@/utils/profileSync';
 import { retrievePendingSignupData } from '@/utils/signupStorage';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -102,6 +102,9 @@ export default function VerifyOTPScreen() {
         try {
           await ensureUserProfilesExist(user.id, userData);
           await joinDefaultCommunity(user.id);
+          if (userData.school) {
+            await handleSchoolCommunityChange(user.id, userData.school);
+          }
         } catch (e) {
           console.error('Profile setup error:', e);
         }
