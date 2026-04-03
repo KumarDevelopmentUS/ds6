@@ -591,6 +591,13 @@ export default function MainMenuScreen() {
         <ThemedText variant="body" style={styles.funFactText}>
           {randomFact}
         </ThemedText>
+        <TouchableOpacity
+          style={[styles.schlevinsButton, { backgroundColor: theme.colors.primary }]}
+          onPress={() => router.push('/schlevins')}
+        >
+          <Ionicons name="dice" size={16} color="#FFFFFF" />
+          <Text style={styles.schlevinsButtonText}>Play Schlevins</Text>
+        </TouchableOpacity>
       </ThemedView>
 
       {/* Debug Section - Only show for authenticated users */}
@@ -1015,5 +1022,21 @@ const createStyles = (theme: any) => StyleSheet.create({
     textAlign: 'center',
     fontWeight: 'bold',
     fontSize: 16,
+  },
+  schlevinsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    alignSelf: 'center',
+    marginTop: 12,
+    paddingVertical: 7,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+  },
+  schlevinsButtonText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '600',
   },
 });
