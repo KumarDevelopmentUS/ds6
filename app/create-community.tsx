@@ -211,7 +211,11 @@ export default function CreateCommunityScreen() {
           })
         );
 
-        await Promise.all(invitePromises);
+        const inviteResults = await Promise.all(invitePromises);
+        const failedCount = inviteResults.filter((r) => r.error).length;
+        if (failedCount > 0) {
+          console.warn(`${failedCount} invite(s) failed to send`);
+        }
       }
 
       // Refresh communities

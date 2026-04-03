@@ -156,12 +156,12 @@ const PostCardComponent: React.FC<PostCardProps> = ({
             iconColor={post.author_avatar_icon_color}
             backgroundColor={post.author_avatar_background_color}
             size={Platform.OS === 'web' ? 48 : 36}
-            onPress={() => router.push(`/user-profile/${post.user_id}`)}
+            onPress={() => post.user_id && router.push(`/user-profile/${post.user_id}`)}
           />
           <View style={styles.headerText}>
             <View style={styles.topRow}>
               <View>
-                <TouchableOpacity onPress={() => router.push(`/user-profile/${post.user_id}`)}>
+                <TouchableOpacity onPress={() => post.user_id && router.push(`/user-profile/${post.user_id}`)}>
                   <Text style={[styles.authorName, { color: theme.colors.text }]}>{post.author_name}</Text>
                   {/* Display @username below the author name, as requested */}
                   {post.author_username ? (

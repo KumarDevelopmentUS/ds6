@@ -9,7 +9,7 @@ export interface Post {
   image_url?: string;
   like_count: number;
   comment_count: number;
-  user_id: string;
+  user_id: string | null;
   community_id: number;
   author_name: string;
   author_avatar_icon: string;
@@ -27,7 +27,7 @@ export interface Comment {
   content: string;
   created_at: string;
   post_uid: string; // UUID reference to posts.uid
-  user_id: string;
+  user_id: string | null;
   parent_comment_id?: number;
   author_name: string;
   author_avatar_icon: string;

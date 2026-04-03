@@ -446,16 +446,16 @@ export const usePost = (postId: string) => {
         .eq('post_uid', postId);
 
       // Get author profile from unified user_profiles table
-      const { data: authorProfile } = await supabase
+      const { data: authorProfile } = data.user_id ? await supabase
         .from('user_profiles')
         .select('avatar_url, username, nickname, display_name, avatar_icon, avatar_icon_color, avatar_background_color')
         .eq('id', data.user_id)
-        .single();
+        .maybeSingle() : { data: null };
 
       // Fetch linked match data if present (same logic as usePosts)
       let linkedMatchData = null;
       if (data.linked_match_id) {
-        const { data: matchData } = await supabase
+        const { data: matchData, error: matchError } = await supabase
           .from('saved_matches')
           .select(`
             id,
@@ -468,8 +468,8 @@ export const usePost = (postId: string) => {
             "matchStartTime"
           `)
           .eq('id', data.linked_match_id)
-          .single();
-        
+          .maybeSingle();
+        if (matchError) console.error('Error fetching linked match:', matchError);
         if (matchData) {
           linkedMatchData = matchData;
         }
@@ -521,7 +521,8 @@ export const usePost = (postId: string) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      const { data: existingVote } = await supabase.from('votes').select('*').eq('post_uid', postId).eq('user_id', user.id).single();
+      const { data: existingVote, error: voteError } = await supabase.from('votes').select('*').eq('post_uid', postId).eq('user_id', user.id).maybeSingle();
+      if (voteError) throw voteError;
 
       if (existingVote) {
         if (existingVote.vote_type === voteType) {

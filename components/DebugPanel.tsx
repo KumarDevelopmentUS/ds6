@@ -1,6 +1,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/supabase';
 import { testStorageSecurity } from '@/utils/storageSecurityTest';
+import { useQueryClient } from '@tanstack/react-query';
 import React, { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
@@ -8,6 +9,7 @@ export const DebugPanel = () => {
   const [debugInfo, setDebugInfo] = useState<any>({});
   const [isLoading, setIsLoading] = useState(false);
   const { session } = useAuth();
+  const queryClient = useQueryClient();
 
   const runDebug = async () => {
     setIsLoading(true);
@@ -145,17 +147,8 @@ User has ${info.step5?.count || 0} memberships
   const refreshCache = async () => {
     try {
       setIsLoading(true);
-      
-      // Force refresh the page to clear all React Query cache
-      if (typeof window !== 'undefined') {
-        Alert.alert('Refreshing', 'Refreshing the app to clear cache...');
-        setTimeout(() => {
-          window.location.reload();
-        }, 1000);
-      } else {
-        Alert.alert('Refresh', 'Please manually refresh the app to clear cache');
-      }
-      
+      await queryClient.invalidateQueries();
+      Alert.alert('Cache Cleared', 'React Query cache has been invalidated.');
     } catch (error) {
       Alert.alert('Error', error instanceof Error ? error.message : 'Unknown error');
     } finally {

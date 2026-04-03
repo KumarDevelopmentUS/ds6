@@ -559,23 +559,9 @@ async function runStorageSecurityTests() {
 
 // Force refresh FeedProvider cache
 export async function refreshFeedCache() {
-  console.log('🔄 CACHE REFRESH: Forcing FeedProvider cache refresh...');
-  
-  try {
-    // For web, trigger a page refresh to clear all React Query cache
-    if (typeof window !== 'undefined') {
-      console.log('🔄 Triggering page refresh to clear React Query cache...');
-      window.location.reload();
-      return true;
-    }
-    
-    // For mobile, we could try to access the queryClient directly, but page refresh is simpler
-    console.log('✅ Cache refresh initiated');
-    return true;
-  } catch (error) {
-    console.error('❌ Cache refresh failed:', error instanceof Error ? error.message : error);
-    return false;
-  }
+  // Cache refresh is handled by React Query invalidation in components.
+  // Call queryClient.invalidateQueries({ queryKey: ['userCommunities'] }) at the call site.
+  return true;
 }
 
 // Force refetch FeedProvider data specifically
