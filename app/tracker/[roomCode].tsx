@@ -79,6 +79,7 @@ interface MatchSetup {
   gameScoreLimit: number;
   sinkPoints: number;
   winByTwo: boolean;
+  sinkWins: boolean;
 }
 
 // Type for live match data, directly mapping to the live_matches table
@@ -113,6 +114,7 @@ const DieStatsTracker: React.FC = () => {
     gameScoreLimit: 11,
     sinkPoints: 3,
     winByTwo: true,
+    sinkWins: false,
   });
 
   const [playerStats, setPlayerStats] = useState<{ [key: number]: PlayerStats }>({});
@@ -654,12 +656,6 @@ const DieStatsTracker: React.FC = () => {
       return;
     }
 
-    // Additional Beer Die validation
-    if (throwResult === 'lineTable' && (!defendingPlayer || defendingPlayer === 0)) {
-      setErrorMessage('Line/Table throws require a defending player');
-      return;
-    }
-
     if (fifaKicker !== null || fifaAction) {
       if (throwResult !== 'invalid') {
         setErrorMessage('FIFA can only be activated on invalid throws');
@@ -752,8 +748,42 @@ const DieStatsTracker: React.FC = () => {
 
     // NEW: Apply points with catch nullification
     if (isCaught) {
-      // Caught throws score 0 points
       pointsToAdd = 0;
+    }
+
+    // Sink instant-win: override player award and compute display adjustment
+    let sinkWinAdjustments: typeof manualAdjustments | null = null;
+    if (throwResult === 'sink' && !isCaught && matchSetup.sinkWins) {
+      const sinkingTeam = getPlayerTeam(throwingPlayer);
+      const opposingTeam = sinkingTeam === 1 ? 2 : 1;
+      const sinkingPlayers = sinkingTeam === 1 ? [1, 2] : [3, 4];
+      const opposingPlayers = sinkingTeam === 1 ? [3, 4] : [1, 2];
+
+      // Pre-sink displayed scores (updatedStats has no points applied yet for this throw)
+      const preSinkScore = sinkingPlayers.reduce((s, p) => s + (updatedStats[p]?.score || 0), 0)
+        - (updatedPenalties[sinkingTeam as 1 | 2] || 0)
+        + (manualAdjustments[sinkingTeam as 1 | 2] || 0);
+      const opposingScore = opposingPlayers.reduce((s, p) => s + (updatedStats[p]?.score || 0), 0)
+        - (updatedPenalties[opposingTeam as 1 | 2] || 0)
+        + (manualAdjustments[opposingTeam as 1 | 2] || 0);
+
+      const isOvertime = preSinkScore >= matchSetup.gameScoreLimit && opposingScore >= matchSetup.gameScoreLimit;
+      const targetScore = isOvertime ? opposingScore + 3 : matchSetup.gameScoreLimit;
+
+      // Player earns gameScoreLimit points (instead of sinkPoints)
+      pointsToAdd = matchSetup.gameScoreLimit;
+
+      // Adjustment so the team's displayed score = targetScore
+      // After award: displayed = preSinkScore + gameScoreLimit + delta  =>  delta = targetScore - preSinkScore - gameScoreLimit
+      const delta = targetScore - preSinkScore - matchSetup.gameScoreLimit;
+      sinkWinAdjustments = {
+        1: sinkingTeam === 1
+          ? (manualAdjustments[1] || 0) + delta
+          : (manualAdjustments[1] || 0),
+        2: sinkingTeam === 2
+          ? (manualAdjustments[2] || 0) + delta
+          : (manualAdjustments[2] || 0),
+      };
     }
 
     // Apply points to thrower
@@ -766,23 +796,28 @@ const DieStatsTracker: React.FC = () => {
       if (fifaAction === 'goodKick') {
         updatedStats[fifaKicker].fifaSuccess++;
         updatedStats[fifaKicker].goodKick++;
-        
-        // FIFA Good Kick: Kicker gets stat credit, catching player gets 1 point (always)
+
         if (defendingPlayer && defendingPlayer > 0) {
           const catchingPlayerId = defendingPlayer as keyof typeof updatedStats;
-          updatedStats[catchingPlayerId].score += 1; // Always award 1 point for successful FIFA
-          console.log(`Rule Applied: FIFA Good Kick - 1 point to catching player ${catchingPlayerId}`);
+          updatedStats[catchingPlayerId].score += 1;
         }
       } else {
         updatedStats[fifaKicker].badKick++;
-        console.log('Rule Applied: FIFA Bad Kick - 0 points');
       }
     }
 
     // Save updated data
     setPlayerStats(updatedStats);
     setTeamPenalties(updatedPenalties);
-    await updateLiveMatchData(updatedStats, updatedPenalties);
+    if (sinkWinAdjustments) setManualAdjustments(sinkWinAdjustments);
+    await updateLiveMatchData(updatedStats, updatedPenalties, sinkWinAdjustments ?? undefined);
+
+    // Sink instant-win check
+    if (throwResult === 'sink' && !isCaught && matchSetup.sinkWins && sinkWinAdjustments) {
+      const sinkingTeam = getPlayerTeam(throwingPlayer);
+      await finishMatchFromSink(sinkingTeam, updatedStats, sinkWinAdjustments);
+      return;
+    }
 
     // NEW: Beer Die form reset logic
     const allowRetoss = throwResult === 'lineTable';
@@ -945,9 +980,30 @@ const DieStatsTracker: React.FC = () => {
   const validateMatchSetup = (setup: MatchSetup): MatchSetup => {
     return {
       ...setup,
-      gameScoreLimit: Math.max(1, Math.min(99, setup.gameScoreLimit || 11)), // Min 1, Max 99
-      sinkPoints: Math.max(1, Math.min(10, setup.sinkPoints || 3)), // Min 1, Max 10
+      gameScoreLimit: Math.max(1, Math.min(99, setup.gameScoreLimit || 11)),
+      sinkPoints: Math.max(1, Math.min(10, setup.sinkPoints || 3)),
+      sinkWins: setup.sinkWins ?? false,
     };
+  };
+
+  const finishMatchFromSink = async (
+    winnerTeam: number,
+    finalStats: typeof playerStats,
+    finalAdjustments: typeof manualAdjustments,
+  ) => {
+    setWinnerTeam(winnerTeam);
+    setMatchFinished(true);
+    if (liveSessionId) {
+      try {
+        await supabase
+          .from('live_matches')
+          .update({ status: 'finished', winnerTeam })
+          .eq('id', liveSessionId);
+      } catch (error) {
+        console.error('Error finishing match on sink win:', error);
+      }
+    }
+    await handleSaveStats(winnerTeam, finalStats, finalAdjustments);
   };
 
   // Handles finishing the match, determining the winner and updating live session status
@@ -999,7 +1055,7 @@ const DieStatsTracker: React.FC = () => {
   };
 
   // Handles saving match statistics to the 'saved_matches' table
-  const handleSaveStats = async (explicitWinner?: number) => {
+  const handleSaveStats = async (explicitWinner?: number, statsOverride?: typeof playerStats, adjustmentsOverride?: typeof manualAdjustments) => {
     console.log('Attempting to save match stats...');
     let savingUserId: string | null | undefined = currentUser?.id;
   
@@ -1032,7 +1088,7 @@ const DieStatsTracker: React.FC = () => {
     setIsLoading(true);
     try {
       // Validate and sanitize all match data
-      const validatedStats = validatePlayerStats(playerStats);
+      const validatedStats = validatePlayerStats(statsOverride ?? playerStats);
       const validatedSetup = validateMatchSetup(matchSetup);
       
       // Validate team penalties (no negative values)
@@ -1056,7 +1112,7 @@ const DieStatsTracker: React.FC = () => {
         matchSetup: validatedSetup,
         playerStats: validatedStats,
         teamPenalties: validatedPenalties,
-        manual_adjustments: manualAdjustments,
+        manual_adjustments: adjustmentsOverride ?? manualAdjustments,
         adjustment_history: adjustmentHistory,
         matchStartTime: matchStartTime?.toISOString(),
         winnerTeam: validatedWinner,
@@ -1350,25 +1406,39 @@ const DieStatsTracker: React.FC = () => {
 
             {/* Sink Points Selection */}
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Sink Points:</Text>
+              <Text style={styles.label}>Sink:</Text>
               <View style={styles.buttonRow}>
                 {[3, 5].map((points) => (
                   <TouchableOpacity
                     key={points}
                     style={[
                       styles.dropdownButton,
-                      matchSetup.sinkPoints === points && styles.dropdownButtonSelected,
+                      !matchSetup.sinkWins && matchSetup.sinkPoints === points && styles.dropdownButtonSelected,
                     ]}
-                    onPress={() => setMatchSetup(prev => ({ ...prev, sinkPoints: points }))}
+                    onPress={() => setMatchSetup(prev => ({ ...prev, sinkPoints: points, sinkWins: false }))}
                   >
                     <Text style={[
                       styles.dropdownButtonText,
-                      matchSetup.sinkPoints === points && styles.dropdownButtonTextSelected,
+                      !matchSetup.sinkWins && matchSetup.sinkPoints === points && styles.dropdownButtonTextSelected,
                     ]}>
-                      {points}
+                      {points} pts
                     </Text>
                   </TouchableOpacity>
                 ))}
+                <TouchableOpacity
+                  style={[
+                    styles.dropdownButton,
+                    matchSetup.sinkWins && styles.dropdownButtonSelected,
+                  ]}
+                  onPress={() => setMatchSetup(prev => ({ ...prev, sinkWins: true }))}
+                >
+                  <Text style={[
+                    styles.dropdownButtonText,
+                    matchSetup.sinkWins && styles.dropdownButtonTextSelected,
+                  ]}>
+                    Instant Win
+                  </Text>
+                </TouchableOpacity>
               </View>
             </View>
 
@@ -1566,7 +1636,7 @@ const DieStatsTracker: React.FC = () => {
                     styles.goodResultOutline,
                     throwResult === 'lineTable' && styles.goodResultSelected,
                   ]}
-                  onPress={() => setThrowResult('lineTable')}
+                  onPress={() => { setThrowResult('lineTable'); setDefendingPlayer(0); setDefendingResult('none'); }}
                 >
                   <Text style={[
                     styles.throwResultButtonText,
@@ -1615,121 +1685,122 @@ const DieStatsTracker: React.FC = () => {
               </View>
 
               {/* Defending Player Selection */}
-              <Text style={styles.sectionHeader}>Defending Player:</Text>
-              
-              {/* Player Row */}
-              <View style={styles.playerRow}>
-                {[1, 2, 3, 4].map((playerId) => (
-                  <TouchableOpacity
-                    key={playerId}
-                    style={[
-                      styles.playerButton,
-                      defendingPlayer === playerId && styles.playerButtonSelected,
-                    ]}
-                    onPress={() => setDefendingPlayer(playerId)}
-                  >
-                    <Text
+              {throwResult !== 'lineTable' && (
+                <>
+                  <Text style={styles.sectionHeader}>Defending Player:</Text>
+
+                  {/* Player Row */}
+                  <View style={styles.playerRow}>
+                    {[1, 2, 3, 4].map((playerId) => (
+                      <TouchableOpacity
+                        key={playerId}
+                        style={[
+                          styles.playerButton,
+                          defendingPlayer === playerId && styles.playerButtonSelected,
+                        ]}
+                        onPress={() => setDefendingPlayer(playerId)}
+                      >
+                        <Text
+                          style={[
+                            styles.playerButtonText,
+                            defendingPlayer === playerId && styles.selectedButtonText,
+                          ]}
+                          numberOfLines={1}
+                          ellipsizeMode="tail"
+                        >
+                          {matchSetup.playerNames[playerId - 1]}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+
+                  {/* Team/N/A Row */}
+                  <View style={styles.teamNARow}>
+                    <TouchableOpacity
                       style={[
-                        styles.playerButtonText,
-                        defendingPlayer === playerId && styles.selectedButtonText,
+                        styles.playerButton,
+                        defendingPlayer === -1 && styles.playerButtonSelected,
                       ]}
-                      numberOfLines={1}
-                      ellipsizeMode="tail"
+                      onPress={() => setDefendingPlayer(-1)}
                     >
-                      {matchSetup.playerNames[playerId - 1]}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
+                      <Text
+                        style={[
+                          styles.playerButtonText,
+                          defendingPlayer === -1 && styles.selectedButtonText,
+                        ]}
+                      >
+                        TEAM
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        styles.playerButton,
+                        defendingPlayer === 0 && styles.playerButtonSelected,
+                      ]}
+                      onPress={() => setDefendingPlayer(0)}
+                    >
+                      <Text
+                        style={[
+                          styles.playerButtonText,
+                          defendingPlayer === 0 && styles.selectedButtonText,
+                        ]}
+                      >
+                        N/A
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
 
-              {/* Team/N/A Row */}
-              <View style={styles.teamNARow}>
-                <TouchableOpacity
-                  style={[
-                    styles.playerButton,
-                    defendingPlayer === -1 && styles.playerButtonSelected,
-                  ]}
-                  onPress={() => setDefendingPlayer(-1)}
-                >
-                  <Text
-                    style={[
-                      styles.playerButtonText,
-                      defendingPlayer === -1 && styles.selectedButtonText,
-                    ]}
-                  >
-                    TEAM
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.playerButton,
-                    defendingPlayer === 0 && styles.playerButtonSelected,
-                  ]}
-                  onPress={() => setDefendingPlayer(0)}
-                >
-                  <Text
-                    style={[
-                      styles.playerButtonText,
-                      defendingPlayer === 0 && styles.selectedButtonText,
-                    ]}
-                  >
-                    N/A
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              {/* Defense Result Selection (Combined) */}
-              <Text style={styles.sectionHeader}>Defense Result:</Text>
-              <View style={styles.buttonRow}>
-                {/* NEW: Beer Die Defense Results - Catch (good) */}
-                <TouchableOpacity
-                  style={[
-                    styles.throwResultButton,
-                    styles.goodResultOutline,
-                    defendingResult === 'catch' && styles.goodResultSelected,
-                  ]}
-                  onPress={() => setDefendingResult('catch')}
-                >
-                  <Text style={[
-                    styles.throwResultButtonText,
-                    defendingResult === 'catch' && styles.selectedThrowText
-                  ]}>
-                    Catch
-                  </Text>
-                </TouchableOpacity>
-                {/* NEW: Beer Die Defense Results - Miss (bad) */}
-                <TouchableOpacity
-                  style={[
-                    styles.throwResultButton,
-                    styles.badResultOutline,
-                    defendingResult === 'miss' && styles.badResultSelected,
-                  ]}
-                  onPress={() => setDefendingResult('miss')}
-                >
-                  <Text style={[
-                    styles.throwResultButtonText,
-                    defendingResult === 'miss' && styles.selectedThrowText
-                  ]}>
-                    Miss
-                  </Text>
-                </TouchableOpacity>
-                {/* NEW: Beer Die Defense Results - N/A (neutral) */}
-                <TouchableOpacity
-                  style={[
-                    styles.throwResultButton,
-                    styles.neutralResultOutline,
-                    defendingResult === 'none' && styles.neutralResultSelected,
-                  ]}
-                  onPress={() => setDefendingResult('none')}
-                >
-                  <Text style={[
-                    styles.throwResultButtonText,
-                    defendingResult === 'none' && styles.selectedThrowText
-                  ]}>
-                    N/A
-                  </Text>
-                </TouchableOpacity>
-              </View>
+                  {/* Defense Result Selection (Combined) */}
+                  <Text style={styles.sectionHeader}>Defense Result:</Text>
+                  <View style={styles.buttonRow}>
+                    <TouchableOpacity
+                      style={[
+                        styles.throwResultButton,
+                        styles.goodResultOutline,
+                        defendingResult === 'catch' && styles.goodResultSelected,
+                      ]}
+                      onPress={() => setDefendingResult('catch')}
+                    >
+                      <Text style={[
+                        styles.throwResultButtonText,
+                        defendingResult === 'catch' && styles.selectedThrowText
+                      ]}>
+                        Catch
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        styles.throwResultButton,
+                        styles.badResultOutline,
+                        defendingResult === 'miss' && styles.badResultSelected,
+                      ]}
+                      onPress={() => setDefendingResult('miss')}
+                    >
+                      <Text style={[
+                        styles.throwResultButtonText,
+                        defendingResult === 'miss' && styles.selectedThrowText
+                      ]}>
+                        Miss
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        styles.throwResultButton,
+                        styles.neutralResultOutline,
+                        defendingResult === 'none' && styles.neutralResultSelected,
+                      ]}
+                      onPress={() => setDefendingResult('none')}
+                    >
+                      <Text style={[
+                        styles.throwResultButtonText,
+                        defendingResult === 'none' && styles.selectedThrowText
+                      ]}>
+                        N/A
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </>
+              )}
 
               {/* Special Actions Buttons */}
               <View style={styles.actionButtonRow}>
@@ -2099,25 +2170,50 @@ const DieStatsTracker: React.FC = () => {
       {showJoinDialog && (
         <View style={styles.overlay}>
           <View style={styles.dialogCard}>
-            <Text style={styles.cardTitle}>Select Player Slot</Text>
-            <Text style={styles.dialogMessage}>Choose which player slot you want to control:</Text>
+            <Text style={styles.cardTitle}>Join as Player</Text>
+            <Text style={styles.dialogMessage}>Select your team and player slot:</Text>
 
-            {[1, 2, 3, 4].map((playerId) => (
-              <TouchableOpacity
-                key={playerId}
-                style={[
-                  styles.dialogButton,
-                  // Disable button if slot is already taken by another user and not by current user
-                  (userSlotMap[playerId.toString()] !== null && userSlotMap[playerId.toString()] !== currentUser?.id) && styles.disabledButton,
-                ]}
-                onPress={() => handleJoinMatch(playerId)}
-                disabled={isLoading || (userSlotMap[playerId.toString()] !== null && userSlotMap[playerId.toString()] !== currentUser?.id)}
-              >
-                <Text style={styles.buttonText}>
-                  {matchSetup.playerNames[playerId - 1]} (Player {playerId})
-                  {userSlotMap[playerId.toString()] && ` - Taken`}
+            {[
+              { teamIndex: 0, slots: [1, 2], color: theme.colors.primary },
+              { teamIndex: 1, slots: [3, 4], color: theme.colors.error },
+            ].map(({ teamIndex, slots, color }) => (
+              <View key={teamIndex} style={styles.joinTeamSection}>
+                <Text style={[styles.joinTeamHeader, { color }]}>
+                  {matchSetup.teamNames[teamIndex]}
                 </Text>
-              </TouchableOpacity>
+                <View style={styles.joinSlotRow}>
+                  {slots.map((playerId) => {
+                    const isTaken = userSlotMap[playerId.toString()] != null &&
+                                    userSlotMap[playerId.toString()] !== currentUser?.id;
+                    const isMySlot = userSlotMap[playerId.toString()] === currentUser?.id;
+                    return (
+                      <TouchableOpacity
+                        key={playerId}
+                        style={[
+                          styles.joinSlotButton,
+                          { borderColor: color },
+                          isTaken && styles.joinSlotTaken,
+                          isMySlot && styles.joinSlotMine,
+                        ]}
+                        onPress={() => handleJoinMatch(playerId)}
+                        disabled={isLoading || isTaken}
+                      >
+                        <Text style={[styles.joinSlotName, isTaken && styles.joinSlotNameTaken]}>
+                          {matchSetup.playerNames[playerId - 1]}
+                        </Text>
+                        <Text style={styles.joinSlotNumber}>Player {playerId}</Text>
+                        <Text style={[
+                          styles.joinSlotStatus,
+                          isMySlot && { color: 'white', fontWeight: '600' },
+                          !isTaken && !isMySlot && { color },
+                        ]}>
+                          {isTaken ? 'Taken' : isMySlot ? 'You' : 'Available'}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
             ))}
 
             <TouchableOpacity
@@ -3196,6 +3292,54 @@ const createStyles = (theme: any) => StyleSheet.create({
     borderRadius: 4,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  joinTeamSection: {
+    marginBottom: 16,
+  },
+  joinTeamHeader: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  joinSlotRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  joinSlotButton: {
+    flex: 1,
+    borderWidth: 2,
+    borderRadius: 8,
+    padding: 12,
+    alignItems: 'center',
+  },
+  joinSlotTaken: {
+    backgroundColor: theme.colors.buttonDisabled,
+    borderColor: theme.colors.border,
+    opacity: 0.5,
+  },
+  joinSlotMine: {
+    backgroundColor: theme.colors.success,
+    borderColor: theme.colors.success,
+  },
+  joinSlotName: {
+    fontWeight: '600',
+    fontSize: 14,
+    color: theme.colors.textPrimary,
+    textAlign: 'center',
+  },
+  joinSlotNameTaken: {
+    color: theme.colors.textSecondary,
+  },
+  joinSlotNumber: {
+    fontSize: 12,
+    color: theme.colors.textSecondary,
+    marginTop: 2,
+  },
+  joinSlotStatus: {
+    fontSize: 11,
+    marginTop: 4,
+    fontStyle: 'italic',
   },
   warningMessage: {
     color: theme.colors.warning,

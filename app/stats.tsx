@@ -1243,7 +1243,7 @@ export default function StatisticsScreen() {
                   <View style={styles.recordItem}>
                     <Ionicons name="water" size={20} color={theme.colors.info} />
                     <ThemedText variant="caption">Most Sinks</ThemedText>
-                    <ThemedText variant="body" color="info">{personalRecords.mostSinksInMatch.value}</ThemedText>
+                    <ThemedText variant="body" color="primary">{personalRecords.mostSinksInMatch.value}</ThemedText>
                   </View>
                 )}
                 {personalRecords.mostGoalsInMatch && personalRecords.mostGoalsInMatch.value > 0 && (
@@ -1311,7 +1311,7 @@ export default function StatisticsScreen() {
                   />
                 </View>
                 <View style={styles.playerInfo}>
-                  <ThemedText variant="body" style={styles.playerName}>
+                  <ThemedText variant="body" style={styles.matchPlayerName}>
                     {h2h.opponent.name}
                     {!h2h.opponent.isRegisteredUser && <ThemedText variant="caption"> (Guest)</ThemedText>}
                   </ThemedText>
@@ -1387,7 +1387,7 @@ export default function StatisticsScreen() {
                   />
                 </View>
                 <View style={styles.playerInfo}>
-                  <ThemedText variant="body" style={styles.playerName}>
+                  <ThemedText variant="body" style={styles.matchPlayerName}>
                     {tm.teammate.name}
                     {!tm.teammate.isRegisteredUser && <ThemedText variant="caption"> (Guest)</ThemedText>}
                   </ThemedText>
@@ -1812,7 +1812,7 @@ const createStyles = (theme: any) => StyleSheet.create({
   playerInfo: {
     flex: 1,
   },
-  playerName: {
+  matchPlayerName: {
     fontWeight: '600',
     marginBottom: 2,
   },

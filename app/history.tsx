@@ -35,6 +35,7 @@ interface SavedMatch {
   };
   playerStats: { [key: number]: PlayerStats };
   teamPenalties: { 1: number; 2: number };
+  manualAdjustments: { 1: number; 2: number };
   matchStartTime: string;
   winnerTeam: number | null;
   matchDuration: number;
@@ -170,7 +171,10 @@ export default function GameHistoryScreen() {
         return userSlot !== undefined;
       });
 
-      setMatches(playerMatches);
+      setMatches(playerMatches.map(m => ({
+        ...m,
+        manualAdjustments: m.manual_adjustments || { 1: 0, 2: 0 },
+      })));
     } catch (error: any) {
       console.error('Error loading matches:', error);
       Alert.alert('Error', 'Failed to load match history');
@@ -190,7 +194,9 @@ export default function GameHistoryScreen() {
     const teamScore = playerIndices.reduce((sum, playerId) => {
       return sum + (match.playerStats[playerId]?.score || 0);
     }, 0);
-    return teamScore - (match.teamPenalties[teamNumber as 1 | 2] || 0);
+    return teamScore
+      - (match.teamPenalties[teamNumber as 1 | 2] || 0)
+      + (match.manualAdjustments?.[teamNumber as 1 | 2] || 0);
   };
 
   const getUserTeam = (match: SavedMatch): number | null => {
@@ -376,8 +382,8 @@ export default function GameHistoryScreen() {
                 : "Try a different filter to see more matches"}
             icon={matches.length === 0 ? "game-controller-outline" : "filter-outline"}
             actionLabel={matches.length === 0 ? "Start a Match" : "Clear Filter"}
-            onAction={() => matches.length === 0 
-              ? router.push('/tracker/join') 
+            onAction={() => matches.length === 0
+              ? router.push('/')
               : setFilter('all')
             }
           />
@@ -385,6 +391,9 @@ export default function GameHistoryScreen() {
           filteredMatches.map((match) => {
             const team1Score = calculateTeamScore(match, 1);
             const team2Score = calculateTeamScore(match, 2);
+            const adj1 = match.manualAdjustments?.[1] || 0;
+            const adj2 = match.manualAdjustments?.[2] || 0;
+            const hasAdjustments = adj1 !== 0 || adj2 !== 0;
             const userTeam = getUserTeam(match);
             const isDraw = !match.winnerTeam;
             const isWin = !isDraw && userTeam && match.winnerTeam === userTeam;
@@ -439,6 +448,13 @@ export default function GameHistoryScreen() {
                       >
                         {team1Score}
                       </ThemedText>
+                      {adj1 !== 0 && (
+                        <View style={styles.adjBadge}>
+                          <ThemedText variant="caption" style={[styles.adjBadgeText, { color: adj1 > 0 ? theme.colors.success : theme.colors.error }]}>
+                            {adj1 > 0 ? '+' : ''}{adj1} adj
+                          </ThemedText>
+                        </View>
+                      )}
                     </View>
                     <ThemedText variant="caption" style={styles.vs}>vs</ThemedText>
                     <View style={styles.teamScore}>
@@ -454,6 +470,13 @@ export default function GameHistoryScreen() {
                       >
                         {team2Score}
                       </ThemedText>
+                      {adj2 !== 0 && (
+                        <View style={styles.adjBadge}>
+                          <ThemedText variant="caption" style={[styles.adjBadgeText, { color: adj2 > 0 ? theme.colors.success : theme.colors.error }]}>
+                            {adj2 > 0 ? '+' : ''}{adj2} adj
+                          </ThemedText>
+                        </View>
+                      )}
                     </View>
                   </View>
                 </TouchableOpacity>
@@ -472,6 +495,23 @@ export default function GameHistoryScreen() {
                       <ThemedText variant="caption">Room Code:</ThemedText>
                       <ThemedText variant="body">{match.roomCode}</ThemedText>
                     </View>
+                    {hasAdjustments && (
+                      <View style={[styles.detailsRow, styles.adjRow]}>
+                        <ThemedText variant="caption" style={styles.adjRowLabel}>Score Adjusted</ThemedText>
+                        <View style={styles.adjRowValues}>
+                          {adj1 !== 0 && (
+                            <ThemedText variant="caption" style={{ color: adj1 > 0 ? theme.colors.success : theme.colors.error }}>
+                              {match.matchSetup.teamNames[0]}: {adj1 > 0 ? '+' : ''}{adj1}
+                            </ThemedText>
+                          )}
+                          {adj2 !== 0 && (
+                            <ThemedText variant="caption" style={{ color: adj2 > 0 ? theme.colors.success : theme.colors.error }}>
+                              {match.matchSetup.teamNames[1]}: {adj2 > 0 ? '+' : ''}{adj2}
+                            </ThemedText>
+                          )}
+                        </View>
+                      </View>
+                    )}
 
                     {/* Player Stats */}
                     <ThemedText variant="subtitle" style={styles.sectionTitle}>
@@ -759,6 +799,29 @@ const createStyles = (theme: any) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+  },
+  adjBadge: {
+    marginTop: 2,
+  },
+  adjBadgeText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  adjRow: {
+    alignItems: 'flex-start',
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+    backgroundColor: theme.colors.backgroundTertiary,
+    marginBottom: 4,
+  },
+  adjRowLabel: {
+    fontWeight: '600',
+    color: theme.colors.warning,
+  },
+  adjRowValues: {
+    alignItems: 'flex-end',
+    gap: 2,
   },
   emptyState: {
     flex: 1,
