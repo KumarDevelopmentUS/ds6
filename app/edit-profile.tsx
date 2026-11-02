@@ -31,15 +31,14 @@ import { AVATAR_COLORS, FUN_AVATAR_ICONS } from '../constants/avatarIcons';
 import { getSchoolByValue, SCHOOLS, searchSchools } from '../constants/schools';
 import { useTheme } from '../contexts/ThemeContext';
 import { deleteProfilePicture, pickImage, takePhoto, updateUserProfilePicture, uploadProfilePicture } from '../utils/imageUpload';
-import { isPasswordVerified, markPasswordVerified, verifyProfilePicturePassword } from '../utils/profilePicturePassword';
 import { handleSchoolCommunityChange } from '../utils/profileSync';
 
 const { width } = Dimensions.get('window');
 const ICON_SIZE = 60;
 const COLOR_SWATCH_SIZE = 40;
 
-// Feature flag for profile picture upload - set to true to enable the feature
-const ENABLE_PROFILE_PICTURE_UPLOAD = false;
+// Feature flag for profile picture upload
+const ENABLE_PROFILE_PICTURE_UPLOAD = true;
 
 export default function EditProfileScreen() {
   const router = useRouter();
@@ -65,10 +64,6 @@ export default function EditProfileScreen() {
   const [showIconColorPicker, setShowIconColorPicker] = useState(false);
   const [showBgColorPicker, setShowBgColorPicker] = useState(false);
   const [showSchoolPicker, setShowSchoolPicker] = useState(false);
-  const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [passwordInput, setPasswordInput] = useState('');
-  const [passwordError, setPasswordError] = useState('');
-  const [pendingAction, setPendingAction] = useState<'upload' | null>(null);
   const [nicknameError, setNicknameError] = useState('');
   const [nicknameTouched, setNicknameTouched] = useState(false);
   const [schoolSearch, setSchoolSearch] = useState('');
@@ -128,17 +123,7 @@ export default function EditProfileScreen() {
       return;
     }
 
-    // Check if password is already verified in this session
-    const isVerified = await isPasswordVerified();
-    
-    if (isVerified) {
-      // Password already verified, show photo options
-      showPhotoOptions();
-    } else {
-      // Show password modal for upload action
-      setPendingAction('upload');
-      setShowPasswordModal(true);
-    }
+    showPhotoOptions();
   };
 
   const showPhotoOptions = () => {
@@ -153,52 +138,26 @@ export default function EditProfileScreen() {
     );
   };
 
-  const handlePasswordSubmit = async () => {
-    if (!passwordInput.trim()) {
-      setPasswordError('Please enter a password');
-      return;
-    }
-
-    const isValid = await verifyProfilePicturePassword(passwordInput.trim());
-    
-    if (isValid) {
-      // Password correct - mark as verified and perform pending action
-      await markPasswordVerified();
-      setShowPasswordModal(false);
-      setPasswordInput('');
-      setPasswordError('');
-      
-      if (pendingAction === 'upload') {
-        showPhotoOptions();
-      }
-      
-      setPendingAction(null);
-    } else {
-      // Password incorrect
-      setPasswordError('Incorrect password');
-      setPasswordInput('');
-    }
-  };
-
-  const handlePasswordCancel = () => {
-    setShowPasswordModal(false);
-    setPasswordInput('');
-    setPasswordError('');
-    setPendingAction(null);
-  };
-
-  const handleTakePhoto = async () => {
+  const uploadNewProfilePicture = async (
+    getImage: typeof takePhoto,
+    failureMessage: string
+  ) => {
     if (!profile) return;
     setLoading(true);
 
     try {
-      const result = await takePhoto();
+      const result = await getImage();
       if (result && !result.canceled && result.assets?.[0]) {
+        const previousUrl = profile.avatar_url;
         const uploadResult = await uploadProfilePicture(result.assets[0].uri, profile.id);
         if (uploadResult.success && uploadResult.url) {
           const updateSuccess = await updateUserProfilePicture(profile.id, uploadResult.url);
           if (updateSuccess) {
             setProfile(prev => prev ? { ...prev, avatar_url: uploadResult.url! } : null);
+            // Remove the replaced file so old pictures don't pile up in storage
+            if (previousUrl) {
+              deleteProfilePicture(previousUrl).catch(() => {});
+            }
             Alert.alert('Success', 'Profile picture updated successfully!');
           } else {
             Alert.alert('Error', 'Failed to update profile picture');
@@ -208,38 +167,14 @@ export default function EditProfileScreen() {
         }
       }
     } catch (error) {
-      console.error('Error taking photo:', error);
-      Alert.alert('Error', 'Failed to take photo');
+      console.error(failureMessage, error);
+      Alert.alert('Error', failureMessage);
     }
     setLoading(false);
   };
 
-  const handlePickImage = async () => {
-    if (!profile) return;
-    setLoading(true);
-
-    try {
-      const result = await pickImage();
-      if (result && !result.canceled && result.assets?.[0]) {
-        const uploadResult = await uploadProfilePicture(result.assets[0].uri, profile.id);
-        if (uploadResult.success && uploadResult.url) {
-          const updateSuccess = await updateUserProfilePicture(profile.id, uploadResult.url);
-          if (updateSuccess) {
-            setProfile(prev => prev ? { ...prev, avatar_url: uploadResult.url! } : null);
-            Alert.alert('Success', 'Profile picture updated successfully!');
-          } else {
-            Alert.alert('Error', 'Failed to update profile picture');
-          }
-        } else {
-          Alert.alert('Error', uploadResult.error || 'Failed to upload image');
-        }
-      }
-    } catch (error) {
-      console.error('Error picking image:', error);
-      Alert.alert('Error', 'Failed to pick image');
-    }
-    setLoading(false);
-  };
+  const handleTakePhoto = () => uploadNewProfilePicture(takePhoto, 'Failed to take photo');
+  const handlePickImage = () => uploadNewProfilePicture(pickImage, 'Failed to pick image');
 
   const handleRemoveProfilePicture = async () => {
     if (!profile || !profile.avatar_url) return;
@@ -774,52 +709,6 @@ export default function EditProfileScreen() {
           </KeyboardAvoidingView>
         </Modal>
 
-        {/* Password Modal for Profile Picture Upload - hidden until feature is enabled */}
-        {ENABLE_PROFILE_PICTURE_UPLOAD && (
-          <Modal visible={showPasswordModal} animationType="fade" transparent={true} onRequestClose={handlePasswordCancel}>
-            <View style={styles.modalOverlay}>
-              <ThemedView variant="card" style={styles.modalContent}>
-                <ThemedText variant="subtitle" style={styles.modalTitle}>
-                  Profile Picture Password
-                </ThemedText>
-                <ThemedText variant="body" style={styles.modalDescription}>
-                  Enter password:
-                </ThemedText>
-                <TextInput
-                  style={[styles.modalInput, passwordError && { borderColor: '#ef4444' }]}
-                  placeholder="Enter password..."
-                  placeholderTextColor={theme.colors.textSecondary}
-                  value={passwordInput}
-                  onChangeText={setPasswordInput}
-                  secureTextEntry={true}
-                  autoFocus={true}
-                  autoComplete="off"
-                  autoCorrect={false}
-                  onSubmitEditing={handlePasswordSubmit}
-                />
-                {passwordError ? (
-                  <ThemedText style={{ color: theme.colors.error, marginTop: 8, textAlign: 'center', marginBottom: 20 }}>
-                    {passwordError}
-                  </ThemedText>
-                ) : null}
-                <View style={styles.modalButtons}>
-                  <TouchableOpacity
-                    style={[styles.modalButton, { backgroundColor: theme.colors.card, borderColor: theme.colors.border, borderWidth: 1 }]}
-                    onPress={handlePasswordCancel}
-                  >
-                    <ThemedText variant="body">Cancel</ThemedText>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.modalButton, { backgroundColor: theme.colors.primary }]}
-                    onPress={handlePasswordSubmit}
-                  >
-                    <ThemedText variant="body" style={{ color: theme.colors.textOnPrimary }}>Submit</ThemedText>
-                  </TouchableOpacity>
-                </View>
-              </ThemedView>
-            </View>
-          </Modal>
-        )}
       </ScrollView>
     </KeyboardAvoidingView>
   );

@@ -3,8 +3,8 @@ import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { Image, StyleSheet, TouchableOpacity, View } from 'react-native';
 
-// Feature flag for profile picture display - set to true to enable
-const ENABLE_PROFILE_PICTURE_DISPLAY = false;
+// Feature flag for profile picture display
+const ENABLE_PROFILE_PICTURE_DISPLAY = true;
 
 interface UserAvatarProps {
   icon?: string;

@@ -6,6 +6,7 @@ import { ThemedView } from '@/components/themed/ThemedView';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { supabase } from '@/supabase';
+import { joinLiveMatch } from '@/utils/liveMatchJoin';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
@@ -144,9 +145,7 @@ export default function JoinMatchScreen() {
         } : null);
 
         // Clear any error messages when data updates successfully
-        if (errorMessage) {
-          setErrorMessage('');
-        }
+        setErrorMessage('');
 
         lastUpdateTime = Date.now();
         updateBuffer = null;
@@ -192,9 +191,9 @@ export default function JoinMatchScreen() {
     return () => {
       console.log('Join screen: Cleaning up smart subscription');
       if (timeoutId) clearTimeout(timeoutId as any);
-      subscription.unsubscribe();
+      supabase.removeChannel(subscription);
     };
-  }, [liveMatch?.id, liveMatch?.status, errorMessage]);
+  }, [liveMatch?.id, liveMatch?.status]);
 
   useEffect(() => {
     loadLiveMatch();
@@ -270,59 +269,38 @@ export default function JoinMatchScreen() {
 
     setIsJoining(true);
     try {
-      // Get user profile for nickname
-      const { data: profileData } = await supabase
-        .from('user_profiles')
-        .select('nickname')
-        .eq('id', session.user.id)
-        .single();
+      const result = await joinLiveMatch(liveMatch.id, playerSlot);
 
-      const nickname = profileData?.nickname || session.user.email?.split('@')[0] || `Player ${playerSlot}`;
-
-      // Update match data
-      const updatedUserSlotMap = { 
-        ...liveMatch.userSlotMap, 
-        [playerSlot.toString()]: session.user.id 
-      };
-      
-      const updatedParticipants = liveMatch.participants.includes(session.user.id)
-        ? liveMatch.participants
-        : [...liveMatch.participants, session.user.id];
-
-      const updatedPlayerNames = [...liveMatch.matchSetup.playerNames];
-      updatedPlayerNames[playerSlot - 1] = nickname;
-
-      const updatedPlayerStats = { ...liveMatch.livePlayerStats };
-      if (updatedPlayerStats[playerSlot]) {
-        updatedPlayerStats[playerSlot].name = nickname;
+      if (result.status === 'slot_taken') {
+        Alert.alert('Slot Taken', `Player slot ${playerSlot} is already taken by another user.`);
+        return;
+      }
+      if (result.status === 'already_joined') {
+        Alert.alert('Already Joined', `You are already assigned to Player slot ${result.slot}. You can only join one slot per match.`);
+        return;
+      }
+      if (result.status === 'not_active') {
+        setErrorMessage('Match not found or has ended');
+        return;
       }
 
-      const { error: updateError } = await supabase
-        .from('live_matches')
-        .update({
-          userSlotMap: updatedUserSlotMap,
-          participants: updatedParticipants,
-          matchSetup: {
-            ...liveMatch.matchSetup,
-            playerNames: updatedPlayerNames
-          },
-          livePlayerStats: updatedPlayerStats
-        })
-        .eq('id', liveMatch.id);
-
-      if (updateError) throw updateError;
-
       // Update local state immediately to reflect the change
-      setLiveMatch(prev => prev ? {
-        ...prev,
-        userSlotMap: updatedUserSlotMap,
-        participants: updatedParticipants,
-        matchSetup: {
-          ...prev.matchSetup,
-          playerNames: updatedPlayerNames
-        },
-        livePlayerStats: updatedPlayerStats
-      } : null);
+      if (result.status === 'joined') {
+        setLiveMatch(prev => prev ? {
+          ...prev,
+          userSlotMap: result.userSlotMap,
+          participants: result.participants,
+          matchSetup: {
+            ...prev.matchSetup,
+            playerNames: result.matchSetup.playerNames
+          },
+          livePlayerStats: result.livePlayerStats
+        } : null);
+      }
+
+      const nickname = result.status === 'joined'
+        ? result.nickname
+        : liveMatch.matchSetup.playerNames[playerSlot - 1];
 
       // Reset selected player state
       setSelectedPlayer(null);

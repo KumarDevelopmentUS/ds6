@@ -28,7 +28,7 @@ export const storePendingSignupData = (data: Omit<PendingSignupData, 'timestamp'
       timestamp: Date.now(),
     };
     
-    if (typeof window !== 'undefined') {
+    if (typeof localStorage !== 'undefined') {
       localStorage.setItem(SIGNUP_DATA_KEY, JSON.stringify(signupData));
       localStorage.setItem(SIGNUP_EMAIL_KEY, data.email.toLowerCase());
       localStorage.setItem(SIGNUP_TIMESTAMP_KEY, signupData.timestamp.toString());
@@ -45,7 +45,7 @@ export const storePendingSignupData = (data: Omit<PendingSignupData, 'timestamp'
  */
 export const retrievePendingSignupData = (email: string): PendingSignupData | null => {
   try {
-    if (typeof window === 'undefined') {
+    if (typeof localStorage === 'undefined') {
       return null;
     }
 
@@ -89,7 +89,7 @@ export const retrievePendingSignupData = (email: string): PendingSignupData | nu
  */
 export const clearPendingSignupData = (): void => {
   try {
-    if (typeof window !== 'undefined') {
+    if (typeof localStorage !== 'undefined') {
       localStorage.removeItem(SIGNUP_DATA_KEY);
       localStorage.removeItem(SIGNUP_EMAIL_KEY);
       localStorage.removeItem(SIGNUP_TIMESTAMP_KEY);
@@ -105,7 +105,7 @@ export const clearPendingSignupData = (): void => {
  */
 export const hasPendingSignupData = (): boolean => {
   try {
-    if (typeof window === 'undefined') {
+    if (typeof localStorage === 'undefined') {
       return false;
     }
 

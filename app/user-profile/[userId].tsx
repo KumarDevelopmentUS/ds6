@@ -8,6 +8,7 @@ import React, { useEffect, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
+    Image,
     ScrollView,
     StyleSheet,
     View
@@ -50,11 +51,15 @@ interface FriendshipStatus {
   status: 'none' | 'friends' | 'pending_sent' | 'pending_received';
 }
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export default function UserProfileScreen() {
   const router = useRouter();
   const { theme } = useTheme();
   const { session } = useAuth();
-  const { userId } = useLocalSearchParams();
+  const { userId: rawUserId } = useLocalSearchParams();
+  // Only accept a well-formed UUID; the id is interpolated into PostgREST filters below.
+  const userId = typeof rawUserId === 'string' && UUID_REGEX.test(rawUserId) ? rawUserId : undefined;
   const styles = createStyles(theme);
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -77,6 +82,8 @@ export default function UserProfileScreen() {
       loadUserStats();
       loadFriendshipStatus();
       loadAchievements();
+    } else {
+      setLoading(false);
     }
   }, [userId, session]);
 
@@ -135,16 +142,6 @@ export default function UserProfileScreen() {
     try {
       setLoadingStats(true);
       
-      // Get username for logging
-    const { data: userProfile } = await supabase
-      .from('user_profiles')
-      .select('username')
-      .eq('id', userId)
-      .single();
-    
-    const username = userProfile?.username || 'unknown';
-    console.log('Loading user statistics...');
-      
       // Use the hybrid approach: try stored stats first, fallback to calculation
       const { getUserStatsHybrid } = await import('../../utils/profileSync');
       const stats = await getUserStatsHybrid(userId);
@@ -167,51 +164,21 @@ export default function UserProfileScreen() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data: friendship, error } = await supabase
+      const { data: relationships, error } = await supabase
         .from('friends')
-        .select('*')
-        .or(`user_id_1.eq.${user.id},user_id_2.eq.${user.id}`)
-        .or(`user_id_1.eq.${userId},user_id_2.eq.${userId}`)
-        .eq('status', 'pending');
+        .select('user_id_1, user_id_2, status')
+        .or(`and(user_id_1.eq.${user.id},user_id_2.eq.${userId}),and(user_id_1.eq.${userId},user_id_2.eq.${user.id})`)
+        .in('status', ['pending', 'accepted']);
 
       if (error) throw error;
 
-      if (friendship && friendship.length > 0) {
-        const relationship = friendship.find(f => 
-          (f.user_id_1 === user.id && f.user_id_2 === userId) ||
-          (f.user_id_1 === userId && f.user_id_2 === user.id)
-        );
-
-        if (relationship) {
-          if (relationship.user_id_1 === user.id) {
-            setFriendshipStatus({ status: 'pending_sent' });
-          } else {
-            setFriendshipStatus({ status: 'pending_received' });
-          }
-        }
+      const pending = relationships?.find(f => f.status === 'pending');
+      if (pending) {
+        setFriendshipStatus({ status: pending.user_id_1 === user.id ? 'pending_sent' : 'pending_received' });
+      } else if (relationships?.some(f => f.status === 'accepted')) {
+        setFriendshipStatus({ status: 'friends' });
       } else {
-        // Check if they're already friends
-        const { data: existingFriendship, error: friendError } = await supabase
-          .from('friends')
-          .select('*')
-          .or(`user_id_1.eq.${user.id},user_id_2.eq.${user.id}`)
-          .or(`user_id_1.eq.${userId},user_id_2.eq.${user.id}`)
-          .eq('status', 'accepted');
-
-        if (!friendError && existingFriendship && existingFriendship.length > 0) {
-          const isFriend = existingFriendship.some(f => 
-            (f.user_id_1 === user.id && f.user_id_2 === userId) ||
-            (f.user_id_1 === userId && f.user_id_2 === user.id)
-          );
-          
-          if (isFriend) {
-            setFriendshipStatus({ status: 'friends' });
-          } else {
-            setFriendshipStatus({ status: 'none' });
-          }
-        } else {
-          setFriendshipStatus({ status: 'none' });
-        }
+        setFriendshipStatus({ status: 'none' });
       }
     } catch (error) {
       console.error('Error loading friendship status:', error);
@@ -255,8 +222,10 @@ export default function UserProfileScreen() {
       const { error } = await supabase
         .from('friends')
         .update({ status: 'accepted' })
-        .or(`user_id_1.eq.${userId},user_id_2.eq.${userId}`)
-        .or(`user_id_1.eq.${user.id},user_id_2.eq.${user.id}`);
+        // Only the recipient of a pending request may accept it
+        .eq('user_id_1', userId)
+        .eq('user_id_2', user.id)
+        .eq('status', 'pending');
 
       if (error) throw error;
 
@@ -308,8 +277,11 @@ export default function UserProfileScreen() {
         {/* Profile Header */}
         <ThemedView variant="card" style={styles.profileHeader}>
           <View style={[styles.avatar, { backgroundColor: profile.avatar_background_color }]}>
-            {/* Profile picture display disabled - always show icon avatar */}
-            <Ionicons name={profile.avatar_icon} size={60} color={profile.avatar_icon_color} />
+            {profile.avatar_url ? (
+              <Image source={{ uri: profile.avatar_url }} style={styles.avatarImage} resizeMode="cover" />
+            ) : (
+              <Ionicons name={profile.avatar_icon} size={60} color={profile.avatar_icon_color} />
+            )}
           </View>
           
           <View style={styles.profileInfo}>
@@ -512,6 +484,11 @@ const createStyles = (theme: any) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 20,
+    overflow: 'hidden',
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
   },
   profileInfo: {
     flex: 1,

@@ -1,7 +1,6 @@
 // contexts/AuthContext.tsx
 import { supabase } from '@/supabase';
 import { logError, logInfo, logSecurity } from '@/utils/logger';
-import { clearPasswordVerification } from '@/utils/profilePicturePassword';
 import { Session } from '@supabase/supabase-js';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
@@ -79,9 +78,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     try {
       logSecurity('AuthContext: User initiated sign out');
-      
-      // Clear password verification status
-      await clearPasswordVerification();
       
       const { error } = await supabase.auth.signOut();
       if (error) {

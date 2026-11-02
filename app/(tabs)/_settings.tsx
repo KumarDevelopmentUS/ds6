@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Alert, Dimensions, Modal, Platform, SafeAreaView, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, DimensionValue, Dimensions, Modal, Platform, SafeAreaView, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 
 
 import { CommunityIcon } from '../../components/CommunityIcon';
@@ -576,7 +576,7 @@ export default function AccountScreen() {
                       <Switch
                         value={item.value}
                         onValueChange={item.onToggle}
-                        disabled={'disabled' in item ? item.disabled : false}
+                        disabled={'disabled' in item && item.disabled === true}
                         trackColor={{
                           false: ('disabled' in item && item.disabled) ? theme.colors.textSecondary : theme.colors.border,
                           true: ('disabled' in item && item.disabled) ? theme.colors.textSecondary : theme.colors.primary
@@ -1103,7 +1103,8 @@ const createStyles = (theme: any) => StyleSheet.create({
   modalContent: {
     width: '90%',
     maxWidth: 600,
-    maxHeight: Platform.OS === 'web' ? '85vh' : '80%',
+    // 'vh' is valid on react-native-web but not in RN's DimensionValue type
+    maxHeight: (Platform.OS === 'web' ? '85vh' : '80%') as DimensionValue,
     borderRadius: 16,
     padding: 24,
     shadowColor: '#000',

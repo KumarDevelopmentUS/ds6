@@ -10,6 +10,15 @@ export interface UploadResult {
   error?: string;
 }
 
+// Allowed image types, keyed by file extension
+const IMAGE_CONTENT_TYPES: Record<string, string> = {
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  png: 'image/png',
+  webp: 'image/webp',
+  heic: 'image/heic',
+};
+
 // File size limits
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB per image
 const MAX_TOTAL_SIZE = 10 * 1024 * 1024; // 10MB total for 2 images
@@ -145,8 +154,10 @@ export const uploadProfilePicture = async (
         error: sizeValidation.error || 'File size validation failed'
       };
     }
-    // Create a unique filename with proper path structure
-    const fileExt = imageUri.split('.').pop()?.toLowerCase() || 'jpg';
+    // Only accept known image types; picker URIs normally end in one of these
+    const uriExt = imageUri.split(/[?#]/)[0].split('.').pop()?.toLowerCase() ?? '';
+    const fileExt = uriExt in IMAGE_CONTENT_TYPES ? uriExt : 'jpg';
+    const contentType = IMAGE_CONTENT_TYPES[fileExt];
     const fileName = `profile-${userId}-${Date.now()}.${fileExt}`;
 
     let uploadData;
@@ -175,7 +186,7 @@ export const uploadProfilePicture = async (
       const result = await supabase.storage
         .from('profile-pictures')
         .upload(fileName, imageData.buffer, { 
-          contentType: `image/${fileExt}`,
+          contentType,
           upsert: true 
         });
       
@@ -189,7 +200,7 @@ export const uploadProfilePicture = async (
       const result = await supabase.storage
         .from('profile-pictures')
         .upload(fileName, blob, {
-          contentType: `image/${fileExt}`,
+          contentType,
           upsert: true,
         });
       
