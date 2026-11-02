@@ -28,28 +28,37 @@ Profile picture upload is now enabled without a password.
 - [ ] ipapi.co's free tier has a daily request limit; past it, logging silently records `unknown`.
 - [ ] Add a retention policy (e.g. delete `session_logs` rows older than 90 days).
 
+### 4. Upgrade the Expo SDK (dependency vulnerabilities)
+`npm audit` reports 56 issues (5 high, 0 critical) after the November 2026 cleanup, down from 123 Dependabot alerts (2 critical). Almost all remaining ones are in build/dev tooling (Expo CLI, Metro, ESLint, React Native CLI) that doesn't ship in the app, and need an SDK upgrade to fix (`npm audit fix --force` would *downgrade* to Expo 51; don't use it).
+- [ ] Upgrade Expo SDK 53 → latest (`npx expo install expo@latest --fix`), following the Expo upgrade guide. Needs a new native build.
+- [ ] After upgrading, remove the `overrides` block in [package.json](package.json) and re-run `npm audit`.
+- [ ] Ships in the app: `query-string` → `decode-uri-component` (DoS via a crafted, malformed URL; only freezes the tab of whoever opens it). The fixed version is ESM-only and breaks `query-string` 7, so it waits for the SDK upgrade.
+- [ ] Build-time only: `image-size` (no 1.x fix), Expo CLI's `tar`, React Native dev tools' `shell-quote`.
+
+**Why `@react-navigation/core` is pinned to 7.12.1:** `expo-router` 5.1 imports `query-string` without declaring it, and newer `@react-navigation/core` versions stopped installing it, which breaks the web build ("Unable to resolve module query-string"). Remove the pin when upgrading Expo.
+
 ---
 
 ## 🟡 MEDIUM PRIORITY
 
-### 4. Live match data sync
+### 5. Live match data sync
 - [ ] The host's score sync writes the whole `livePlayerStats` blob. If it fires before the host's screen receives a new player's join, that player's display name in stats briefly reverts (their slot is safe). Fix by moving play recording to small RPCs, or by merging names from `matchSetup.playerNames`.
 - [ ] When saving a match, `saved_matches.userSlotMap` and the stats update use the host's local slot map, which could miss a player who joined in the last second. Re-fetch the match row before saving.
 
-### 5. Client-side rate limits are cosmetic
+### 6. Client-side rate limits are cosmetic
 Magic link and password reset limits ([magicLinkAuth.ts](utils/magicLinkAuth.ts), [passwordReset.ts](utils/passwordReset.ts)) are stored on the device and are trivial to bypass.
 - [ ] Confirm Supabase Auth's server-side rate limits are configured (Dashboard → Authentication → Rate Limits).
 - [ ] Error messages like "No account found with this email" reveal which emails are registered; consider a generic message.
 
-### 6. Regenerate database types
+### 7. Regenerate database types
 [types/database.ts](types/database.ts) is out of date (missing `join_live_match`, `kick_community_member`, `update_community`, etc.).
 - [ ] Run `npm run generate-types` and fix any new type errors it surfaces.
 
-### 7. Lint warnings (59)
+### 8. Lint warnings (59)
 Mostly `react-hooks/exhaustive-deps` and unused variables.
 - [ ] Fix carefully screen by screen: adding missing effect dependencies can cause loops or extra fetches, so test each screen after changing it.
 
-### 8. Content Security Policy
+### 9. Content Security Policy
 [vercel.json](vercel.json) allows `'unsafe-inline'` and `'unsafe-eval'` in `script-src`.
 - [ ] Test whether the Expo web export works without `'unsafe-eval'`; remove it if so.
 - [ ] `Permissions-Policy: camera=()` blocks the camera on web. That's fine while photo features are mobile-only, but must change if camera features come to web.
@@ -58,7 +67,7 @@ Mostly `react-hooks/exhaustive-deps` and unused variables.
 
 ## 🟢 LOW PRIORITY / CLEANUP
 
-### 9. Dead code and leftovers
+### 10. Dead code and leftovers
 - [ ] Unused Expo template components: `HelloWave`, `ParallaxScrollView`, `Collapsible`, `ExternalLink`, `components/ThemedText.tsx`, `components/ThemedView.tsx` (the app uses `components/themed/`), `HomeButton`, `AuthScreen`, `GameStats`, `ScoreBoard`, `MatchSummaryDemo`.
 - [ ] Unused utils: `photoProcessing.ts`, `imageUrlHelper.ts`, `loggerConfig.ts`, `hooks/useKeyboardShortcuts.ts`.
 - [ ] Debug buttons on the feed screen (`debugFeedProvider`, `debugUserCommunities` in [_feed/index.tsx](app/(tabs)/_feed/index.tsx)); check whether they're reachable and remove or hide behind `__DEV__`.
@@ -66,17 +75,16 @@ Mostly `react-hooks/exhaustive-deps` and unused variables.
 - [ ] `die.png` (1.6 MB) in the repo root.
 - [ ] Duplicated session-handling code in [auth/callback.tsx](app/auth/callback.tsx) (the "session found" and "code exchange" branches are copy-pasted).
 
-### 10. Logging
+### 11. Logging
 - [ ] Many `console.log` calls with emoji debug output ship to production. Route them through [logger.ts](utils/logger.ts), which already silences non-errors in production.
 - [ ] [auth/callback.tsx](app/auth/callback.tsx) logs signup data (username, nickname, school).
 - [ ] The root layout logs the current page on every navigation.
 
-### 11. Error display
+### 12. Error display
 - [ ] The root `ErrorBoundary` in [_layout.tsx](app/_layout.tsx) shows raw error text to users. Show a friendly message and a "Reload" button instead.
 
-### 12. Tooling
+### 13. Tooling
 - [ ] Supabase CLI is v2.34.3; v3.0.0 is available.
-- [ ] Commit the fetched migration files so local and remote migration history stay in sync.
 
 ---
 
@@ -94,5 +102,6 @@ Mostly `react-hooks/exhaustive-deps` and unused variables.
 - [x] `window.location.reload()` crash path on native; `localStorage` used on native
 - [x] Password update logged the full user object
 - [x] Unused username lookups (extra network request) removed from signup, community join and stats paths
+- [x] Dependencies: removed 9 unused packages (`nanoid`, `dotenv`, `resend`, `react-native-image-picker`, `react-native-permissions`, `@react-native-community/image-editor`, `react-native-chart-kit`, `react-native-webview`, `expo-media-library`), applied non-breaking `npm audit fix`, and overrode `brace-expansion`/`postcss` to patched versions. Both critical alerts are resolved.
 - [x] 97 TypeScript errors fixed (invalid `'85vh'` style type)
 - [x] Unused `api.anthropic.com` removed from the CSP
