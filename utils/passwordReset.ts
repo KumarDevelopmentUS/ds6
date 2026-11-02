@@ -175,11 +175,9 @@ export async function updatePassword(newPassword: string): Promise<PasswordReset
     console.log('🔐 Updating user password...');
     
     // Update password
-    const { data, error } = await supabase.auth.updateUser({
+    const { error } = await supabase.auth.updateUser({
       password: newPassword
     });
-
-    console.log('🔐 Password update response:', { data, error });
 
     if (error) {
       console.error('❌ Password update error:', error);

@@ -4,6 +4,7 @@
 import { HapticBackButton } from '@/components/HapticBackButton';
 import { useTheme } from '@/contexts/ThemeContext';
 import { supabase } from '@/supabase';
+import { joinLiveMatch } from '@/utils/liveMatchJoin';
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -315,7 +316,6 @@ const DieStatsTracker: React.FC = () => {
   // Supabase Realtime listener for live match updates
   // Smart subscription management for game updates
   const [subscriptionEnabled, setSubscriptionEnabled] = useState(false);
-  const [lastUpdateTime, setLastUpdateTime] = useState(Date.now());
 
   // Enable subscription only when game is active and user is participating
   useEffect(() => {
@@ -337,7 +337,9 @@ const DieStatsTracker: React.FC = () => {
 
     console.log(`Setting up smart live subscription for ${liveSessionId}`);
 
-    // Batch updates to avoid excessive re-renders
+    // Batch updates to avoid excessive re-renders. Kept local (not state) so
+    // applying an update doesn't tear down and re-create the subscription.
+    let lastUpdateTime = 0;
     let updateBuffer: any = null;
     let timeoutId: number | null = null;
 
@@ -360,7 +362,7 @@ const DieStatsTracker: React.FC = () => {
           setWinnerTeam(updatedMatch.winnerTeam);
         }
 
-        setLastUpdateTime(Date.now());
+        lastUpdateTime = Date.now();
         updateBuffer = null;
       }
     };
@@ -399,9 +401,9 @@ const DieStatsTracker: React.FC = () => {
     return () => {
       console.log('Game tracker: Cleaning up smart subscription');
       if (timeoutId) clearTimeout(timeoutId as any);
-      subscription.unsubscribe();
+      supabase.removeChannel(subscription);
     };
-  }, [liveSessionId, subscriptionEnabled, lastUpdateTime]); // Depend on smart subscription state
+  }, [liveSessionId, subscriptionEnabled]);
 
   // Helper to sanitize text inputs to prevent script injection or unwanted characters
   const sanitizeInput = (input: string): string => {
@@ -484,83 +486,27 @@ const DieStatsTracker: React.FC = () => {
 
     setIsLoading(true);
     try {
-      const { data: currentMatch, error: fetchError } = await supabase
-        .from('live_matches')
-        .select('*')
-        .eq('id', liveSessionId)
-        .single();
+      const result = await joinLiveMatch(liveSessionId, playerSlot);
 
-      if (fetchError) throw fetchError;
-
-      // Check if the selected slot is already taken by another user
-      if (currentMatch.userSlotMap[playerSlot.toString()] && currentMatch.userSlotMap[playerSlot.toString()] !== currentUser.id) {
-        Alert.alert('Slot Taken', `Player slot ${playerSlot} is already taken by another user.`);
-        setIsLoading(false);
-        return;
+      switch (result.status) {
+        case 'slot_taken':
+          Alert.alert('Slot Taken', `Player slot ${playerSlot} is already taken by another user.`);
+          return;
+        case 'already_joined':
+          Alert.alert('Already Joined', `You are already assigned to Player slot ${result.slot}. You can only join one slot per match.`);
+          return;
+        case 'already_in_slot':
+          Alert.alert('Already Assigned', `You are already assigned to Player slot ${playerSlot}.`);
+          setShowJoinDialog(false);
+          return;
+        case 'not_active':
+          setErrorMessage('This match has already finished.');
+          return;
       }
-
-      // Check if the current user is already in a different slot
-      const existingSlot = Object.keys(currentMatch.userSlotMap).find(
-        key => currentMatch.userSlotMap[key] === currentUser.id
-      );
-      if (existingSlot && existingSlot !== playerSlot.toString()) {
-        Alert.alert('Already Joined', `You are already assigned to Player slot ${existingSlot}. You can only join one slot per match.`);
-        setIsLoading(false);
-        return;
-      }
-      
-      // If the user is already in THIS specific slot, just confirm
-      if (currentMatch.userSlotMap[playerSlot.toString()] === currentUser.id) {
-        Alert.alert('Already Assigned', `You are already assigned to Player slot ${playerSlot}.`);
-        setShowJoinDialog(false);
-        setIsLoading(false);
-        return;
-      }
-
-
-      const { data: profileData, error: profileError } = await supabase
-        .from('user_profiles')
-        .select('nickname')
-        .eq('id', currentUser.id)
-        .single();
-
-      if (profileError && profileError.code !== 'PGRST116') {
-          console.error("Error fetching user profile:", profileError.message);
-      }
-
-      const nickname = profileData?.nickname || currentUser.email?.split('@')[0] || `Player ${playerSlot}`;
-
-      const updatedUserSlotMap = { ...currentMatch.userSlotMap, [playerSlot.toString()]: currentUser.id };
-      const updatedParticipants = currentMatch.participants.includes(currentUser.id)
-        ? currentMatch.participants
-        : [...currentMatch.participants, currentUser.id];
-
-      const updatedPlayerNames = [...currentMatch.matchSetup.playerNames];
-      updatedPlayerNames[playerSlot - 1] = nickname;
-
-      const updatedPlayerStats = { ...currentMatch.livePlayerStats };
-      if (updatedPlayerStats[playerSlot]) {
-        updatedPlayerStats[playerSlot].name = nickname;
-      }
-
-      const { error: updateError } = await supabase
-        .from('live_matches')
-        .update({
-          userSlotMap: updatedUserSlotMap,
-          participants: updatedParticipants,
-          matchSetup: {
-            ...currentMatch.matchSetup,
-            playerNames: updatedPlayerNames
-          },
-          livePlayerStats: updatedPlayerStats
-        })
-        .eq('id', liveSessionId);
-
-      if (updateError) throw updateError;
 
       console.log('Successfully joined match as player', playerSlot);
-      setUserSlotMap(updatedUserSlotMap);
-      setMatchSetup(prev => ({ ...prev, playerNames: updatedPlayerNames }));
+      setUserSlotMap(result.userSlotMap);
+      setMatchSetup(prev => ({ ...prev, playerNames: result.matchSetup.playerNames }));
       setShowJoinDialog(false);
       Alert.alert('Success', `You have successfully joined Player slot ${playerSlot}!`);
       setErrorMessage('');
@@ -594,7 +540,8 @@ const DieStatsTracker: React.FC = () => {
           liveTeamPenalties: validatedPenalties,
           manual_adjustments: updatedManualAdjustments || manualAdjustments,
           adjustment_history: updatedAdjustmentHistory || adjustmentHistory,
-          userSlotMap: userSlotMap,
+          // userSlotMap is intentionally not synced here: joins write it atomically
+          // via join_live_match, and a stale local copy would erase new players.
         })
         .eq('id', liveSessionId);
 
@@ -607,7 +554,7 @@ const DieStatsTracker: React.FC = () => {
     } catch (error) {
       console.error('Error syncing play:', error);
     }
-  }, [liveSessionId, playerStats, teamPenalties, manualAdjustments, adjustmentHistory, userSlotMap]);
+  }, [liveSessionId, playerStats, teamPenalties, manualAdjustments, adjustmentHistory]);
 
   // Helper function to check if in Match Point, Advantage, or Overtime
   const getGameState = () => {
@@ -1161,22 +1108,21 @@ const DieStatsTracker: React.FC = () => {
   
       setLiveSessionId(null);
 
-      // Show success message and navigate to home
+      // Show success message and navigate to home (once — either OK or the timeout)
+      let navigatedHome = false;
+      const goHome = () => {
+        if (navigatedHome) return;
+        navigatedHome = true;
+        router.push('/(tabs)/' as any);
+      };
       Alert.alert(
         'Success', 
         'Match statistics saved successfully!',
-        [
-          {
-            text: 'OK',
-            onPress: () => router.push('/(tabs)/' as any),
-          }
-        ]
+        [{ text: 'OK', onPress: goHome }]
       );
       
       // Auto-navigate after a brief delay if user doesn't dismiss the alert
-      setTimeout(() => {
-        router.push('/(tabs)/' as any);
-      }, 1500);
+      setTimeout(goHome, 1500);
     } catch (error: any) {
       console.error('Error saving match:', error.message);
       Alert.alert('Error', `Failed to save match statistics: ${error.message}`);

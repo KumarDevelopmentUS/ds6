@@ -9,12 +9,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useUserProfile } from '@/hooks/useSocialFeatures';
 import { supabase } from '@/supabase';
-import { debugFeedProvider, debugRLSPolicies, debugUserCommunities, forceFeedRefetch, joinCommunityManually, refreshFeedCache, testDatabaseConnection } from '@/utils/profileSync';
-import { testStorageSecurity } from '@/utils/storageSecurityTest';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
-import { Alert, Modal, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, Modal, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 // Custom room code generator that only uses capital letters
 const generateRoomCode = (length: number = 6): string => {
@@ -317,27 +315,6 @@ export default function MainMenuScreen() {
     return true;
   };
 
-  // Debug functions
-  const handleTestJoinCommunity = () => {
-    joinCommunityManually('arizona_state_university', 'school');
-  };
-
-  const handleSecurityTest = async () => {
-    try {
-      console.log('🔐 Starting comprehensive security test...');
-      const result = await testStorageSecurity();
-      
-      if (result.success) {
-        Alert.alert('Security Test Complete', 'Security test completed. Check console for detailed results.');
-      } else {
-        Alert.alert('Security Issues Found', `Found ${result.errors.length} security issues. Check console for details.`);
-      }
-    } catch (error) {
-      console.error('Security test failed:', error);
-      Alert.alert('Security Test Failed', error instanceof Error ? error.message : 'Unknown error');
-    }
-  };
-
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <ScrollView
@@ -457,11 +434,10 @@ export default function MainMenuScreen() {
                 ]}>
                   {userProfile.avatar_url ? (
                     <View style={styles.avatarImageContainer}>
-                      {/* Note: For now, we'll use the icon. In a real app, you'd use Image component for avatar_url */}
-                      <Ionicons 
-                        name={userProfile.avatar_icon as any || 'person'} 
-                        size={32} 
-                        color={userProfile.avatar_icon_color || '#FFFFFF'} 
+                      <Image
+                        source={{ uri: userProfile.avatar_url }}
+                        style={{ width: '100%', height: '100%' }}
+                        resizeMode="cover"
                       />
                     </View>
                   ) : (
@@ -616,75 +592,6 @@ export default function MainMenuScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Debug Section - Only show for authenticated users */}
-      {false && session && (
-        <ThemedView variant="card" style={styles.debugCard}>
-          <View style={styles.debugHeader}>
-            <Ionicons name="bug" size={24} color={theme.colors.warning} />
-            <ThemedText variant="subtitle" style={styles.debugTitle}>
-              Debug Tools
-            </ThemedText>
-          </View>
-          <View style={styles.debugButtons}>
-            <ThemedButton
-              title="🧪 Test DB"
-              variant="outline"
-              onPress={testDatabaseConnection}
-              size="small"
-              style={styles.debugButton}
-            />
-            <ThemedButton
-              title="🏘️ My Communities"
-              variant="outline"
-              onPress={debugUserCommunities}
-              size="small"
-              style={styles.debugButton}
-            />
-            <ThemedButton
-              title="📡 Feed Provider"
-              variant="outline"
-              onPress={debugFeedProvider}
-              size="small"
-              style={styles.debugButton}
-            />
-            <ThemedButton
-              title="🔄 Fresh Query"
-              variant="outline"
-              onPress={forceFeedRefetch}
-              size="small"
-              style={styles.debugButton}
-            />
-            <ThemedButton
-              title="🔐 Check RLS"
-              variant="outline"
-              onPress={debugRLSPolicies}
-              size="small"
-              style={styles.debugButton}
-            />
-            <ThemedButton
-              title="🔄 Refresh Cache"
-              variant="outline"
-              onPress={refreshFeedCache}
-              size="small"
-              style={styles.debugButton}
-            />
-            <ThemedButton
-              title="🎓 Join ASU"
-              variant="outline"
-              onPress={handleTestJoinCommunity}
-              size="small"
-              style={styles.debugButton}
-            />
-            <ThemedButton
-              title="🔐 Security Test"
-              variant="outline"
-              onPress={handleSecurityTest}
-              size="small"
-              style={styles.debugButton}
-            />
-          </View>
-        </ThemedView>
-      )}
       </ScrollView>
 
       {/* Web Join Room Modal */}
@@ -907,28 +814,6 @@ const createStyles = (theme: any) => StyleSheet.create({
   funFactText: {
     lineHeight: 22,
     fontStyle: 'italic',
-  },
-  debugCard: {
-    marginTop: 16,
-    marginBottom: 20,
-  },
-  debugHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  debugTitle: {
-    marginLeft: 8,
-    marginBottom: 0,
-  },
-  debugButtons: {
-    flexDirection: 'row',
-    gap: 8,
-    flexWrap: 'wrap',
-  },
-  debugButton: {
-    flex: 1,
-    minWidth: 100,
   },
   modalOverlay: {
     flex: 1,

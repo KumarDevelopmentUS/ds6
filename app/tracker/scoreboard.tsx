@@ -221,7 +221,7 @@ export default function ScoreboardScreen() {
     return () => {
       console.log('Scoreboard: Cleaning up 3-second subscription');
       if (timeoutId) clearTimeout(timeoutId as any);
-      subscription.unsubscribe();
+      supabase.removeChannel(subscription);
     };
   }, [liveMatch?.id]);
 

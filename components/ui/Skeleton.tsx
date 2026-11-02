@@ -1,10 +1,10 @@
 // components/ui/Skeleton.tsx
 import React, { useEffect, useRef } from 'react';
-import { Animated, Platform, StyleSheet, View, ViewStyle } from 'react-native';
+import { Animated, DimensionValue, Platform, StyleSheet, View, ViewStyle } from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 
 interface SkeletonProps {
-  width?: number | string;
+  width?: DimensionValue;
   height?: number;
   borderRadius?: number;
   style?: ViewStyle;
@@ -63,7 +63,7 @@ export const Skeleton: React.FC<SkeletonProps> = ({
 };
 
 // Pre-built skeleton variants
-export const SkeletonText: React.FC<{ lines?: number; lastLineWidth?: string }> = ({
+export const SkeletonText: React.FC<{ lines?: number; lastLineWidth?: DimensionValue }> = ({
   lines = 1,
   lastLineWidth = '70%',
 }) => {
